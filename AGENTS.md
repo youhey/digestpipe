@@ -223,6 +223,18 @@ Keep formatting rules practical and Laravel-friendly.
 
 Do not introduce broad style changes unrelated to the current task.
 
+## PHP Code Readability
+
+Prefer explicit class structure over compact syntax when defining application services.
+
+Do not use constructor property promotion for service dependencies. Declare class properties first, then assign them inside the constructor. This keeps member structure easy to scan.
+
+Avoid direct global namespace references such as `\Throwable`, `\DOMDocument`, or `\InvalidArgumentException` in application code. Add `use` declarations at the top of the file instead, so dependencies are visible in one place.
+
+Do not mark application classes as `final` unless there is a concrete technical reason. The default should remain extensible and easy to mock in tests.
+
+Application classes should have a class-level PHPDoc summary. Public methods and public properties should also have concise PHPDoc comments that explain their role. Keep comments descriptive, not historical; do not add comments that merely restate a recent change.
+
 ## Docker Guidelines
 
 Keep Docker configuration under `docker/`.

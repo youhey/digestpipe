@@ -1,0 +1,136 @@
+<?php
+
+namespace App\Feeds;
+
+use Carbon\CarbonImmutable;
+use DOMDocument;
+use DOMElement;
+use DOMXPath;
+use RuntimeException;
+use Throwable;
+use UnexpectedValueException;
+
+/**
+ * RSS 2.0 / RDF feed XMLからnews item候補を抽出します。
+ */
+class RssFeedParser
+{
+    /**
+     * Feed XMLをparseして、保存可能なitem一覧と失敗件数を返します。
+     */
+    public function parse(string $xml, ?int $limit = null): ParsedFeed
+    {
+        $dom = new DOMDocument();
+
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $loaded = $dom->loadXML($xml, LIBXML_NOCDATA | LIBXML_NONET);
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        if ($loaded === false) {
+            throw new RuntimeException('Feed XML could not be parsed.');
+        }
+
+        $xpath = new DOMXPath($dom);
+        $nodes = $xpath->query('//*[local-name() = "item"]');
+
+        if ($nodes === false) {
+            throw new RuntimeException('Feed item XPath query failed.');
+        }
+
+        $items = [];
+        $failedItemCount = 0;
+        $maxItems = $limit ?? PHP_INT_MAX;
+
+        foreach ($nodes as $node) {
+            if (! $node instanceof DOMElement) {
+                continue;
+            }
+
+            if (count($items) >= $maxItems) {
+                break;
+            }
+
+            try {
+                $items[] = $this->parseItem($node);
+            } catch (UnexpectedValueException) {
+                ++$failedItemCount;
+            }
+        }
+
+        return new ParsedFeed($items, $failedItemCount);
+    }
+
+    private function parseItem(DOMElement $item): FeedItem
+    {
+        $title = $this->text($item, 'title');
+        $sourceUrl = $this->text($item, 'link');
+        $externalId = $this->text($item, 'guid') ?? $this->attribute($item, 'about') ?? $sourceUrl;
+        $excerpt = $this->text($item, 'description');
+        $publishedAt = $this->parseDate(
+            $this->text($item, 'pubDate')
+            ?? $this->text($item, 'date')
+            ?? $this->text($item, 'published')
+            ?? $this->text($item, 'updated')
+        );
+
+        if ($title === null || $externalId === null) {
+            throw new UnexpectedValueException('Feed item is missing required identity fields.');
+        }
+
+        return new FeedItem(
+            externalId: $externalId,
+            sourceUrl: $sourceUrl,
+            title: $title,
+            excerpt: $excerpt,
+            publishedAt: $publishedAt,
+        );
+    }
+
+    private function text(DOMElement $item, string $localName): ?string
+    {
+        foreach ($item->childNodes as $childNode) {
+            if (! $childNode instanceof DOMElement || $childNode->localName !== $localName) {
+                continue;
+            }
+
+            $value = trim($childNode->textContent);
+
+            return $value === '' ? null : $value;
+        }
+
+        return null;
+    }
+
+    private function attribute(DOMElement $item, string $localName): ?string
+    {
+        foreach ($item->attributes as $attribute) {
+            if ($attribute->localName !== $localName) {
+                continue;
+            }
+
+            $value = trim($attribute->value);
+
+            return $value === '' ? null : $value;
+        }
+
+        return null;
+    }
+
+    private function parseDate(?string $value): ?CarbonImmutable
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($value);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+}

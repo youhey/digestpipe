@@ -104,8 +104,16 @@ return (new PhpCsFixer\Config())
             'closure_function_spacing' => 'one',
         ],
 
+        'fully_qualified_strict_types' => false,
+
         'general_phpdoc_annotation_remove' => [
             'annotations' => [],
+        ],
+
+        'global_namespace_import' => [
+            'import_classes' => true,
+            'import_constants' => false,
+            'import_functions' => false,
         ],
 
         'heredoc_to_nowdoc' => true,
