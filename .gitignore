@@ -36,6 +36,7 @@ desktop.ini
 # Tooling / generated metadata
 tags
 *.log
+.php-cs-fixer.cache
 
 # Local binaries / scratch
 /.bin/
