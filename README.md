@@ -58,6 +58,18 @@ make test and make lint should pass before committing.
 
 make destroy removes containers, images, and volumes. Use it only when you want to reset the local environment completely.
 
+## Batch Commands
+
+Run application batch commands through the `php-cli` service.
+
+```bash
+docker compose exec -T php-cli php artisan digestpipe:feeds:fetch
+docker compose exec -T php-cli php artisan digestpipe:items:enqueue-processing
+docker compose exec -T php-cli php artisan queue:work --stop-when-empty
+```
+
+`digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--only=translation`, and `--only=summary`.
+
 ## Database Reset Behavior
 
 `make up` runs `php artisan migrate:refresh` and `php artisan db:seed`.

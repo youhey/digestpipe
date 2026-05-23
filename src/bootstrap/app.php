@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\EnqueueProcessingCommand;
 use App\Console\Commands\FetchFeedsCommand;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -12,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withCommands([
+        EnqueueProcessingCommand::class,
         FetchFeedsCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
