@@ -1,12 +1,17 @@
 includes:
     - vendor/larastan/larastan/extension.neon
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
 
 parameters:
-    level: 5
-    parallel:
-        maximumNumberOfProcesses: 1
+    level: max
+
     paths:
         - app
+        - bootstrap/app.php
+        - bootstrap/providers.php
         - config
-        - database
+        - database/factories
+        - database/migrations
+        - database/seeders
         - routes
+        - tests

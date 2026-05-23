@@ -8,16 +8,6 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
-    public function createApplication()
-    {
-        $app = require Application::inferBasePath() . '/bootstrap/app.php';
-
-        $app->loadEnvironmentFrom('.env.example');
-        $app->make(Kernel::class)->bootstrap();
-
-        return $app;
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -27,5 +17,20 @@ abstract class TestCase extends BaseTestCase
             'queue.default' => 'sync',
             'session.driver' => 'array',
         ]);
+    }
+
+    public function createApplication(): Application
+    {
+        $app = require Application::inferBasePath() . '/bootstrap/app.php';
+
+        assert($app instanceof Application);
+
+        $app->loadEnvironmentFrom('.env.example');
+
+        $kernel = $app->make(Kernel::class);
+
+        $kernel->bootstrap();
+
+        return $app;
     }
 }
