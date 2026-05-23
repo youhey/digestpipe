@@ -311,6 +311,135 @@ LOG_CHANNEL=stderr
 
 Do not rely on `storage/logs` for production observability.
 
+## Application Environment Configuration
+
+Laravel application configuration must follow Laravel's standard `.env` loading behavior.
+
+In this repository, the Laravel application lives under `src/`, so the application environment files are:
+
+```txt
+src/.env.example  # Sample local development settings. Committed.
+src/.env          # Developer-specific local settings. Not committed.
+```
+
+Environment variables that control Laravel application behavior must be defined in `src/.env.example` / `src/.env`, not in `docker-compose.yml`.
+
+Examples:
+
+```txt
+APP_*
+DB_*
+CACHE_*
+SESSION_*
+QUEUE_*
+REDIS_*
+FILESYSTEM_*
+AWS_*
+LOG_*
+```
+
+This keeps the project aligned with Laravel conventions and avoids duplicating the same settings across `docker-compose.yml` and `src/.env`. From an SSOT / DRY perspective, Laravel application settings belong in `src/.env`.
+
+## Layer Responsibilities
+
+`docker-compose.yml` defines the local development infrastructure layer.
+
+It may define:
+
+```txt
+service image
+build context
+Dockerfile path
+ports
+volumes
+networks
+healthchecks
+depends_on
+middleware bootstrap settings
+```
+
+Settings required to bootstrap middleware containers may remain in `docker-compose.yml`.
+
+Examples:
+
+```yaml
+postgres:
+  environment:
+    POSTGRES_DB: digestpipe
+    POSTGRES_USER: digestpipe
+    POSTGRES_PASSWORD: digestpipe
+
+minio:
+  environment:
+    MINIO_ROOT_USER: minioadmin
+    MINIO_ROOT_PASSWORD: minioadmin
+```
+
+However, the database, cache, session, queue, storage, and logging backends used by Laravel are application-layer settings. They must be defined in `src/.env.example` / `src/.env`.
+
+Even when values overlap, such as `POSTGRES_DB` and `DB_DATABASE`, they belong to different layers.
+
+```txt
+POSTGRES_DB   # Initial database name created by the PostgreSQL container
+DB_DATABASE   # Database name used by the Laravel application connection
+```
+
+This kind of duplication is acceptable because the variables configure different layers.
+
+## Docker Compose Must Not Load `src/.env`
+
+This project must not use Docker Compose `env_file` to load `src/.env`.
+
+`src/.env` is the environment file for the Laravel application. The only intended usage is for Laravel itself to load it through Laravel's standard mechanism.
+
+Docker Compose and other layers must not understand, load, or depend on `src/.env`.
+
+Developers may still modify their local `src/.env` manually after copying it from `src/.env.example` when they need to change local application behavior.
+
+## Laravel Cloud Compatibility
+
+`src/.env.example` is committed as a sample configuration for local development.
+
+In Laravel Cloud, production environment variables are managed by Laravel Cloud. Therefore, committing local development defaults to `src/.env.example` does not affect production behavior on Laravel Cloud.
+
+It is acceptable for `src/.env.example` to include sample values required for the local Docker Compose environment.
+
+Examples:
+
+```env
+DB_HOST=postgres
+DB_DATABASE=digestpipe
+DB_USERNAME=digestpipe
+DB_PASSWORD=digestpipe
+
+REDIS_HOST=valkey
+
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+AWS_BUCKET=digestpipe-local
+AWS_ENDPOINT=http://minio:9000
+```
+
+These are sample credentials for local development only. They are not production secrets. In this context, committing them to `src/.env.example` is not considered a vulnerability.
+
+## App Key Handling
+
+Do not commit a fixed Laravel `APP_KEY`.
+
+Leave it empty in `src/.env.example`.
+
+```env
+APP_KEY=
+```
+
+Each developer must generate it during local setup:
+
+```bash
+docker compose run --rm php-cli php artisan key:generate
+```
+
+`APP_KEY` is used for encrypted cookies and encrypted application data, so it should be generated per environment, even for local development.
+
 ## Documentation
 
 Use `docs/` for development notes and design documents.

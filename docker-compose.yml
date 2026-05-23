@@ -6,32 +6,6 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./src:/var/www/html
-    environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      APP_URL: http://localhost:8080
-      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_DATABASE: digestpipe
-      DB_USERNAME: digestpipe
-      DB_PASSWORD: digestpipe
-      CACHE_STORE: redis
-      SESSION_DRIVER: redis
-      QUEUE_CONNECTION: database
-      FILESYSTEM_DISK: s3
-      LOG_CHANNEL: stderr
-      REDIS_CLIENT: phpredis
-      REDIS_HOST: valkey
-      REDIS_PORT: "6379"
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
-      AWS_DEFAULT_REGION: us-east-1
-      AWS_BUCKET: digestpipe-local
-      AWS_ENDPOINT: http://minio:9000
-      AWS_URL: http://localhost:9000/digestpipe-local
-      AWS_USE_PATH_STYLE_ENDPOINT: "true"
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,32 +21,6 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./src:/var/www/html
-    environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      APP_URL: http://localhost:8080
-      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      DB_CONNECTION: pgsql
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_DATABASE: digestpipe
-      DB_USERNAME: digestpipe
-      DB_PASSWORD: digestpipe
-      CACHE_STORE: redis
-      SESSION_DRIVER: redis
-      QUEUE_CONNECTION: database
-      FILESYSTEM_DISK: s3
-      LOG_CHANNEL: stderr
-      REDIS_CLIENT: phpredis
-      REDIS_HOST: valkey
-      REDIS_PORT: "6379"
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
-      AWS_DEFAULT_REGION: us-east-1
-      AWS_BUCKET: digestpipe-local
-      AWS_ENDPOINT: http://minio:9000
-      AWS_URL: http://localhost:9000/digestpipe-local
-      AWS_USE_PATH_STYLE_ENDPOINT: "true"
     depends_on:
       postgres:
         condition: service_healthy

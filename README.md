@@ -52,7 +52,8 @@ docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix
 Local Defaults
 
 `src/.env.example` is configured for the local Docker Compose environment.
-The actual src/.env file should be created locally and must not be committed.
+The actual `src/.env` file should be created locally and must not be committed.
+Laravel reads application settings from `src/.env`; Docker Compose only defines the local containers and middleware services.
 
 ```dotenv
 DB_CONNECTION=pgsql

@@ -15,6 +15,4 @@ RUN apt-get update \
     && docker-php-ext-enable redis \
     && rm -rf /var/lib/apt/lists/*
 
-COPY docker/php/fpm/php.ini /usr/local/etc/php/conf.d/99-digestpipe.ini
-
 WORKDIR /var/www/html

@@ -1,6 +1,11 @@
 # Local Development Environment
 
-The Docker Compose setup in this repository is intended for local development only. Production deployment targets Laravel Cloud, and application settings should be configured through environment variables.
+The Docker Compose setup in this repository is intended for local development only.
+Production deployment targets Laravel Cloud, and application settings should be configured through environment variables.
+
+Local Laravel settings live in `src/.env`.
+Create it from `src/.env.example`;
+Docker Compose should only define the local containers and middleware services.
 
 ## Services
 
@@ -10,6 +15,22 @@ The Docker Compose setup in this repository is intended for local development on
 - `postgres`: Local PostgreSQL database.
 - `valkey`: Redis-compatible cache and session backend.
 - `minio`: S3-compatible object storage.
+
+## App Key
+
+APP_KEY must be left empty in src/.env.example.
+
+```dotenv
+APP_KEY=
+```
+
+Generate it during local setup:
+
+```bash
+docker compose run --rm php-cli php artisan key:generate
+```
+
+Do not commit a fixed APP_KEY.
 
 ## Common Commands
 
@@ -28,7 +49,8 @@ docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix --dry-run --diff
 
 The web application is available at `http://localhost:8080`.
 
-The MinIO console is available at `http://localhost:9001`. The sample local credentials are `minioadmin` / `minioadmin`.
+The MinIO console is available at `http://localhost:9001`.
+The sample local credentials are `minioadmin` / `minioadmin`.
 
 ## Laravel Cloud Assumptions
 
