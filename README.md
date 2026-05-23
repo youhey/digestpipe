@@ -8,8 +8,8 @@ A tiny pipe that turns noisy news feeds into clean Japanese signal.
 
 ```txt
 .
-├── 🗂️ docker/               # Development documentation
-├── 🗂️ docs/                 # Dockerfiles and container configuration
+├── 🗂️ docs/                 # Development documentation
+├── 🗂️ docker/               # Dockerfiles and container configuration
 ├── 🗂️ src/                  # Laravel application source
 ├── 📄 docker-compose.yml    # Local development environment
 ├── 📄 AGENTS.md
@@ -24,13 +24,8 @@ Laravel framework files should not be placed directly in the repository root.
 On the first run, build the Docker images and install the application dependencies.
 
 ```bash
-docker compose build
-docker compose run --rm php-cli composer install
-docker compose run --rm node npm install
-cp src/.env.example src/.env
-docker compose run --rm php-cli php artisan key:generate
-docker compose run --rm php-cli php artisan migrate
-docker compose up -d
+make build
+make up
 ```
 
 The web application is available at `http://localhost:8080`.
@@ -38,27 +33,38 @@ The web application is available at `http://localhost:8080`.
 The MinIO console is available at `http://localhost:9001`.
 The sample local credentials are `minioadmin` / `minioadmin`.
 
-## Common Commands
+## Development Workflow
 
-Composer, Artisan, tests, static analysis, and formatting should be run through the php-cli service.
+Use the Makefile as the main entrypoint for local development.
+
+Typical workflow:
 
 ```bash
-docker compose run --rm php-cli php artisan test
-docker compose run --rm php-cli ./vendor/bin/pest
-docker compose run --rm php-cli ./vendor/bin/phpstan analyse
-docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix --dry-run --diff
-docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix
+make build   # First-time setup and container build
+make up      # Start services and prepare the app
+make test    # Run PHPUnit
+make lint    # Run PHPStan and PHP-CS-Fixer dry-run
+make fix     # Apply PHP-CS-Fixer
+make down    # Stop services
 ```
 
 Node.js, npm, and Vite should be run through the node service.
 
 ```bash
-docker compose run --rm node npm install
-docker compose run --rm node npm run build
-docker compose run --rm node npm run dev -- --host 0.0.0.0
+make front-build
 ```
 
-Local Defaults
+make test and make lint should pass before committing.
+
+make destroy removes containers, images, and volumes. Use it only when you want to reset the local environment completely.
+
+## Database Reset Behavior
+
+`make up` runs `php artisan migrate:refresh` and `php artisan db:seed`.
+
+This means the local database schema is refreshed when starting the app. Do not store important local data in the development database.
+
+## Local Defaults
 
 `src/.env.example` is configured for the local Docker Compose environment.
 The actual `src/.env` file should be created locally and must not be committed.
@@ -75,6 +81,20 @@ LOG_CHANNEL=stderr
 
 The local stack uses PostgreSQL for the database, Valkey for cache and session storage, and MinIO for object storage.
 SQLite is not used as the default database for this project.
+
+Default local URLs:
+
+- Web: `http://localhost:8080`
+- Vite: `http://localhost:5173`
+- MinIO Console: `http://localhost:9001`
+
+## Environment Files
+
+The root `.env` is used by Docker Compose for local port forwarding and middleware bootstrap values.
+
+The `src/.env` file is used by the Laravel application.
+
+Laravel application settings should live in `src/.env.example` and `src/.env`, not in `docker-compose.yml`.
 
 ## Laravel Cloud Assumptions
 

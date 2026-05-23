@@ -13,6 +13,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    command: sleep infinity
 
   php-fpm:
     build:
@@ -32,7 +33,7 @@ services:
   nginx:
     image: nginx:1.29-alpine
     ports:
-      - "8080:80"
+      - "${FORWARD_NGINX_PORT:-8080}:80"
     volumes:
       - ./src:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -41,25 +42,25 @@ services:
 
   node:
     image: node:24-bookworm-slim
-    command: sleep infinity
     working_dir: /var/www/html
     volumes:
       - ./src:/var/www/html
     ports:
-      - "5173:5173"
+      - "${FORWARD_VITE_PORT:-5173}:5173"
+    command: sleep infinity
 
   postgres:
     image: postgres:18-alpine
     ports:
-      - "5432:5432"
+      - "${FORWARD_POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_DB: digestpipe
-      POSTGRES_USER: digestpipe
-      POSTGRES_PASSWORD: digestpipe
+      POSTGRES_DB: "${DB_DATABASE:-digestpipe}"
+      POSTGRES_USER: "${DB_USERNAME:-digestpipe}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-digestpipe}"
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U digestpipe -d digestpipe"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -67,7 +68,7 @@ services:
   valkey:
     image: valkey/valkey:9-alpine
     ports:
-      - "6379:6379"
+      - "${FORWARD_VALKEY_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -78,8 +79,8 @@ services:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${FORWARD_MINIO_SERVICE_PORT:-9000}:9000"
+      - "${FORWARD_MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin

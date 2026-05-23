@@ -1,4 +1,4 @@
-# AGENT.md
+# AGENTS.md
 
 This document describes the development conventions and constraints for agents working on this repository.
 
@@ -26,7 +26,7 @@ docker/               # Dockerfiles and container configuration
 src/                  # Laravel application source
 docker-compose.yml    # Local development environment
 README.md
-AGENT.md
+AGENTS.md
 ```
 
 Laravel application files must be placed under `src/`.
@@ -63,6 +63,8 @@ Required services:
     - Web runtime for Laravel
 - `nginx`
     - Local HTTP frontend
+- `node`
+    - Node.js, npm, and Vite tooling
 - `postgres`
     - PostgreSQL database
 - `valkey`
@@ -76,7 +78,8 @@ The web frontend should use:
 nginx -> php-fpm -> Laravel
 ```
 
-The command and test container should use `php-cli`.
+PHP commands and tests should use `php-cli`.
+Node.js, npm, and Vite commands should use `node`.
 
 ## Application Defaults
 
@@ -183,11 +186,10 @@ Pest should also be installed and available for experimentation.
 
 Prefer adding tests for application behavior when implementing features.
 
-Common commands should be available from the `php-cli` service, for example:
+Use the Makefile for normal test execution:
 
 ```bash
-docker compose run --rm php-cli php artisan test
-docker compose run --rm php-cli ./vendor/bin/pest
+make test
 ```
 
 ## Static Analysis
@@ -196,10 +198,10 @@ Use PHPStan for static analysis.
 
 PHPStan should be configured in the Laravel application under `src/`.
 
-A typical command should be available:
+Use the Makefile for normal static analysis:
 
 ```bash
-docker compose run --rm php-cli ./vendor/bin/phpstan analyse
+make lint
 ```
 
 Prefer fixing issues rather than suppressing them.
@@ -210,11 +212,11 @@ If a suppression is necessary, keep it narrow and documented.
 
 Use PHP-CS-Fixer for PHP formatting and coding style checks.
 
-Typical commands should be available:
+Use the Makefile for normal coding style checks and fixes:
 
 ```bash
-docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix --dry-run --diff
-docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix
+make lint
+make fix
 ```
 
 Keep formatting rules practical and Laravel-friendly.
@@ -432,13 +434,51 @@ Leave it empty in `src/.env.example`.
 APP_KEY=
 ```
 
-Each developer must generate it during local setup:
+Local setup through the Makefile generates it:
 
 ```bash
-docker compose run --rm php-cli php artisan key:generate
+make up
 ```
 
 `APP_KEY` is used for encrypted cookies and encrypted application data, so it should be generated per environment, even for local development.
+
+## Development Commands
+
+Use the Makefile as the primary entrypoint for local development tasks.
+
+Humans and agents should prefer these commands instead of calling Docker Compose directly:
+
+- `make build`
+- `make up`
+- `make down`
+- `make test`
+- `make lint`
+- `make fix`
+
+Use raw `docker compose` commands only when debugging the local environment or when the Makefile does not provide the required operation.
+
+The `php-cli` and `node` services are expected to be long-running services so that Makefile tasks can use `docker compose exec`.
+
+## Makefile Policy
+
+The Makefile is the canonical interface for local development operations.
+
+Agents should prefer existing Makefile targets over direct `docker compose` commands.
+
+Do not add new Makefile targets unless there is a repeated workflow that cannot be expressed with the existing targets.
+
+Keep the command surface small. The primary commands are:
+
+- `make build`
+- `make up`
+- `make down`
+- `make test`
+- `make lint`
+- `make fix`
+
+Use `make destroy` only when a full local reset is explicitly requested.
+
+Do not replace `docker compose exec` with `docker compose run` for normal development commands unless there is a concrete reason. The `php-cli` and `node` services are intentionally long-running so they can be used as execution targets.
 
 ## Documentation
 
