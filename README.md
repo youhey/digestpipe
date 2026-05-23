@@ -26,6 +26,7 @@ On the first run, build the Docker images and install the application dependenci
 ```bash
 docker compose build
 docker compose run --rm php-cli composer install
+docker compose run --rm node npm install
 cp src/.env.example src/.env
 docker compose run --rm php-cli php artisan key:generate
 docker compose run --rm php-cli php artisan migrate
@@ -47,6 +48,14 @@ docker compose run --rm php-cli ./vendor/bin/pest
 docker compose run --rm php-cli ./vendor/bin/phpstan analyse
 docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix --dry-run --diff
 docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix
+```
+
+Node.js, npm, and Vite should be run through the node service.
+
+```bash
+docker compose run --rm node npm install
+docker compose run --rm node npm run build
+docker compose run --rm node npm run dev -- --host 0.0.0.0
 ```
 
 Local Defaults

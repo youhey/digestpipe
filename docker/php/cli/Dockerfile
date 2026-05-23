@@ -6,8 +6,6 @@ RUN apt-get update \
         libicu-dev \
         libpq-dev \
         libzip-dev \
-        nodejs \
-        npm \
         unzip \
     && docker-php-ext-install \
         bcmath \
