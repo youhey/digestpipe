@@ -3,18 +3,21 @@
 namespace App\Feeds;
 
 /**
- * Feed item保存処理の集計結果です。
+ * RSS フィード情報源からニュース取得した集計結果
  */
 class IngestFeedItemsResult
 {
-    /** 新規作成した、またはdry-runで作成予定だったitem数です。 */
+    /** @var int 新規作成または dry-run で作成予定のアイテム数 */
     public readonly int $createdCount;
 
-    /** 既存itemとしてskipした件数です。 */
+    /** @var int スキップした既存アイテムの件数 */
     public readonly int $skippedDuplicateCount;
 
     /**
-     * 保存処理結果を作成します。
+     * Constructor
+     *
+     * @param int $createdCount
+     * @param int $skippedDuplicateCount
      */
     public function __construct(int $createdCount, int $skippedDuplicateCount)
     {

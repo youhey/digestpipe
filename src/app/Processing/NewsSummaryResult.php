@@ -3,15 +3,17 @@
 namespace App\Processing;
 
 /**
- * News item要約処理の結果です。
+ * ニュース記事アイテムの要約結果
  */
 class NewsSummaryResult
 {
-    /** 保存する短い要約文です。 */
+    /** @var string 本文の短い要約 */
     public readonly string $summary;
 
     /**
-     * 要約結果を作成します。
+     * Constructor
+     *
+     * @param string $summary
      */
     public function __construct(string $summary)
     {

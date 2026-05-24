@@ -2,15 +2,22 @@
 
 namespace App\Feeds;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 /**
- * RSS feed sourceからXML payloadをHTTPで取得します。
+ * RSS フィードの情報源から XML Payload を取得
  */
 class FeedFetcher
 {
     /**
-     * 指定されたfeed source URLへHTTP requestを送り、statusとbodyを返します。
+     * 指定された RSS フィードの URL からコンテンツを HTTP ダウンロード
+     *
+     * @param FeedSource $source 情報源
+     *
+     * @return FetchedFeed ダウンロードしたコンテンツの Status と Body
+     *
+     * @throws ConnectionException
      */
     public function fetch(FeedSource $source): FetchedFeed
     {

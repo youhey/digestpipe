@@ -5,27 +5,33 @@ namespace App\Feeds;
 use InvalidArgumentException;
 
 /**
- * digestpipe.feed_sourcesで定義されたRSS取得元の正規化済み設定です。
+ * RSS フィード情報源
  */
 class FeedSource
 {
-    /** Sourceを一意に識別する設定keyです。 */
+    /** @var string 情報源を一意に識別するキー */
     public readonly string $key;
 
-    /** ログや保存レコードで使うsource表示名です。 */
+    /** @var string ログやレコードに保存する情報源の名称 */
     public readonly string $name;
 
-    /** RSS/RDF feedのURLです。 */
+    /** @var string RSS/RDF フィード の URL */
     public readonly string $url;
 
-    /** Feed itemの主な言語です。 */
+    /** @var string アイテムの主な言語 */
     public readonly string $language;
 
-    /** 取得対象として有効かどうかを示します。 */
+    /** @var bool 取得対象として有効かどうか */
     public readonly bool $enabled;
 
     /**
-     * Feed source設定を作成します。
+     * Constructor
+     *
+     * @param string $key
+     * @param string $name
+     * @param string $url
+     * @param string $language
+     * @param bool $enabled
      */
     public function __construct(string $key, string $name, string $url, string $language, bool $enabled)
     {
@@ -37,9 +43,11 @@ class FeedSource
     }
 
     /**
-     * Config arrayからfeed sourceを作成します。
+     * 設定の連想配列からインスタンスを生成して返す
      *
      * @param array{key?: mixed, name?: mixed, url?: mixed, language?: mixed, enabled?: mixed} $data
+     *
+     * @return self
      */
     public static function fromConfig(array $data): self
     {

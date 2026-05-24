@@ -8,24 +8,31 @@ use App\Jobs\SummarizeNewsItemJob;
 use App\Jobs\TranslateNewsItemJob;
 
 /**
- * News item processing orchestrationの判定結果です。
+ * ニュース記事アイテムのプロセス間の連携状態
+ *
+ * 次に処理するべきプロセスを判定するための状態
  */
 class NewsItemProcessingPlan
 {
-    /** Dispatchすべきstageです。 */
+    /** @var string|null 処理を割り当てるステージ */
     public readonly ?string $stage;
 
-    /** Dispatchするjob class名です。 */
+    /** @var string|null 処理を割り当てるジョブ・クラスの名前 */
     public readonly ?string $jobClass;
 
-    /** queuedへ更新するstatus field名です。 */
+    /** @var string|null `queued` へ更新する Status Field 名。 */
     public readonly ?string $statusField;
 
-    /** 判定理由を表す短い文字列です。 */
+    /** @var string 判定理由を表現する短い文字列 */
     public readonly string $reason;
 
     /**
-     * 判定結果を作成します。
+     * Constructor
+     *
+     * @param string|null $stage
+     * @param string|null $jobClass
+     * @param string|null $statusField
+     * @param string $reason
      */
     public function __construct(?string $stage, ?string $jobClass, ?string $statusField, string $reason)
     {
@@ -36,7 +43,9 @@ class NewsItemProcessingPlan
     }
 
     /**
-     * Dispatch対象があるかどうかを返します。
+     * 割り当てる処理が存在すれば `TRUE` を、なければ `FALSE` を返す
+     *
+     * @return bool
      */
     public function shouldDispatch(): bool
     {
@@ -44,7 +53,11 @@ class NewsItemProcessingPlan
     }
 
     /**
-     * Article content fetch jobの判定結果を返します。
+     * 次にニュース記事の本文取得を必要としている状態を生成して返す
+     *
+     * @param string $reason
+     *
+     * @return self
      */
     public static function contentFetch(string $reason): self
     {
@@ -52,7 +65,11 @@ class NewsItemProcessingPlan
     }
 
     /**
-     * Analysis jobの判定結果を返します。
+     * 次にニュース記事の分析を必要としている状態を生成して返す
+     *
+     * @param string $reason
+     *
+     * @return self
      */
     public static function analysis(string $reason): self
     {
@@ -60,7 +77,11 @@ class NewsItemProcessingPlan
     }
 
     /**
-     * Translation jobの判定結果を返します。
+     * 次にニュース記事の翻訳を必要としている状態を生成して返す
+     *
+     * @param string $reason
+     *
+     * @return self
      */
     public static function translation(string $reason): self
     {
@@ -68,7 +89,11 @@ class NewsItemProcessingPlan
     }
 
     /**
-     * Summary jobの判定結果を返します。
+     * 次にニュース記事の要約を必要としている状態を生成して返す
+     *
+     * @param string $reason
+     *
+     * @return self
      */
     public static function summary(string $reason): self
     {
@@ -76,7 +101,11 @@ class NewsItemProcessingPlan
     }
 
     /**
-     * Dispatch対象がない判定結果を返します。
+     * ニュース記事には次に必要な処理がない状態を生成して返す
+     *
+     * @param string $reason
+     *
+     * @return self
      */
     public static function none(string $reason): self
     {

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /**
- * Article content fetch jobをqueueへ投入するbatch commandです。
+ * 記事アイテムの本文取得要求を待ち行列に登録
  */
 class EnqueueContentFetchCommand extends Command
 {
@@ -21,7 +21,9 @@ class EnqueueContentFetchCommand extends Command
     protected $description = 'Enqueue article content fetch jobs for fetched news items.';
 
     /**
-     * 未取得article contentを持つnews itemをqueueへ投入します。
+     * 本文を未だ取得していない記事アイテムの本文取得を `dispatch` する
+     *
+     * @return int success=0 or failure=1 or invalid=2
      */
     public function handle(): int
     {

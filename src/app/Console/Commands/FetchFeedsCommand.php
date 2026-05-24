@@ -12,7 +12,7 @@ use InvalidArgumentException;
 use Throwable;
 
 /**
- * Configured RSS sourcesから最新ニュースを取得して、未登録のfeed itemをDBへ保存するbatch commandです。
+ * RSS 情報源からニュースを取得して未登録の記事アイテムを永続化
  */
 class FetchFeedsCommand extends Command
 {
@@ -32,7 +32,7 @@ class FetchFeedsCommand extends Command
     private readonly NewsItemIngestor $ingestor;
 
     /**
-     * RSS ingestionに必要な依存serviceを受け取ります。
+     * Constructor
      */
     public function __construct(FeedSourceRepository $sources, FeedFetcher $fetcher, RssFeedParser $parser, NewsItemIngestor $ingestor)
     {
@@ -45,7 +45,9 @@ class FetchFeedsCommand extends Command
     }
 
     /**
-     * 設定済みfeed sourceを取得し、新規itemを保存します。
+     * 設定されている RSS 情報源からニュースを取得して DB に保存する
+     *
+     * @return int success=0 or failure=1 or invalid=2
      */
     public function handle(): int
     {

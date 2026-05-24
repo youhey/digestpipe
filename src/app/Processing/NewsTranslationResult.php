@@ -3,18 +3,21 @@
 namespace App\Processing;
 
 /**
- * News item翻訳処理の結果です。
+ * ニュース記事アイテムの翻訳結果
  */
 class NewsTranslationResult
 {
-    /** 翻訳済みtitleです。 */
+    /** @var string 翻訳済みタイトル */
     public readonly string $title;
 
-    /** 翻訳済みdescriptionです。 */
+    /** @var string|null 翻訳済み本文 */
     public readonly ?string $description;
 
     /**
-     * 翻訳結果を作成します。
+     * Constructor
+     *
+     * @param string $title
+     * @param string|null $description
      */
     public function __construct(string $title, ?string $description)
     {

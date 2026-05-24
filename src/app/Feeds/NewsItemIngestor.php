@@ -7,14 +7,18 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 正規化済みfeed itemをnews_items tableへ重複なく保存します。
+ * 正規化したニュース記事アイテムを永続化
  */
 class NewsItemIngestor
 {
     /**
-     * Feed itemを保存し、作成数と重複skip数を返します。
+     * ニュース記事のアイテムを DB に保存
      *
-     * @param list<FeedItem> $items
+     * @param FeedSource $source RSS フィード情報源
+     * @param list<FeedItem> $items ニュース記事アイテムのリスト
+     * @param bool $dryRun dry-run フラグ
+     *
+     * @return IngestFeedItemsResult
      */
     public function ingest(FeedSource $source, array $items, bool $dryRun): IngestFeedItemsResult
     {

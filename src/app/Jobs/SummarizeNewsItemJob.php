@@ -11,17 +11,19 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * 翻訳済みnews itemの要約処理をqueue worker上で実行します。
+ * 翻訳済みニュース記事アイテムを要約
  */
 class SummarizeNewsItemJob implements ShouldQueue
 {
     use Queueable;
 
-    /** 要約対象のnews item IDです。 */
+    /** @var int 要約対象のアイテム ID */
     public readonly int $newsItemId;
 
     /**
-     * 要約jobを作成します。
+     * Constructor
+     *
+     * @param int $newsItemId
      */
     public function __construct(int $newsItemId)
     {
@@ -29,7 +31,11 @@ class SummarizeNewsItemJob implements ShouldQueue
     }
 
     /**
-     * 翻訳済みnews itemを要約し、summary statusと要約結果を保存します。
+     * 翻訳済みニュース記事アイテムを要約して DB に保存
+     *
+     * @param NewsAiProcessor $processor
+     *
+     * @return void
      */
     public function handle(NewsAiProcessor $processor): void
     {

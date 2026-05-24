@@ -6,14 +6,16 @@ use App\Models\NewsItem;
 use App\Processing\NewsItemTextSelector;
 
 /**
- * 外部APIを呼ばずに決定的なarticle analysis JSONを返すstub serviceです。
+ * 外部 API を利用しないでニュース記事の分析結果 JSON を生成
  */
 class FakeArticleAnalyzer implements ArticleAnalyzer
 {
     private readonly NewsItemTextSelector $textSelector;
 
     /**
-     * Fake article analyzerを作成します。
+     * Constructor
+     *
+     * @param NewsItemTextSelector|null $textSelector
      */
     public function __construct(?NewsItemTextSelector $textSelector = null)
     {
@@ -21,7 +23,7 @@ class FakeArticleAnalyzer implements ArticleAnalyzer
     }
 
     /**
-     * News itemから固定形式の構造化digest JSONを返します。
+     * ニュース記事アイテムから固定形式の構造化した JSON を返す
      */
     public function analyze(NewsItem $item): ArticleAnalysisResult
     {

@@ -3,21 +3,25 @@
 namespace App\Feeds;
 
 /**
- * Feed sourceへのHTTP fetch結果です。
+ * RSS フィード情報源の取得結果
  */
 class FetchedFeed
 {
-    /** HTTP status codeです。 */
+    /** @var int HTTP Status Code */
     public readonly int $statusCode;
 
-    /** Response bodyです。ログには出さない前提です。 */
+    /** @var string Response Body */
     public readonly string $body;
 
-    /** Laravel HTTP client上の成功判定です。 */
+    /** @var bool HTTP Client がリクエストに成功していれば `TRUE` 失敗していれば `FALSE` */
     public readonly bool $successful;
 
     /**
-     * HTTP fetch結果を作成します。
+     * Constructor
+     *
+     * @param int $statusCode
+     * @param string $body
+     * @param bool $successful
      */
     public function __construct(int $statusCode, string $body, bool $successful)
     {

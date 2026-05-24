@@ -235,6 +235,31 @@ Do not mark application classes as `final` unless there is a concrete technical 
 
 Application classes should have a class-level PHPDoc summary. Public methods and public properties should also have concise PHPDoc comments that explain their role. Keep comments descriptive, not historical; do not add comments that merely restate a recent change.
 
+### PHPDoc Comment Style
+
+Write PHPDoc comments in Japanese for project application code unless surrounding code already has a stronger local convention.
+
+Use comments to describe the role of the class, method, or public property in the current design. Do not describe recent changes, implementation history, or task phases.
+
+Keep summaries short and concrete. Prefer project vocabulary such as:
+
+- `ニュース記事アイテム`
+- `RSS フィード情報源`
+- `分析結果 JSON`
+- `構造化した JSON`
+- `本文取得`
+- `待ち行列に登録`
+- `dispatch`
+- `Status Field`
+
+Do not force technical terms into Japanese when the English term is clearer or already used in the codebase. Terms such as `OpenAI Responses API`, `JSON Schema`, `dry-run`, `Status`, and `Payload` may remain in English.
+
+For public properties, prefer a short one-line `@var` comment that gives the type and meaning.
+
+For public methods, include a short behavior summary and add `@param`, `@return`, and `@throws` tags when they clarify the contract. Make sure the summary preserves important preconditions. For example, a summary job that only handles translated items should be described as handling translated news items, not merely as summarizing news items.
+
+`Constructor` is acceptable as the constructor summary when the parameters already make the dependency setup clear.
+
 ## Docker Guidelines
 
 Keep Docker configuration under `docker/`.

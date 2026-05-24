@@ -5,14 +5,16 @@ namespace App\Processing;
 use App\Models\NewsItem;
 
 /**
- * 外部APIを呼ばずに決定的な翻訳・要約結果を返すstub serviceです。
+ * 外部 API を使用しないでニュース記事アイテムの翻訳と要約を生成
  */
 class FakeNewsAiProcessor implements NewsAiProcessor
 {
     private readonly NewsItemTextSelector $textSelector;
 
     /**
-     * Fake AI processorを作成します。
+     * Constructor
+     *
+     * @param NewsItemTextSelector|null $textSelector
      */
     public function __construct(?NewsItemTextSelector $textSelector = null)
     {
@@ -20,7 +22,11 @@ class FakeNewsAiProcessor implements NewsAiProcessor
     }
 
     /**
-     * 元titleとdescriptionに日本語処理済みであることを示すprefixを付与します。
+     * タイトルと本文に日本語翻訳済みであることを示す Prefix を付与した結果を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return NewsTranslationResult
      */
     public function translate(NewsItem $item): NewsTranslationResult
     {
@@ -33,7 +39,11 @@ class FakeNewsAiProcessor implements NewsAiProcessor
     }
 
     /**
-     * 翻訳済みtextから短い固定形式のsummaryを作成します。
+     * 翻訳済みテキストから短い固定形式の要約を作成して結果を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return NewsSummaryResult
      */
     public function summarize(NewsItem $item): NewsSummaryResult
     {

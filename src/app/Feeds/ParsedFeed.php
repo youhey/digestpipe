@@ -3,24 +3,21 @@
 namespace App\Feeds;
 
 /**
- * RSS/RDF parse結果です。
+ * RSS/RDF フィードの情報をパースした結果
  */
 class ParsedFeed
 {
-    /**
-     * 正規化できたfeed item一覧です。
-     *
-     * @var list<FeedItem>
-     */
+    /** @var list<FeedItem> 正規化したニュースのリスト */
     public readonly array $items;
 
-    /** 必須項目不足などでskipしたitem数です。 */
+    /** @var int 必須項目の不足などで無視したアイテム数 */
     public readonly int $failedItemCount;
 
     /**
-     * Parse結果を作成します。
+     * Constructor
      *
      * @param list<FeedItem> $items
+     * @param int $failedItemCount
      */
     public function __construct(array $items, int $failedItemCount)
     {

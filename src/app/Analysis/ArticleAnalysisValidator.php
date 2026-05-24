@@ -5,12 +5,12 @@ namespace App\Analysis;
 use App\Processing\AiProcessingException;
 
 /**
- * Article analysis JSON schema v1の最小検証と正規化を行います。
+ * ニュース記事の分析結果 JSON Schema v1 を検証して正規化
  */
 class ArticleAnalysisValidator
 {
     /**
-     * Analysis JSONを検証し、保存可能なshapeへ正規化します。
+     * Analysis JSON を検証して保存可能な Shape へ正規化
      *
      * @param array<string, mixed> $json
      *
@@ -55,7 +55,7 @@ class ArticleAnalysisValidator
     }
 
     /**
-     * Analysis JSON schema v1を返します。
+     * Analysis JSON schema v1 を返す
      *
      * @return array<string, mixed>
      */

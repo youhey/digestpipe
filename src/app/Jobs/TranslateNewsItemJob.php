@@ -11,17 +11,19 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * News itemの翻訳処理をqueue worker上で実行します。
+ * ニュース記事アイテムを翻訳
  */
 class TranslateNewsItemJob implements ShouldQueue
 {
     use Queueable;
 
-    /** 翻訳対象のnews item IDです。 */
+    /** @var int 翻訳対象のアイテム ID */
     public readonly int $newsItemId;
 
     /**
-     * 翻訳jobを作成します。
+     * Constructor
+     *
+     * @param int $newsItemId
      */
     public function __construct(int $newsItemId)
     {
@@ -29,7 +31,11 @@ class TranslateNewsItemJob implements ShouldQueue
     }
 
     /**
-     * News itemを翻訳し、translation statusと翻訳結果を保存します。
+     * ニュース記事アイテムを翻訳して DB に保存
+     *
+     * @param NewsAiProcessor $processor
+     *
+     * @return void
      */
     public function handle(NewsAiProcessor $processor): void
     {

@@ -15,17 +15,19 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * News itemのsource article HTMLを取得し、本文textを抽出します。
+ * ニュース記事アイテムの本文を取得
  */
 class FetchNewsItemArticleContentJob implements ShouldQueue
 {
     use Queueable;
 
-    /** 本文取得対象のnews item IDです。 */
+    /** @var int 本文を取得するアイテム ID */
     public readonly int $newsItemId;
 
     /**
-     * Article content fetch jobを作成します。
+     * Constructor
+     *
+     * @param int $newsItemId
      */
     public function __construct(int $newsItemId)
     {
@@ -33,7 +35,11 @@ class FetchNewsItemArticleContentJob implements ShouldQueue
     }
 
     /**
-     * Article URLをfetchし、抽出済み本文を保存します。
+     * ニュース記事アイテムの本文を取得して保存
+     *
+     * @param ArticleTextExtractor $extractor
+     *
+     * @return void
      */
     public function handle(ArticleTextExtractor $extractor): void
     {

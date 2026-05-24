@@ -5,17 +5,25 @@ namespace App\Processing;
 use App\Models\NewsItem;
 
 /**
- * News itemの翻訳と要約を生成する処理serviceです。
+ * AI を利用してニュース記事アイテムの翻訳と要約を生成
  */
 interface NewsAiProcessor
 {
     /**
-     * News itemから日本語翻訳結果を生成します。
+     * ニュース記事アイテムを日本語に翻訳した結果を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return NewsTranslationResult
      */
     public function translate(NewsItem $item): NewsTranslationResult;
 
     /**
-     * News itemから要約結果を生成します。
+     * ニュース記事アイテムを要約した結果を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return NewsSummaryResult
      */
     public function summarize(NewsItem $item): NewsSummaryResult;
 }

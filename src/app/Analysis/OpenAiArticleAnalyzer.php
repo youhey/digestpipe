@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use JsonException;
 
 /**
- * OpenAI Responses APIを使ってarticle analysis JSONを生成します。
+ * OpenAI Responses API を使用してニュース記事の分析結果 JSON を生成
  */
 class OpenAiArticleAnalyzer implements ArticleAnalyzer
 {
@@ -23,7 +23,10 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
     private readonly ArticleAnalysisValidator $validator;
 
     /**
-     * OpenAI-backed article analyzerを作成します。
+     * Constructor
+     *
+     * @param NewsItemTextSelector|null $textSelector
+     * @param ArticleAnalysisValidator|null $validator
      */
     public function __construct(?NewsItemTextSelector $textSelector = null, ?ArticleAnalysisValidator $validator = null)
     {
@@ -32,7 +35,13 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
     }
 
     /**
-     * News itemをsource languageのまま分析し、構造化digest JSONを返します。
+     * ニュース記事アイテムを元の言語のまま分析して構造化した JSON を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return ArticleAnalysisResult
+     *
+     * @throws JsonException
      */
     public function analyze(NewsItem $item): ArticleAnalysisResult
     {

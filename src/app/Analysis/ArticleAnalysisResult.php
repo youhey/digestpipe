@@ -3,24 +3,21 @@
 namespace App\Analysis;
 
 /**
- * Article analysis serviceが返す構造化digest JSONとmodel名です。
+ * ニュース記事の分析結果を構造化した JSON および使用したモデル名
  */
 class ArticleAnalysisResult
 {
-    /**
-     * Analysis JSON schemaに沿った結果です。
-     *
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> Analysis JSON Schema に準拠した分析結果 JSON */
     public readonly array $json;
 
-    /** Analysisに使用したmodel名です。 */
+    /** @var string Analysis に使用したモデル名 */
     public readonly string $model;
 
     /**
-     * Analysis結果を作成します。
+     * Constructor
      *
      * @param array<string, mixed> $json
+     * @param string $model
      */
     public function __construct(array $json, string $model)
     {

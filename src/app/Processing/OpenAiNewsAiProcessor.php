@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 use JsonException;
 
 /**
- * OpenAI Responses APIを使ってnews itemの翻訳と要約を生成します。
+ * OpenAI Responses API を利用してニュース記事アイテムの翻訳と要約を生成
  */
 class OpenAiNewsAiProcessor implements NewsAiProcessor
 {
@@ -19,7 +19,9 @@ class OpenAiNewsAiProcessor implements NewsAiProcessor
     private readonly NewsItemTextSelector $textSelector;
 
     /**
-     * OpenAI-backed AI processorを作成します。
+     * Constructor
+     *
+     * @param NewsItemTextSelector|null $textSelector
      */
     public function __construct(?NewsItemTextSelector $textSelector = null)
     {
@@ -27,7 +29,13 @@ class OpenAiNewsAiProcessor implements NewsAiProcessor
     }
 
     /**
-     * News itemから日本語翻訳結果を生成します。
+     * ニュース記事アイテムを日本語に翻訳した結果を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return NewsTranslationResult
+     *
+     * @throws JsonException
      */
     public function translate(NewsItem $item): NewsTranslationResult
     {
@@ -71,7 +79,13 @@ class OpenAiNewsAiProcessor implements NewsAiProcessor
     }
 
     /**
-     * News itemから日本語要約結果を生成します。
+     * ニュース記事アイテムを要約した結果を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return NewsSummaryResult
+     *
+     * @throws JsonException
      */
     public function summarize(NewsItem $item): NewsSummaryResult
     {

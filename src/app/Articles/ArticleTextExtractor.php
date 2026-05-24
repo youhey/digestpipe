@@ -9,12 +9,16 @@ use DOMXPath;
 use RuntimeException;
 
 /**
- * HTMLから本文候補を決定的なDOM処理で抽出します。
+ * HTML から本文候補を決定的な DOM 処理で抽出
  */
 class ArticleTextExtractor
 {
     /**
-     * HTMLから記事本文を抽出します。
+     * HTML から記事本文を抽出
+     *
+     * @param string $html
+     *
+     * @return ExtractedArticleContent
      */
     public function extract(string $html): ExtractedArticleContent
     {

@@ -5,12 +5,16 @@ namespace App\Processing;
 use App\Models\NewsItem;
 
 /**
- * AI処理へ渡す本文入力をnews itemから選択します。
+ * ニュース記事アイテムから AI 処理へ渡す本文入力を選択
  */
 class NewsItemTextSelector
 {
     /**
-     * 記事本文、意味のあるexcerpt、titleの順でAI入力用textを返します。
+     * 記事本文、意味のある `excerpt` `title` の順で入力用テキストを選択して返す
+     *
+     * @param NewsItem $item
+     *
+     * @return string|null
      */
     public function bodyText(NewsItem $item): ?string
     {

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /**
- * News itemの状態を見て、次に必要なprocessing jobをqueueへ投入するbatch commandです。
+ * 記事アイテムの状態から次に必要な処理を待ち行列に登録
  */
 class EnqueueProcessingCommand extends Command
 {
@@ -40,7 +40,9 @@ class EnqueueProcessingCommand extends Command
     }
 
     /**
-     * News itemごとに次の有効なprocessing jobを1つだけdispatchします。
+     * 記事アイテムごとに次に遷移するべき処理を1つだけ `dispatch` する
+     *
+     * @return int success=0 or failure=1 or invalid=2
      */
     public function handle(): int
     {

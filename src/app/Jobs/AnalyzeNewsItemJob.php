@@ -11,17 +11,19 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * News itemをsource languageのまま分析し、構造化digest JSONを保存します。
+ * ニュース記事アイテムを元の言語のまま分析
  */
 class AnalyzeNewsItemJob implements ShouldQueue
 {
     use Queueable;
 
-    /** Analysis対象のnews item IDです。 */
+    /** @var int 分析対象のアイテム ID */
     public readonly int $newsItemId;
 
     /**
-     * Analysis jobを作成します。
+     * Constructor
+     *
+     * @param int $newsItemId
      */
     public function __construct(int $newsItemId)
     {
@@ -29,7 +31,11 @@ class AnalyzeNewsItemJob implements ShouldQueue
     }
 
     /**
-     * News itemを分析してanalysis_jsonへ保存します。
+     * ニュース記事アイテムを元の言語のまま分析して、構造化した分析結果 JSON を保存する
+     *
+     * @param ArticleAnalyzer $analyzer
+     *
+     * @return void
      */
     public function handle(ArticleAnalyzer $analyzer): void
     {

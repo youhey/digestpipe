@@ -5,12 +5,17 @@ namespace App\Items;
 use App\Models\NewsItem;
 
 /**
- * News itemの現在状態から次にdispatch可能な処理を決定します。
+ * ニュース記事アイテムの現在の状態から次に必要な処理を決定する
  */
 class NewsItemProcessingPlanner
 {
     /**
-     * 現在状態に基づき、1 itemにつき1つだけ次の処理を返します。
+     * ニュース記事の現在の状態から、アイテム1つごと1つだけ次に必要な処理を返す
+     *
+     * @param NewsItem $item
+     * @param string|null $stage
+     *
+     * @return NewsItemProcessingPlan
      */
     public function plan(NewsItem $item, ?string $stage = null): NewsItemProcessingPlan
     {

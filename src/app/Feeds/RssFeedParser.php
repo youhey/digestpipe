@@ -11,12 +11,17 @@ use Throwable;
 use UnexpectedValueException;
 
 /**
- * RSS 2.0 / RDF feed XMLからnews item候補を抽出します。
+ * RSS 2.0 / RDF feed XML からニュース記事のアイテム候補を抽出
  */
 class RssFeedParser
 {
     /**
-     * Feed XMLをparseして、保存可能なitem一覧と失敗件数を返します。
+     * RSS フィード の XML をパースして保存可能なアイテムのリストと失敗した件数を返す
+     *
+     * @param string $xml
+     * @param int|null $limit
+     *
+     * @return ParsedFeed
      */
     public function parse(string $xml, ?int $limit = null): ParsedFeed
     {

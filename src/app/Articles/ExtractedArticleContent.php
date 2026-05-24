@@ -3,18 +3,20 @@
 namespace App\Articles;
 
 /**
- * HTMLから抽出した記事本文です。
+ * HTML から抽出した記事本文
  */
 class ExtractedArticleContent
 {
-    /** 抽出済みの正規化済み本文です。 */
+    /** @var string 正規化済みの本文 */
     public readonly string $text;
 
-    /** 抽出済み本文の文字数です。 */
+    /** @var int 本文の文字数 */
     public readonly int $characterCount;
 
     /**
-     * 抽出結果を作成します。
+     * Constructor
+     *
+     * @param string $text
      */
     public function __construct(string $text)
     {

@@ -6,7 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * RSS ingestionで取得したニュースitemを表すEloquent modelです。
+ * RSS フィードから取得したニュース記事アイテム
  *
  * @property int $id
  * @property string $source_key

@@ -6,12 +6,16 @@ use InvalidArgumentException;
 use UnexpectedValueException;
 
 /**
- * Laravel configからRSS feed source定義を読み出します。
+ * 設定から RSS フィードの定義リストを読み込む
  */
 class FeedSourceRepository
 {
     /**
-     * 有効なfeed sourceを返します。source key指定時は該当sourceだけに絞ります。
+     * 有効な RSS フィード情報源 を返す
+     *
+     * `$sourceKey` が指定された場合は該当する情報源だけに絞る
+     *
+     * @param string|null $sourceKey 取得する情報源を限定したい場合のキー指定
      *
      * @return list<FeedSource>
      */
@@ -39,7 +43,7 @@ class FeedSourceRepository
     }
 
     /**
-     * Configに定義されたすべてのfeed sourceを返します。
+     * 設定に定義されたすべての RSS フィード情報源を返す
      *
      * @return list<FeedSource>
      */
