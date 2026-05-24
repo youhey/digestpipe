@@ -94,6 +94,30 @@ docker compose exec -T php-cli php artisan digestpipe:digests:export --from=2026
 
 Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`, and `--limit`. Supported formats are `json` and `jsonl`. The command only exports records where `analysis_status=completed` and `analysis_json` is present.
 
+## API Authentication
+
+digestpipe uses Laravel Sanctum personal access tokens for private API access. Digest JSON API endpoints are not implemented yet, but future HTTP API routes should require `auth:sanctum` and the `digests:read` ability.
+
+Create an API user and token:
+
+```bash
+docker compose exec -T php-cli php artisan digestpipe:users:create-api-user user@example.test --name="DigestPipe User"
+```
+
+Rotate the token:
+
+```bash
+docker compose exec -T php-cli php artisan digestpipe:users:rotate-api-token user@example.test
+```
+
+Use the token:
+
+```bash
+curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" http://localhost:8080/api/...
+```
+
+The token is shown only once when it is created or rotated. Store it outside the repository. OAuth, login APIs, registration APIs, password reset flows, and public user management screens are intentionally not implemented.
+
 ## AI Processing Driver
 
 The primary AI pipeline analyzes source content and stores structured digest JSON. Downstream applications can later translate, rewrite, narrate, or personalize the structured output.

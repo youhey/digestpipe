@@ -361,6 +361,21 @@ Treat an item as ready for downstream digest use only when `analysis_status=comp
 
 Use `digestpipe:digests:export` as the read-only export surface for completed structured digest records. Do not add HTTP JSON API endpoints until API authentication is explicitly addressed. Exported records should include source metadata, article metadata, processing metadata, and `analysis_json`; do not export raw `article_content_text` by default.
 
+## API Authentication
+
+digestpipe uses Laravel Sanctum personal access tokens for private HTTP API access. Do not add OAuth, login APIs, registration APIs, password reset flows, public user management screens, or custom plaintext API token columns unless explicitly requested.
+
+Manage API users and tokens from Artisan commands:
+
+```bash
+php artisan digestpipe:users:create-api-user user@example.test --name="DigestPipe User"
+php artisan digestpipe:users:rotate-api-token user@example.test
+```
+
+Tokens should use the `digests:read` ability for read-only digest access. Future digest API routes should be protected with `auth:sanctum` and the `digests:read` ability, for example `['auth:sanctum', 'abilities:digests:read']`.
+
+Never log raw personal access tokens. Print newly created or rotated tokens only once in the command output, and do not commit generated tokens.
+
 ## Object Storage
 
 Use MinIO locally as an S3-compatible object storage service.
