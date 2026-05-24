@@ -2,6 +2,7 @@
 
 use App\Console\Commands\EnqueueContentFetchCommand;
 use App\Console\Commands\EnqueueProcessingCommand;
+use App\Console\Commands\ExportDigestsCommand;
 use App\Console\Commands\FetchFeedsCommand;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         EnqueueContentFetchCommand::class,
         EnqueueProcessingCommand::class,
+        ExportDigestsCommand::class,
         FetchFeedsCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {

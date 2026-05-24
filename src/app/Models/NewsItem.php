@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $discussion_url
  * @property string $title
  * @property string|null $excerpt
+ * @property CarbonImmutable|null $published_at
+ * @property CarbonImmutable $fetched_at
  * @property string $content_hash
  * @property string $processing_status
  * @property string $translation_status

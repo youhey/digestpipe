@@ -66,6 +66,7 @@ Run application batch commands through the `php-cli` service.
 docker compose exec -T php-cli php artisan digestpipe:feeds:fetch
 docker compose exec -T php-cli php artisan digestpipe:items:enqueue-processing
 docker compose exec -T php-cli php artisan queue:work --stop-when-empty
+docker compose exec -T php-cli php artisan digestpipe:digests:export --limit=20
 ```
 
 Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. The command is state-aware and dispatches only the next valid job for each item: article content fetch, then article analysis. The analysis output is structured digest JSON for downstream applications.
@@ -77,6 +78,23 @@ A news item is ready for downstream digest use when `analysis_status=completed` 
 `digestpipe:items:enqueue-content-fetch` remains available for focused debugging and supports `--limit`, `--dry-run`, and `--source`.
 
 digestpipe treats RSS items as discovery signals, not always as full article content. For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker News discussion URL, and `description` usually contains only a Comments link. The content fetch pipeline enriches items by fetching and extracting source article text before AI analysis. Discussion/comment extraction is planned separately.
+
+## Structured Digest Export
+
+The primary output of digestpipe is structured digest JSON. Each exported digest wraps source metadata, article metadata, processing metadata, and the stored `analysis_json`.
+
+Downstream applications can translate, rewrite, narrate, personalize, rank, group, or combine these digest records. Raw extracted article content is not exported by default.
+
+For now, digestpipe exposes this output through an Artisan command. A JSON API is intentionally deferred until legacy cleanup and authentication design are handled.
+
+```bash
+docker compose exec -T php-cli php artisan digestpipe:digests:export --limit=20
+docker compose exec -T php-cli php artisan digestpipe:digests:export --source=hacker_news --format=json
+docker compose exec -T php-cli php artisan digestpipe:digests:export --topic=technology --format=jsonl
+docker compose exec -T php-cli php artisan digestpipe:digests:export --from=2026-05-01 --to=2026-05-24
+```
+
+Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`, and `--limit`. Supported formats are `json` and `jsonl`. The command only exports records where `analysis_status=completed` and `analysis_json` is present.
 
 ## AI Processing Driver
 

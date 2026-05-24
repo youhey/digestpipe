@@ -363,6 +363,8 @@ Use `digestpipe:items:enqueue-processing` as the primary item processing orchest
 
 Treat an item as ready for downstream digest use only when `analysis_status=completed` and `analysis_json` is present. Do not enqueue legacy translation or summary as a default follow-up after completed analysis.
 
+Use `digestpipe:digests:export` as the read-only export surface for completed structured digest records. Do not add HTTP JSON API endpoints until API authentication and legacy cleanup are explicitly addressed. Exported records should include source metadata, article metadata, processing metadata, and `analysis_json`; do not export raw `article_content_text` by default.
+
 ## Object Storage
 
 Use MinIO locally as an S3-compatible object storage service.
