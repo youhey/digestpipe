@@ -295,6 +295,26 @@ For small local development and initial production deployment, database queues a
 
 If Redis queues are introduced later, keep the queue connection configurable.
 
+## AI Processing
+
+The translation and summary pipeline must keep the fake AI driver available for tests and safe local development.
+
+OpenAI-backed processing is selected through Laravel config and environment variables, not hard-coded in jobs.
+
+```env
+DIGESTPIPE_AI_DRIVER=fake
+DIGESTPIPE_AI_BATCH_LIMIT=3
+DIGESTPIPE_AI_DAILY_LIMIT=30
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_REQUEST_TIMEOUT=60
+OPENAI_MAX_RETRIES=2
+```
+
+Never commit real OpenAI API keys. Do not log API keys, full prompts, full article bodies, or raw OpenAI responses.
+
+Automated tests must not call the real OpenAI API. Use Laravel HTTP fakes, mocked services, or the fake AI driver.
+
 ## Object Storage
 
 Use MinIO locally as an S3-compatible object storage service.

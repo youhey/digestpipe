@@ -70,6 +70,46 @@ docker compose exec -T php-cli php artisan queue:work --stop-when-empty
 
 `digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--only=translation`, and `--only=summary`.
 
+## AI Processing Driver
+
+The translation and summary pipeline supports a safe fake driver and an OpenAI-backed driver.
+
+```dotenv
+DIGESTPIPE_AI_DRIVER=fake
+DIGESTPIPE_AI_BATCH_LIMIT=3
+DIGESTPIPE_AI_DAILY_LIMIT=30
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_REQUEST_TIMEOUT=60
+OPENAI_MAX_RETRIES=2
+```
+
+Use `DIGESTPIPE_AI_DRIVER=fake` for tests and safe local development. Do not commit real API keys.
+
+For a cautious first OpenAI run, keep limits low:
+
+```dotenv
+DIGESTPIPE_AI_DRIVER=openai
+DIGESTPIPE_AI_BATCH_LIMIT=1
+DIGESTPIPE_AI_DAILY_LIMIT=10
+OPENAI_MODEL=gpt-5.5
+OPENAI_REQUEST_TIMEOUT=120
+OPENAI_MAX_RETRIES=2
+```
+
+For lower-cost local trials:
+
+```dotenv
+DIGESTPIPE_AI_DRIVER=openai
+DIGESTPIPE_AI_BATCH_LIMIT=3
+DIGESTPIPE_AI_DAILY_LIMIT=30
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_REQUEST_TIMEOUT=60
+OPENAI_MAX_RETRIES=2
+```
+
+Automated tests must not call the real OpenAI API. Use HTTP fakes or the fake AI driver.
+
 ## Database Reset Behavior
 
 `make up` runs `php artisan migrate:refresh` and `php artisan db:seed`.

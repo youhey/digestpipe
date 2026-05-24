@@ -215,7 +215,7 @@ class EnqueueProcessingCommand extends Command
         $value = $this->option('limit');
 
         if ($value === null || $value === '') {
-            return null;
+            return $this->configuredBatchLimit();
         }
 
         $limit = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -225,5 +225,16 @@ class EnqueueProcessingCommand extends Command
         }
 
         return $limit;
+    }
+
+    private function configuredBatchLimit(): ?int
+    {
+        $value = config('digestpipe.ai.batch_limit');
+
+        if (! is_int($value) || $value < 1) {
+            return null;
+        }
+
+        return $value;
     }
 }

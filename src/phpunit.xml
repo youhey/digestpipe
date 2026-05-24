@@ -33,6 +33,14 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
 
+        <env name="DIGESTPIPE_AI_DRIVER" value="fake"/>
+        <env name="DIGESTPIPE_AI_BATCH_LIMIT" value="3"/>
+        <env name="DIGESTPIPE_AI_DAILY_LIMIT" value="30"/>
+        <env name="OPENAI_API_KEY" value=""/>
+        <env name="OPENAI_MODEL" value="gpt-4o-mini"/>
+        <env name="OPENAI_REQUEST_TIMEOUT" value="60"/>
+        <env name="OPENAI_MAX_RETRIES" value="2"/>
+
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
