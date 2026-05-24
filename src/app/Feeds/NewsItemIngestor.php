@@ -56,6 +56,7 @@ class NewsItemIngestor
                 'processing_status' => 'fetched',
                 'translation_status' => 'pending',
                 'summary_status' => 'pending',
+                'analysis_status' => 'pending',
                 'article_content_status' => 'pending',
                 'error_message' => null,
             ]);

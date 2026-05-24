@@ -1,8 +1,8 @@
 # digestpipe
 
-Distilled Information Gateway for News Feed Translation Pipeline.
+Distilled Information Gateway for News Feed Transformation Pipeline.
 
-A tiny pipe that turns noisy news feeds into clean Japanese signal.
+A tiny pipeline that turns noisy information sources into structured digest JSON.
 
 ## Structure
 
@@ -64,27 +64,33 @@ Run application batch commands through the `php-cli` service.
 
 ```bash
 docker compose exec -T php-cli php artisan digestpipe:feeds:fetch
-docker compose exec -T php-cli php artisan digestpipe:items:enqueue-content-fetch
 docker compose exec -T php-cli php artisan digestpipe:items:enqueue-processing
 docker compose exec -T php-cli php artisan queue:work --stop-when-empty
 ```
 
-Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. The command is state-aware and dispatches only the next valid job for each item: article content fetch, then translation, then summary. Do not manually enqueue translation or summary before article content processing has completed.
+Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. The command is state-aware and dispatches only the next valid job for each item: article content fetch, then article analysis. The analysis output is structured digest JSON for downstream applications.
 
-`digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--source`, and `--stage=content|translation|summary`. `--limit` limits the number of jobs dispatched in one command run.
+`digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--source`, and `--stage=content|analysis|translation|summary`. `--limit` limits the number of jobs dispatched in one command run. Translation and summary stages remain available as legacy secondary paths, but they are not the default pipeline direction.
 
 `digestpipe:items:enqueue-content-fetch` remains available for focused debugging and supports `--limit`, `--dry-run`, and `--source`.
 
-digestpipe treats RSS items as discovery signals, not always as full article content. For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker News discussion URL, and `description` usually contains only a Comments link. The content fetch pipeline enriches items by fetching and extracting source article text before AI translation and summarization. Discussion/comment extraction is planned separately.
+digestpipe treats RSS items as discovery signals, not always as full article content. For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker News discussion URL, and `description` usually contains only a Comments link. The content fetch pipeline enriches items by fetching and extracting source article text before AI analysis. Discussion/comment extraction is planned separately.
 
 ## AI Processing Driver
 
-The translation and summary pipeline supports a safe fake driver and an OpenAI-backed driver.
+The primary AI pipeline analyzes source content and stores structured digest JSON. Translation and summary remain as compatibility paths for now; downstream applications can later translate, rewrite, narrate, or personalize the structured output.
+
+The AI pipeline supports a safe fake driver and an OpenAI-backed driver.
 
 ```dotenv
 DIGESTPIPE_AI_DRIVER=fake
 DIGESTPIPE_AI_BATCH_LIMIT=3
 DIGESTPIPE_AI_DAILY_LIMIT=30
+DIGESTPIPE_ANALYSIS_MODEL=gpt-4o-mini
+DIGESTPIPE_ANALYSIS_BATCH_LIMIT=10
+DIGESTPIPE_ANALYSIS_DAILY_LIMIT=100
+DIGESTPIPE_ANALYSIS_MAX_INPUT_CHARS=8000
+DIGESTPIPE_ANALYSIS_OUTPUT_SCHEMA_VERSION=1.0
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_REQUEST_TIMEOUT=60
@@ -99,6 +105,8 @@ For a cautious first OpenAI run, keep limits low:
 DIGESTPIPE_AI_DRIVER=openai
 DIGESTPIPE_AI_BATCH_LIMIT=1
 DIGESTPIPE_AI_DAILY_LIMIT=10
+DIGESTPIPE_ANALYSIS_BATCH_LIMIT=1
+DIGESTPIPE_ANALYSIS_DAILY_LIMIT=10
 OPENAI_MODEL=gpt-5.5
 OPENAI_REQUEST_TIMEOUT=120
 OPENAI_MAX_RETRIES=2
@@ -110,6 +118,8 @@ For lower-cost local trials:
 DIGESTPIPE_AI_DRIVER=openai
 DIGESTPIPE_AI_BATCH_LIMIT=3
 DIGESTPIPE_AI_DAILY_LIMIT=30
+DIGESTPIPE_ANALYSIS_BATCH_LIMIT=3
+DIGESTPIPE_ANALYSIS_DAILY_LIMIT=30
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_REQUEST_TIMEOUT=60
 OPENAI_MAX_RETRIES=2

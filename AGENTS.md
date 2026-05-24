@@ -4,15 +4,15 @@ This document describes the development conventions and constraints for agents w
 
 ## Project Overview
 
-`digestpipe` is a small Laravel application designed to collect trusted news feeds, translate and summarize them, and expose the processed digest data through a JSON API.
+`digestpipe` is a small Laravel application designed to collect noisy information sources and turn them into structured digest JSON.
 
 Full name:
 
-> Distilled Information Gateway for News Feed Translation Pipeline
+> Distilled Information Gateway for News Feed Transformation Pipeline
 
 Short description:
 
-> A tiny pipe that turns noisy news feeds into clean Japanese signal.
+> A tiny pipeline that turns noisy information sources into structured digest JSON.
 
 The application is intended to be deployed to Laravel Cloud. The local development environment should approximate the Laravel Cloud runtime where practical, while remaining simple and reproducible with Docker Compose.
 
@@ -297,7 +297,11 @@ If Redis queues are introduced later, keep the queue connection configurable.
 
 ## AI Processing
 
-The translation and summary pipeline must keep the fake AI driver available for tests and safe local development.
+The primary AI pipeline analyzes source content and stores structured digest JSON. digestpipe is not primarily a translation application; downstream applications can translate, rewrite, narrate, or personalize the structured output.
+
+Translation and summary jobs remain available as legacy compatibility paths for now, but they should not be treated as the future primary pipeline.
+
+The fake AI driver must remain available for tests and safe local development.
 
 OpenAI-backed processing is selected through Laravel config and environment variables, not hard-coded in jobs.
 
@@ -305,6 +309,11 @@ OpenAI-backed processing is selected through Laravel config and environment vari
 DIGESTPIPE_AI_DRIVER=fake
 DIGESTPIPE_AI_BATCH_LIMIT=3
 DIGESTPIPE_AI_DAILY_LIMIT=30
+DIGESTPIPE_ANALYSIS_MODEL=gpt-4o-mini
+DIGESTPIPE_ANALYSIS_BATCH_LIMIT=10
+DIGESTPIPE_ANALYSIS_DAILY_LIMIT=100
+DIGESTPIPE_ANALYSIS_MAX_INPUT_CHARS=8000
+DIGESTPIPE_ANALYSIS_OUTPUT_SCHEMA_VERSION=1.0
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_REQUEST_TIMEOUT=60
@@ -323,9 +332,9 @@ For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker 
 
 Article content extraction must be deterministic and non-AI. Prefer modest DOM-based extraction from source article HTML, and do not add a headless browser unless there is a concrete requirement.
 
-Translation and summary input should prefer extracted `article_content_text`, then meaningful `excerpt`, then title-only fallback. Do not send raw HTML or large article bodies to AI services.
+Analysis input should prefer extracted `article_content_text`, then meaningful `excerpt`, then title-only fallback. Do not send raw HTML or large article bodies to AI services. Translation and summary compatibility paths should follow the same input hygiene.
 
-Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. It is state-aware and dispatches only one next valid job per item in this order: article content fetch, translation, summary. Do not manually enqueue translation or summary before article content processing has completed.
+Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. It is state-aware and dispatches only one next valid job per item in this order: article content fetch, article analysis. Do not manually enqueue translation or summary as part of the normal pipeline; use explicit legacy stages only when compatibility testing requires them.
 
 ## Object Storage
 

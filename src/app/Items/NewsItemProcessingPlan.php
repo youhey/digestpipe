@@ -2,6 +2,11 @@
 
 namespace App\Items;
 
+use App\Jobs\AnalyzeNewsItemJob;
+use App\Jobs\FetchNewsItemArticleContentJob;
+use App\Jobs\SummarizeNewsItemJob;
+use App\Jobs\TranslateNewsItemJob;
+
 /**
  * News item processing orchestrationの判定結果です。
  */
@@ -43,7 +48,15 @@ class NewsItemProcessingPlan
      */
     public static function contentFetch(string $reason): self
     {
-        return new self('content', 'App\Jobs\FetchNewsItemArticleContentJob', 'article_content_status', $reason);
+        return new self('content', FetchNewsItemArticleContentJob::class, 'article_content_status', $reason);
+    }
+
+    /**
+     * Analysis jobの判定結果を返します。
+     */
+    public static function analysis(string $reason): self
+    {
+        return new self('analysis', AnalyzeNewsItemJob::class, 'analysis_status', $reason);
     }
 
     /**
@@ -51,7 +64,7 @@ class NewsItemProcessingPlan
      */
     public static function translation(string $reason): self
     {
-        return new self('translation', 'App\Jobs\TranslateNewsItemJob', 'translation_status', $reason);
+        return new self('translation', TranslateNewsItemJob::class, 'translation_status', $reason);
     }
 
     /**
@@ -59,7 +72,7 @@ class NewsItemProcessingPlan
      */
     public static function summary(string $reason): self
     {
-        return new self('summary', 'App\Jobs\SummarizeNewsItemJob', 'summary_status', $reason);
+        return new self('summary', SummarizeNewsItemJob::class, 'summary_status', $reason);
     }
 
     /**

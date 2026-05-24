@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -20,6 +21,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $processing_status
  * @property string $translation_status
  * @property string $summary_status
+ * @property string $analysis_status
+ * @property array<string, mixed>|null $analysis_json
+ * @property string|null $analysis_model
+ * @property string|null $analysis_error
+ * @property CarbonImmutable|null $analyzed_at
  * @property string $article_content_status
  * @property string|null $article_content_text
  * @property string|null $article_content_error
@@ -47,6 +53,11 @@ class NewsItem extends Model
         'processing_status',
         'translation_status',
         'summary_status',
+        'analysis_status',
+        'analysis_json',
+        'analysis_model',
+        'analysis_error',
+        'analyzed_at',
         'article_content_status',
         'article_content_text',
         'article_content_fetched_at',
@@ -70,6 +81,8 @@ class NewsItem extends Model
         return [
             'published_at' => 'immutable_datetime',
             'fetched_at' => 'immutable_datetime',
+            'analysis_json' => 'array',
+            'analyzed_at' => 'immutable_datetime',
             'article_content_fetched_at' => 'immutable_datetime',
             'translation_started_at' => 'immutable_datetime',
             'translation_completed_at' => 'immutable_datetime',

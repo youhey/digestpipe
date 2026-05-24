@@ -7,6 +7,14 @@ return [
         'daily_limit' => (int) env('DIGESTPIPE_AI_DAILY_LIMIT', 30),
     ],
 
+    'analysis' => [
+        'model' => env('DIGESTPIPE_ANALYSIS_MODEL', env('OPENAI_MODEL', 'gpt-4o-mini')),
+        'batch_limit' => (int) env('DIGESTPIPE_ANALYSIS_BATCH_LIMIT', 10),
+        'daily_limit' => (int) env('DIGESTPIPE_ANALYSIS_DAILY_LIMIT', 100),
+        'max_input_chars' => (int) env('DIGESTPIPE_ANALYSIS_MAX_INPUT_CHARS', 8000),
+        'schema_version' => env('DIGESTPIPE_ANALYSIS_OUTPUT_SCHEMA_VERSION', '1.0'),
+    ],
+
     'openai' => [
         'api_key' => env('OPENAI_API_KEY'),
         'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),

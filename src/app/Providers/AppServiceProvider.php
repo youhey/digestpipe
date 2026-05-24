@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Analysis\ArticleAnalyzer;
+use App\Analysis\FakeArticleAnalyzer;
+use App\Analysis\OpenAiArticleAnalyzer;
 use App\Processing\FakeNewsAiProcessor;
 use App\Processing\NewsAiProcessor;
 use App\Processing\OpenAiNewsAiProcessor;
@@ -25,6 +28,17 @@ class AppServiceProvider extends ServiceProvider
             return match ($driver) {
                 'fake' => new FakeNewsAiProcessor(),
                 'openai' => new OpenAiNewsAiProcessor(),
+                default => throw new InvalidArgumentException("Unsupported digestpipe AI driver [{$driver}]."),
+            };
+        });
+
+        $this->app->bind(ArticleAnalyzer::class, function (): ArticleAnalyzer {
+            $configuredDriver = config('digestpipe.ai.driver', 'fake');
+            $driver = is_string($configuredDriver) ? $configuredDriver : 'fake';
+
+            return match ($driver) {
+                'fake' => new FakeArticleAnalyzer(),
+                'openai' => new OpenAiArticleAnalyzer(),
                 default => throw new InvalidArgumentException("Unsupported digestpipe AI driver [{$driver}]."),
             };
         });

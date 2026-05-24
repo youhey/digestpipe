@@ -36,6 +36,11 @@
         <env name="DIGESTPIPE_AI_DRIVER" value="fake"/>
         <env name="DIGESTPIPE_AI_BATCH_LIMIT" value="3"/>
         <env name="DIGESTPIPE_AI_DAILY_LIMIT" value="30"/>
+        <env name="DIGESTPIPE_ANALYSIS_MODEL" value="gpt-4o-mini"/>
+        <env name="DIGESTPIPE_ANALYSIS_BATCH_LIMIT" value="10"/>
+        <env name="DIGESTPIPE_ANALYSIS_DAILY_LIMIT" value="100"/>
+        <env name="DIGESTPIPE_ANALYSIS_MAX_INPUT_CHARS" value="8000"/>
+        <env name="DIGESTPIPE_ANALYSIS_OUTPUT_SCHEMA_VERSION" value="1.0"/>
         <env name="OPENAI_API_KEY" value=""/>
         <env name="OPENAI_MODEL" value="gpt-4o-mini"/>
         <env name="OPENAI_REQUEST_TIMEOUT" value="60"/>

@@ -12,10 +12,14 @@ class NewsItemProcessingPlanner
     /**
      * 現在状態に基づき、1 itemにつき1つだけ次の処理を返します。
      */
-    public function plan(NewsItem $item): NewsItemProcessingPlan
+    public function plan(NewsItem $item, ?string $stage = null): NewsItemProcessingPlan
     {
-        if ($item->summary_status === 'completed') {
-            return NewsItemProcessingPlan::none('summary_completed');
+        if ($stage === 'translation') {
+            return $this->legacyTranslationPlan($item);
+        }
+
+        if ($stage === 'summary') {
+            return $this->legacySummaryPlan($item);
         }
 
         if ($item->article_content_status === 'pending') {
@@ -34,6 +38,27 @@ class NewsItemProcessingPlanner
             return NewsItemProcessingPlan::none('article_content_unusable');
         }
 
+        if ($item->analysis_status === 'pending') {
+            $reason = $item->article_content_status === 'skipped'
+                ? 'article_content_skipped_analysis_pending'
+                : 'article_content_completed_analysis_pending';
+
+            return NewsItemProcessingPlan::analysis($reason);
+        }
+
+        if ($item->analysis_status === 'queued' || $item->analysis_status === 'processing') {
+            return NewsItemProcessingPlan::none('analysis_' . $item->analysis_status);
+        }
+
+        return NewsItemProcessingPlan::none('analysis_' . $item->analysis_status);
+    }
+
+    private function legacyTranslationPlan(NewsItem $item): NewsItemProcessingPlan
+    {
+        if ($item->article_content_status !== 'completed' && $item->article_content_status !== 'skipped') {
+            return NewsItemProcessingPlan::none('article_content_not_ready_for_translation');
+        }
+
         if ($item->translation_status === 'pending') {
             $reason = $item->article_content_status === 'skipped'
                 ? 'article_content_skipped_translation_pending'
@@ -42,6 +67,11 @@ class NewsItemProcessingPlanner
             return NewsItemProcessingPlan::translation($reason);
         }
 
+        return NewsItemProcessingPlan::none('translation_' . $item->translation_status);
+    }
+
+    private function legacySummaryPlan(NewsItem $item): NewsItemProcessingPlan
+    {
         if ($item->translation_status === 'queued' || $item->translation_status === 'processing') {
             return NewsItemProcessingPlan::none('translation_' . $item->translation_status);
         }
