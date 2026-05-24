@@ -9,14 +9,26 @@ use App\Models\NewsItem;
  */
 class FakeNewsAiProcessor implements NewsAiProcessor
 {
+    private readonly NewsItemTextSelector $textSelector;
+
+    /**
+     * Fake AI processorを作成します。
+     */
+    public function __construct(?NewsItemTextSelector $textSelector = null)
+    {
+        $this->textSelector = $textSelector ?? new NewsItemTextSelector();
+    }
+
     /**
      * 元titleとdescriptionに日本語処理済みであることを示すprefixを付与します。
      */
     public function translate(NewsItem $item): NewsTranslationResult
     {
+        $bodyText = $this->textSelector->bodyText($item);
+
         return new NewsTranslationResult(
             title: '[ja] ' . $item->title,
-            description: $item->excerpt === null ? null : '[ja] ' . $item->excerpt,
+            description: $bodyText === null ? null : '[ja] ' . $bodyText,
         );
     }
 
@@ -25,7 +37,7 @@ class FakeNewsAiProcessor implements NewsAiProcessor
      */
     public function summarize(NewsItem $item): NewsSummaryResult
     {
-        $text = trim(($item->translated_title ?? $item->title) . ' ' . ($item->translated_description ?? $item->excerpt ?? ''));
+        $text = trim(($item->translated_title ?? $item->title) . ' ' . ($item->translated_description ?? $this->textSelector->bodyText($item) ?? ''));
 
         return new NewsSummaryResult('Summary: ' . substr($text, 0, 160));
     }

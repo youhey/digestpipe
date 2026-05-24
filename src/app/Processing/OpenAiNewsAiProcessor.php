@@ -16,6 +16,16 @@ class OpenAiNewsAiProcessor implements NewsAiProcessor
 {
     private const ENDPOINT = 'https://api.openai.com/v1/responses';
 
+    private readonly NewsItemTextSelector $textSelector;
+
+    /**
+     * OpenAI-backed AI processorを作成します。
+     */
+    public function __construct(?NewsItemTextSelector $textSelector = null)
+    {
+        $this->textSelector = $textSelector ?? new NewsItemTextSelector();
+    }
+
     /**
      * News itemから日本語翻訳結果を生成します。
      */
@@ -26,7 +36,7 @@ class OpenAiNewsAiProcessor implements NewsAiProcessor
             input: [
                 'phase' => 'translation',
                 'title' => $item->title,
-                'description' => $item->excerpt,
+                'description' => $this->textSelector->bodyText($item),
                 'source_url' => $item->source_url,
             ],
             schemaName: 'digestpipe_translation',
@@ -70,7 +80,7 @@ class OpenAiNewsAiProcessor implements NewsAiProcessor
             input: [
                 'phase' => 'summary',
                 'translated_title' => $item->translated_title,
-                'translated_description' => $item->translated_description,
+                'translated_description' => $item->translated_description ?? $this->textSelector->bodyText($item),
                 'source_url' => $item->source_url,
             ],
             schemaName: 'digestpipe_summary',

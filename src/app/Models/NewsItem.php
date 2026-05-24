@@ -13,12 +13,16 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $external_id
  * @property string $identity_hash
  * @property string|null $source_url
+ * @property string|null $discussion_url
  * @property string $title
  * @property string|null $excerpt
  * @property string $content_hash
  * @property string $processing_status
  * @property string $translation_status
  * @property string $summary_status
+ * @property string $article_content_status
+ * @property string|null $article_content_text
+ * @property string|null $article_content_error
  * @property string|null $translated_title
  * @property string|null $translated_description
  * @property string|null $summary
@@ -34,6 +38,7 @@ class NewsItem extends Model
         'external_id',
         'identity_hash',
         'source_url',
+        'discussion_url',
         'title',
         'excerpt',
         'published_at',
@@ -42,6 +47,10 @@ class NewsItem extends Model
         'processing_status',
         'translation_status',
         'summary_status',
+        'article_content_status',
+        'article_content_text',
+        'article_content_fetched_at',
+        'article_content_error',
         'translated_title',
         'translated_description',
         'summary',
@@ -61,6 +70,7 @@ class NewsItem extends Model
         return [
             'published_at' => 'immutable_datetime',
             'fetched_at' => 'immutable_datetime',
+            'article_content_fetched_at' => 'immutable_datetime',
             'translation_started_at' => 'immutable_datetime',
             'translation_completed_at' => 'immutable_datetime',
             'summary_started_at' => 'immutable_datetime',

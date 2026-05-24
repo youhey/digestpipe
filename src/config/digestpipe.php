@@ -14,6 +14,14 @@ return [
         'max_retries' => (int) env('OPENAI_MAX_RETRIES', 2),
     ],
 
+    'content' => [
+        'fetch_timeout' => (int) env('DIGESTPIPE_CONTENT_FETCH_TIMEOUT', 15),
+        'max_bytes' => (int) env('DIGESTPIPE_CONTENT_MAX_BYTES', 1048576),
+        'max_chars' => (int) env('DIGESTPIPE_CONTENT_MAX_CHARS', 8000),
+        'min_chars' => (int) env('DIGESTPIPE_CONTENT_MIN_CHARS', 200),
+        'user_agent' => env('DIGESTPIPE_CONTENT_USER_AGENT', 'digestpipe/0.1 (+personal news summarizer)'),
+    ],
+
     'feed_sources' => [
         [
             'key' => 'hacker_news',

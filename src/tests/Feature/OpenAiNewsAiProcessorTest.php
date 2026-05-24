@@ -135,6 +135,35 @@ class OpenAiNewsAiProcessorTest extends TestCase
         });
     }
 
+    public function testOpenAiTranslationInputPrefersExtractedArticleContentAndStripsHtml(): void
+    {
+        $this->configureOpenAi();
+        Http::fake([
+            'https://api.openai.com/v1/responses' => Http::response($this->openAiOutput([
+                'translated_title' => '翻訳タイトル',
+                'translated_description' => '翻訳本文',
+            ]), 200),
+        ]);
+
+        $this->app->make(NewsAiProcessor::class)->translate($this->createNewsItem([
+            'excerpt' => 'RSS excerpt',
+            'article_content_text' => '<article><p>Extracted <strong>article</strong> text</p></article>',
+        ]));
+
+        Http::assertSent(function (Request $request): bool {
+            $payload = $request->data();
+            $input = $payload['input'] ?? null;
+
+            if (! is_string($input)) {
+                return false;
+            }
+
+            return str_contains($input, 'Extracted article text')
+                && ! str_contains($input, '<article>')
+                && ! str_contains($input, 'RSS excerpt');
+        });
+    }
+
     public function testOpenAiServiceHandlesConnectionFailure(): void
     {
         $this->configureOpenAi();
@@ -252,6 +281,7 @@ class OpenAiNewsAiProcessorTest extends TestCase
             'external_id' => 'external-openai',
             'identity_hash' => hash('sha256', 'external-openai' . serialize($attributes)),
             'source_url' => 'https://news.example.test/openai',
+            'discussion_url' => null,
             'title' => 'Example title',
             'excerpt' => 'Example excerpt',
             'published_at' => CarbonImmutable::parse('2026-05-23 12:00:00'),
@@ -260,6 +290,8 @@ class OpenAiNewsAiProcessorTest extends TestCase
             'processing_status' => 'fetched',
             'translation_status' => 'pending',
             'summary_status' => 'pending',
+            'article_content_status' => 'pending',
+            'article_content_error' => null,
             'error_message' => null,
             'processing_error' => null,
         ], $attributes));

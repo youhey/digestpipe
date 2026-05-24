@@ -119,10 +119,12 @@ class FetchFeedsCommandTest extends TestCase
             'source_name' => 'Hacker News',
             'external_id' => 'hn-1',
             'source_url' => 'https://news.example.test/one',
+            'discussion_url' => null,
             'title' => 'First item',
             'processing_status' => 'fetched',
             'translation_status' => 'pending',
             'summary_status' => 'pending',
+            'article_content_status' => 'pending',
         ]);
 
         $item = NewsItem::query()->firstOrFail();
@@ -173,6 +175,26 @@ class FetchFeedsCommandTest extends TestCase
 
         $this->assertDatabaseCount('news_items', 0);
         self::assertSame(RuntimeException::class, $loggedErrors[0]['exception_class'] ?? null);
+    }
+
+    public function testHackerNewsCommentsDescriptionIsNotStoredAsExcerptAndCommentsUrlIsPreserved(): void
+    {
+        $this->configureFeedSources();
+
+        Http::fake([
+            'https://feeds.example.test/hacker-news.xml' => Http::response(self::hackerNewsFeedWithCommentsDescription(), 200),
+        ]);
+
+        $this->fetchFeeds()
+            ->assertSuccessful();
+
+        $this->assertDatabaseHas('news_items', [
+            'source_key' => 'hacker_news',
+            'source_url' => 'https://article.example.test/story',
+            'discussion_url' => 'https://news.ycombinator.com/item?id=48248014',
+            'title' => 'HN linked article',
+            'excerpt' => null,
+        ]);
     }
 
     /**
@@ -245,6 +267,24 @@ class FetchFeedsCommandTest extends TestCase
                     <dc:date>2026-05-23T12:00:00Z</dc:date>
                 </item>
             </rdf:RDF>
+            XML;
+    }
+
+    private static function hackerNewsFeedWithCommentsDescription(): string
+    {
+        return <<<'XML'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0">
+                <channel>
+                    <item>
+                        <guid>hn-comments-only</guid>
+                        <title>HN linked article</title>
+                        <link>https://article.example.test/story</link>
+                        <comments>https://news.ycombinator.com/item?id=48248014</comments>
+                        <description><![CDATA[<a href="https://news.ycombinator.com/item?id=48248014">Comments</a>]]></description>
+                    </item>
+                </channel>
+            </rss>
             XML;
     }
 }

@@ -15,6 +15,9 @@ class FeedItem
     /** 元記事またはfeed itemのURLです。 */
     public readonly ?string $sourceUrl;
 
+    /** Discussionやcomment threadのURLです。 */
+    public readonly ?string $discussionUrl;
+
     /** Feed itemのtitleです。 */
     public readonly string $title;
 
@@ -27,10 +30,11 @@ class FeedItem
     /**
      * 正規化済みfeed itemを作成します。
      */
-    public function __construct(?string $externalId, ?string $sourceUrl, string $title, ?string $excerpt, ?CarbonImmutable $publishedAt)
+    public function __construct(?string $externalId, ?string $sourceUrl, ?string $discussionUrl, string $title, ?string $excerpt, ?CarbonImmutable $publishedAt)
     {
         $this->externalId = $externalId;
         $this->sourceUrl = $sourceUrl;
+        $this->discussionUrl = $discussionUrl;
         $this->title = $title;
         $this->excerpt = $excerpt;
         $this->publishedAt = $publishedAt;

@@ -41,6 +41,12 @@
         <env name="OPENAI_REQUEST_TIMEOUT" value="60"/>
         <env name="OPENAI_MAX_RETRIES" value="2"/>
 
+        <env name="DIGESTPIPE_CONTENT_FETCH_TIMEOUT" value="15"/>
+        <env name="DIGESTPIPE_CONTENT_MAX_BYTES" value="1048576"/>
+        <env name="DIGESTPIPE_CONTENT_MAX_CHARS" value="8000"/>
+        <env name="DIGESTPIPE_CONTENT_MIN_CHARS" value="80"/>
+        <env name="DIGESTPIPE_CONTENT_USER_AGENT" value="digestpipe-test"/>
+
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

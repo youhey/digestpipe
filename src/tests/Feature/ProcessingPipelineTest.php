@@ -233,6 +233,7 @@ class ProcessingPipelineTest extends TestCase
             'external_id' => 'external-' . $sequence,
             'identity_hash' => hash('sha256', 'external-' . $sequence),
             'source_url' => 'https://news.example.test/' . $sequence,
+            'discussion_url' => null,
             'title' => 'Example title ' . $sequence,
             'excerpt' => 'Example excerpt ' . $sequence,
             'published_at' => CarbonImmutable::parse('2026-05-23 12:00:00'),
@@ -241,6 +242,8 @@ class ProcessingPipelineTest extends TestCase
             'processing_status' => 'fetched',
             'translation_status' => 'pending',
             'summary_status' => 'pending',
+            'article_content_status' => 'pending',
+            'article_content_error' => null,
             'error_message' => null,
             'processing_error' => null,
         ], $attributes));

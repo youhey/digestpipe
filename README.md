@@ -64,11 +64,16 @@ Run application batch commands through the `php-cli` service.
 
 ```bash
 docker compose exec -T php-cli php artisan digestpipe:feeds:fetch
+docker compose exec -T php-cli php artisan digestpipe:items:enqueue-content-fetch
 docker compose exec -T php-cli php artisan digestpipe:items:enqueue-processing
 docker compose exec -T php-cli php artisan queue:work --stop-when-empty
 ```
 
+`digestpipe:items:enqueue-content-fetch` supports `--limit`, `--dry-run`, and `--source`.
+
 `digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--only=translation`, and `--only=summary`.
+
+digestpipe treats RSS items as discovery signals, not always as full article content. For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker News discussion URL, and `description` usually contains only a Comments link. The content fetch pipeline enriches items by fetching and extracting source article text before AI translation and summarization. Discussion/comment extraction is planned separately.
 
 ## AI Processing Driver
 

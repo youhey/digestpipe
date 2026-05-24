@@ -315,6 +315,16 @@ Never commit real OpenAI API keys. Do not log API keys, full prompts, full artic
 
 Automated tests must not call the real OpenAI API. Use Laravel HTTP fakes, mocked services, or the fake AI driver.
 
+## Article Content Fetching
+
+Treat RSS items as discovery signals. Do not assume RSS descriptions contain full article content.
+
+For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker News discussion URL, and `description` usually contains only a Comments link. Do not treat that description as article content, and do not implement Hacker News discussion/comment summarization unless explicitly requested.
+
+Article content extraction must be deterministic and non-AI. Prefer modest DOM-based extraction from source article HTML, and do not add a headless browser unless there is a concrete requirement.
+
+Translation and summary input should prefer extracted `article_content_text`, then meaningful `excerpt`, then title-only fallback. Do not send raw HTML or large article bodies to AI services.
+
 ## Object Storage
 
 Use MinIO locally as an S3-compatible object storage service.

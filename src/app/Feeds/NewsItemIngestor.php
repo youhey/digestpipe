@@ -47,6 +47,7 @@ class NewsItemIngestor
                 'external_id' => $item->externalId,
                 'identity_hash' => $identityHash,
                 'source_url' => $item->sourceUrl,
+                'discussion_url' => $item->discussionUrl,
                 'title' => $item->title,
                 'excerpt' => $item->excerpt,
                 'published_at' => $item->publishedAt,
@@ -55,6 +56,7 @@ class NewsItemIngestor
                 'processing_status' => 'fetched',
                 'translation_status' => 'pending',
                 'summary_status' => 'pending',
+                'article_content_status' => 'pending',
                 'error_message' => null,
             ]);
 

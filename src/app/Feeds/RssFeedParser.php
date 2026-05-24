@@ -69,8 +69,9 @@ class RssFeedParser
     {
         $title = $this->text($item, 'title');
         $sourceUrl = $this->text($item, 'link');
+        $discussionUrl = $this->text($item, 'comments');
         $externalId = $this->text($item, 'guid') ?? $this->attribute($item, 'about') ?? $sourceUrl;
-        $excerpt = $this->text($item, 'description');
+        $excerpt = $this->normalizeExcerpt($this->text($item, 'description'), $discussionUrl);
         $publishedAt = $this->parseDate(
             $this->text($item, 'pubDate')
             ?? $this->text($item, 'date')
@@ -85,6 +86,7 @@ class RssFeedParser
         return new FeedItem(
             externalId: $externalId,
             sourceUrl: $sourceUrl,
+            discussionUrl: $discussionUrl,
             title: $title,
             excerpt: $excerpt,
             publishedAt: $publishedAt,
@@ -132,5 +134,40 @@ class RssFeedParser
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function normalizeExcerpt(?string $value, ?string $discussionUrl): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $text = trim(html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5));
+
+        if ($text === '') {
+            return null;
+        }
+
+        if ($this->isCommentsOnlyExcerpt($text, $discussionUrl)) {
+            return null;
+        }
+
+        $normalizedText = preg_replace('/\s+/', ' ', $text);
+
+        if (! is_string($normalizedText)) {
+            return null;
+        }
+
+        return $normalizedText;
+    }
+
+    private function isCommentsOnlyExcerpt(string $text, ?string $discussionUrl): bool
+    {
+        if (strcasecmp($text, 'Comments') !== 0) {
+            return false;
+        }
+
+        return is_string($discussionUrl)
+            && str_starts_with($discussionUrl, 'https://news.ycombinator.com/item?');
     }
 }
