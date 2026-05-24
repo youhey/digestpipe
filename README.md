@@ -96,7 +96,7 @@ Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`,
 
 ## API Authentication
 
-digestpipe uses Laravel Sanctum personal access tokens for private API access. Digest JSON API endpoints are not implemented yet, but future HTTP API routes should require `auth:sanctum` and the `digests:read` ability.
+digestpipe uses Laravel Sanctum personal access tokens for private API access. Article JSON API routes require `auth:sanctum` and the `digests:read` ability.
 
 Create an API user and token:
 
@@ -117,6 +117,35 @@ curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" http://localhost:8080/ap
 ```
 
 The token is shown only once when it is created or rotated. Store it outside the repository. OAuth, login APIs, registration APIs, password reset flows, and public user management screens are intentionally not implemented.
+
+## Article JSON API
+
+The private Article JSON API exposes completed article analysis records. It is read-only and uses the same item representation as `digestpipe:digests:export`.
+
+```bash
+curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
+  "http://localhost:8080/api/articles"
+
+curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
+  "http://localhost:8080/api/articles?from=2026-05-24T00:00:00Z&to=2026-05-24T12:00:00Z"
+
+curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
+  "http://localhost:8080/api/articles?source=hacker_news&limit=50"
+
+curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
+  "http://localhost:8080/api/articles/123"
+```
+
+Endpoints:
+
+- `GET /api/articles`
+- `GET /api/articles/{id}`
+
+`GET /api/articles` returns records where `analysis_status=completed` and `analysis_json` is present. The default time window is the last 24 hours, using `published_at` with `fetched_at` fallback. Supported query parameters are `from`, `to`, `source`, and `limit`. The default limit is `100`; the maximum limit is `500`.
+
+`GET /api/articles/{id}` returns a single completed analysis record or `404`.
+
+Raw extracted article content is not exposed by default. `fields` filtering, pagination, topic filtering, write APIs, and public API access are intentionally deferred.
 
 ## AI Processing Driver
 

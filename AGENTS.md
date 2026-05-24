@@ -376,6 +376,23 @@ Tokens should use the `digests:read` ability for read-only digest access. Future
 
 Never log raw personal access tokens. Print newly created or rotated tokens only once in the command output, and do not commit generated tokens.
 
+## Article JSON API
+
+The private Article JSON API exposes completed article analysis records through read-only routes:
+
+```txt
+GET /api/articles
+GET /api/articles/{id}
+```
+
+These routes must stay protected by `auth:sanctum` and `abilities:digests:read`. Do not add public unauthenticated access or write APIs unless explicitly requested.
+
+The API response shape should stay aligned with `DigestExportItemBuilder` and `digestpipe:digests:export`. Do not expose raw `article_content_text`, prompts, provider raw responses, API keys, or secrets.
+
+`GET /api/articles` supports `from`, `to`, `source`, and `limit`. The default window is the last 24 hours, using `published_at` with `fetched_at` fallback. The default limit is `100`, and the maximum limit is `500`.
+
+`fields` filtering, pagination, topic filtering, source-specific metadata fetching, write APIs, daily digest generation, and Hacker News discussion/comment analysis are intentionally deferred.
+
 ## Object Storage
 
 Use MinIO locally as an S3-compatible object storage service.
