@@ -83,7 +83,7 @@ The primary output of digestpipe is structured digest JSON. Each exported digest
 
 Downstream applications can translate, rewrite, narrate, personalize, rank, group, or combine these digest records. Raw extracted article content is not exported by default.
 
-For now, digestpipe exposes this output through an Artisan command. A JSON API is intentionally deferred until authentication design is handled.
+digestpipe exposes this output through an Artisan command and a private read-only Article JSON API.
 
 ```bash
 docker compose exec -T php-cli php artisan digestpipe:digests:export --limit=20
@@ -94,58 +94,9 @@ docker compose exec -T php-cli php artisan digestpipe:digests:export --from=2026
 
 Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`, and `--limit`. Supported formats are `json` and `jsonl`. The command only exports records where `analysis_status=completed` and `analysis_json` is present.
 
-## API Authentication
+## API
 
-digestpipe uses Laravel Sanctum personal access tokens for private API access. Article JSON API routes require `auth:sanctum` and the `digests:read` ability.
-
-Create an API user and token:
-
-```bash
-docker compose exec -T php-cli php artisan digestpipe:users:create-api-user user@example.test --name="DigestPipe User"
-```
-
-Rotate the token:
-
-```bash
-docker compose exec -T php-cli php artisan digestpipe:users:rotate-api-token user@example.test
-```
-
-Use the token:
-
-```bash
-curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" http://localhost:8080/api/...
-```
-
-The token is shown only once when it is created or rotated. Store it outside the repository. OAuth, login APIs, registration APIs, password reset flows, and public user management screens are intentionally not implemented.
-
-## Article JSON API
-
-The private Article JSON API exposes completed article analysis records. It is read-only and uses the same item representation as `digestpipe:digests:export`.
-
-```bash
-curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
-  "http://localhost:8080/api/articles"
-
-curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
-  "http://localhost:8080/api/articles?from=2026-05-24T00:00:00Z&to=2026-05-24T12:00:00Z"
-
-curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
-  "http://localhost:8080/api/articles?source=hacker_news&limit=50"
-
-curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
-  "http://localhost:8080/api/articles/123"
-```
-
-Endpoints:
-
-- `GET /api/articles`
-- `GET /api/articles/{id}`
-
-`GET /api/articles` returns records where `analysis_status=completed` and `analysis_json` is present. The default time window is the last 24 hours, using `published_at` with `fetched_at` fallback. Supported query parameters are `from`, `to`, `source`, and `limit`. The default limit is `100`; the maximum limit is `500`.
-
-`GET /api/articles/{id}` returns a single completed analysis record or `404`.
-
-Raw extracted article content is not exposed by default. `fields` filtering, pagination, topic filtering, write APIs, and public API access are intentionally deferred.
+The private read-only Article JSON API is documented in [docs/api.md](docs/api.md).
 
 ## AI Processing Driver
 

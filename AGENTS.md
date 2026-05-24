@@ -359,7 +359,7 @@ Use `digestpipe:items:enqueue-processing` as the primary item processing orchest
 
 Treat an item as ready for downstream digest use only when `analysis_status=completed` and `analysis_json` is present.
 
-Use `digestpipe:digests:export` as the read-only export surface for completed structured digest records. Do not add HTTP JSON API endpoints until API authentication is explicitly addressed. Exported records should include source metadata, article metadata, processing metadata, and `analysis_json`; do not export raw `article_content_text` by default.
+Use `digestpipe:digests:export` and the private Article JSON API as read-only export surfaces for completed structured digest records. Exported records should include source metadata, article metadata, processing metadata, and `analysis_json`; do not export raw `article_content_text` by default.
 
 ## API Authentication
 
@@ -392,6 +392,10 @@ The API response shape should stay aligned with `DigestExportItemBuilder` and `d
 `GET /api/articles` supports `from`, `to`, `source`, and `limit`. The default window is the last 24 hours, using `published_at` with `fetched_at` fallback. The default limit is `100`, and the maximum limit is `500`.
 
 `fields` filtering, pagination, topic filtering, source-specific metadata fetching, write APIs, daily digest generation, and Hacker News discussion/comment analysis are intentionally deferred.
+
+## API Documentation
+
+When API behavior changes, update `docs/api.md` in the same task. Do not document planned API features as current behavior.
 
 ## Object Storage
 
