@@ -3,8 +3,6 @@
 return [
     'ai' => [
         'driver' => env('DIGESTPIPE_AI_DRIVER', 'fake'),
-        'batch_limit' => (int) env('DIGESTPIPE_AI_BATCH_LIMIT', 3),
-        'daily_limit' => (int) env('DIGESTPIPE_AI_DAILY_LIMIT', 30),
     ],
 
     'analysis' => [
@@ -27,7 +25,7 @@ return [
         'max_bytes' => (int) env('DIGESTPIPE_CONTENT_MAX_BYTES', 1048576),
         'max_chars' => (int) env('DIGESTPIPE_CONTENT_MAX_CHARS', 8000),
         'min_chars' => (int) env('DIGESTPIPE_CONTENT_MIN_CHARS', 200),
-        'user_agent' => env('DIGESTPIPE_CONTENT_USER_AGENT', 'digestpipe/0.1 (+personal news summarizer)'),
+        'user_agent' => env('DIGESTPIPE_CONTENT_USER_AGENT', 'digestpipe/0.1 (+structured digest pipeline)'),
     ],
 
     'feed_sources' => [

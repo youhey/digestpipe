@@ -4,19 +4,13 @@ namespace Tests\Feature;
 
 use App\Jobs\AnalyzeNewsItemJob;
 use App\Jobs\FetchNewsItemArticleContentJob;
-use App\Jobs\SummarizeNewsItemJob;
-use App\Jobs\TranslateNewsItemJob;
 use App\Models\NewsItem;
-use App\Processing\NewsAiProcessor;
-use App\Processing\NewsSummaryResult;
-use App\Processing\NewsTranslationResult;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\PendingCommand;
-use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -52,8 +46,6 @@ class ProcessingPipelineTest extends TestCase
             'id' => $item->id,
             'article_content_status' => 'pending',
             'analysis_status' => 'pending',
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
         ]);
     }
 
@@ -76,7 +68,7 @@ class ProcessingPipelineTest extends TestCase
     public function testQueuedArticleContentDoesNotEnqueueDuplicateContentFetchJob(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem([
+        $this->createNewsItem([
             'article_content_status' => 'queued',
         ]);
 
@@ -84,10 +76,6 @@ class ProcessingPipelineTest extends TestCase
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'article_content_status' => 'queued',
-        ]);
     }
 
     public function testProcessingArticleContentDoesNotEnqueueAnalysis(): void
@@ -109,8 +97,6 @@ class ProcessingPipelineTest extends TestCase
         $item = $this->createNewsItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'pending',
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
         ]);
 
         $this->enqueueProcessing()
@@ -118,13 +104,9 @@ class ProcessingPipelineTest extends TestCase
 
         Queue::assertPushed(AnalyzeNewsItemJob::class, 1);
         Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $item->id);
-        Queue::assertNotPushed(TranslateNewsItemJob::class);
-        Queue::assertNotPushed(SummarizeNewsItemJob::class);
         $this->assertDatabaseHas('news_items', [
             'id' => $item->id,
             'analysis_status' => 'queued',
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
         ]);
     }
 
@@ -177,104 +159,10 @@ class ProcessingPipelineTest extends TestCase
     public function testCompletedAnalysisEnqueuesNothingByDefault(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem([
-            'article_content_status' => 'completed',
-            'analysis_status' => 'completed',
-            'analysis_json' => $this->analysisJson('Completed analysis'),
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
-        ]);
-
-        $this->enqueueProcessing()
-            ->assertSuccessful();
-
-        Queue::assertNothingPushed();
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
-        ]);
-    }
-
-    public function testLegacyTranslationStageEnqueuesTranslationJob(): void
-    {
-        Queue::fake();
-        $item = $this->createNewsItem([
-            'article_content_status' => 'completed',
-            'translation_status' => 'pending',
-        ]);
-
-        $this->enqueueProcessing(['--stage' => 'translation'])
-            ->assertSuccessful();
-
-        Queue::assertPushed(TranslateNewsItemJob::class, 1);
-        Queue::assertPushed(TranslateNewsItemJob::class, static fn (TranslateNewsItemJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'translation_status' => 'queued',
-        ]);
-    }
-
-    public function testQueuedTranslationDoesNotEnqueueDuplicateTranslationJobInLegacyStage(): void
-    {
-        Queue::fake();
-        $this->createNewsItem([
-            'article_content_status' => 'completed',
-            'translation_status' => 'queued',
-        ]);
-
-        $this->enqueueProcessing(['--stage' => 'translation'])
-            ->assertSuccessful();
-
-        Queue::assertNothingPushed();
-    }
-
-    public function testProcessingTranslationDoesNotEnqueueSummaryInLegacyStage(): void
-    {
-        Queue::fake();
-        $this->createNewsItem([
-            'article_content_status' => 'completed',
-            'translation_status' => 'processing',
-            'summary_status' => 'pending',
-        ]);
-
-        $this->enqueueProcessing(['--stage' => 'summary'])
-            ->assertSuccessful();
-
-        Queue::assertNothingPushed();
-    }
-
-    public function testLegacySummaryStageEnqueuesSummaryJob(): void
-    {
-        Queue::fake();
-        $item = $this->createNewsItem([
-            'article_content_status' => 'completed',
-            'translation_status' => 'completed',
-            'summary_status' => 'pending',
-            'translated_title' => '[ja] Completed title',
-        ]);
-
-        $this->enqueueProcessing(['--stage' => 'summary'])
-            ->assertSuccessful();
-
-        Queue::assertNotPushed(TranslateNewsItemJob::class);
-        Queue::assertPushed(SummarizeNewsItemJob::class, 1);
-        Queue::assertPushed(SummarizeNewsItemJob::class, static fn (SummarizeNewsItemJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'summary_status' => 'queued',
-        ]);
-    }
-
-    public function testCompletedSummaryEnqueuesNothing(): void
-    {
-        Queue::fake();
         $this->createNewsItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Completed analysis'),
-            'translation_status' => 'completed',
-            'summary_status' => 'completed',
         ]);
 
         $this->enqueueProcessing()
@@ -309,6 +197,31 @@ class ProcessingPipelineTest extends TestCase
         Queue::assertPushed(FetchNewsItemArticleContentJob::class, 1);
         Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $reutersItem->id);
         $this->assertDatabaseCountByArticleContentStatus('queued', 1);
+    }
+
+    public function testStageFilterCanLimitToAnalysis(): void
+    {
+        Queue::fake();
+        $this->createNewsItem([
+            'article_content_status' => 'pending',
+        ]);
+        $analysisItem = $this->createNewsItem([
+            'article_content_status' => 'completed',
+            'analysis_status' => 'pending',
+        ]);
+
+        $this->enqueueProcessing(['--stage' => 'analysis'])
+            ->assertSuccessful();
+
+        Queue::assertNotPushed(FetchNewsItemArticleContentJob::class);
+        Queue::assertPushed(AnalyzeNewsItemJob::class, 1);
+        Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $analysisItem->id);
+    }
+
+    public function testInvalidStageReturnsError(): void
+    {
+        $this->enqueueProcessing(['--stage' => 'unknown'])
+            ->assertExitCode(2);
     }
 
     public function testDryRunOutputsDecisionInformation(): void
@@ -368,7 +281,7 @@ class ProcessingPipelineTest extends TestCase
         Queue::assertNothingPushed();
     }
 
-    public function testCompletedAnalysisHelperRequiresCompletedAnalysisJson(): void
+    public function testCompletedAnalysisHelpersRequireCompletedAnalysisJson(): void
     {
         $readyItem = $this->createNewsItem([
             'article_content_status' => 'completed',
@@ -387,95 +300,9 @@ class ProcessingPipelineTest extends TestCase
         ]);
 
         self::assertTrue($readyItem->hasCompletedAnalysis());
+        self::assertTrue($readyItem->readyForDigest());
         self::assertFalse($missingJsonItem->hasCompletedAnalysis());
-        self::assertFalse($pendingItem->hasCompletedAnalysis());
-    }
-
-    public function testTranslateNewsItemJobUpdatesTranslationFieldsAndStatus(): void
-    {
-        $item = $this->createNewsItem([
-            'title' => 'Original title',
-            'excerpt' => 'Original excerpt',
-            'translation_status' => 'queued',
-        ]);
-
-        (new TranslateNewsItemJob($item->id))->handle($this->app->make(NewsAiProcessor::class));
-
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'translation_status' => 'completed',
-            'translated_title' => '[ja] Original title',
-            'translated_description' => '[ja] Original excerpt',
-            'processing_error' => null,
-        ]);
-
-        $item->refresh();
-
-        self::assertNotNull($item->translation_started_at);
-        self::assertNotNull($item->translation_completed_at);
-    }
-
-    public function testSummarizeNewsItemJobUpdatesSummaryFieldsAndStatus(): void
-    {
-        $item = $this->createNewsItem([
-            'translation_status' => 'completed',
-            'summary_status' => 'queued',
-            'translated_title' => '[ja] Original title',
-            'translated_description' => '[ja] Original excerpt',
-        ]);
-
-        (new SummarizeNewsItemJob($item->id))->handle($this->app->make(NewsAiProcessor::class));
-
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'summary_status' => 'completed',
-            'summary' => 'Summary: [ja] Original title [ja] Original excerpt',
-            'processing_error' => null,
-        ]);
-
-        $item->refresh();
-
-        self::assertNotNull($item->summary_started_at);
-        self::assertNotNull($item->summary_completed_at);
-    }
-
-    public function testJobsAreIdempotentWhenItemIsAlreadyCompleted(): void
-    {
-        $item = $this->createNewsItem([
-            'translation_status' => 'completed',
-            'summary_status' => 'completed',
-            'translated_title' => '[ja] Existing title',
-            'translated_description' => '[ja] Existing excerpt',
-            'summary' => 'Existing summary',
-        ]);
-
-        (new TranslateNewsItemJob($item->id))->handle($this->app->make(NewsAiProcessor::class));
-        (new SummarizeNewsItemJob($item->id))->handle($this->app->make(NewsAiProcessor::class));
-
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'translation_status' => 'completed',
-            'summary_status' => 'completed',
-            'translated_title' => '[ja] Existing title',
-            'translated_description' => '[ja] Existing excerpt',
-            'summary' => 'Existing summary',
-        ]);
-    }
-
-    public function testTranslationFailureMarksItemAsFailedAndStoresError(): void
-    {
-        $this->app->bind(NewsAiProcessor::class, FailingNewsAiProcessor::class);
-        $item = $this->createNewsItem([
-            'translation_status' => 'queued',
-        ]);
-
-        (new TranslateNewsItemJob($item->id))->handle($this->app->make(NewsAiProcessor::class));
-
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'translation_status' => 'failed',
-            'processing_error' => 'Stub translation failure.',
-        ]);
+        self::assertFalse($pendingItem->readyForDigest());
     }
 
     /**
@@ -510,17 +337,12 @@ class ProcessingPipelineTest extends TestCase
             'published_at' => CarbonImmutable::parse('2026-05-23 12:00:00'),
             'fetched_at' => CarbonImmutable::parse('2026-05-23 12:05:00'),
             'content_hash' => hash('sha256', 'content-' . $sequence),
-            'processing_status' => 'fetched',
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
             'article_content_status' => 'pending',
             'article_content_error' => null,
             'analysis_status' => 'pending',
             'analysis_json' => null,
             'analysis_model' => null,
             'analysis_error' => null,
-            'error_message' => null,
-            'processing_error' => null,
         ], $attributes));
     }
 
@@ -559,27 +381,5 @@ class ProcessingPipelineTest extends TestCase
         $items = NewsItem::query()->where('article_content_status', $status)->get();
 
         self::assertCount($expectedCount, $items);
-    }
-}
-
-/**
- * Failure pathを検証するためのAI processing stubです。
- */
-class FailingNewsAiProcessor implements NewsAiProcessor
-{
-    /**
-     * 常に翻訳失敗を発生させます。
-     */
-    public function translate(NewsItem $item): NewsTranslationResult
-    {
-        throw new RuntimeException('Stub translation failure.');
-    }
-
-    /**
-     * 要約側では固定の結果を返します。
-     */
-    public function summarize(NewsItem $item): NewsSummaryResult
-    {
-        return new NewsSummaryResult('unused');
     }
 }

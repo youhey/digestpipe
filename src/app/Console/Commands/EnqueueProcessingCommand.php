@@ -6,8 +6,6 @@ use App\Items\NewsItemProcessingPlan;
 use App\Items\NewsItemProcessingPlanner;
 use App\Jobs\AnalyzeNewsItemJob;
 use App\Jobs\FetchNewsItemArticleContentJob;
-use App\Jobs\SummarizeNewsItemJob;
-use App\Jobs\TranslateNewsItemJob;
 use App\Models\NewsItem;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -22,8 +20,7 @@ class EnqueueProcessingCommand extends Command
         {--limit= : Maximum jobs to enqueue}
         {--dry-run : Inspect candidate items without dispatching jobs or changing statuses}
         {--source= : Enqueue only one source key}
-        {--stage= : Enqueue only one stage: content, analysis, translation, or summary}
-        {--only= : Backward-compatible alias for --stage=translation or --stage=summary}';
+        {--stage= : Enqueue only one stage: content or analysis}';
 
     protected $description = 'State-aware orchestrator for article content and analysis jobs.';
 
@@ -47,9 +44,16 @@ class EnqueueProcessingCommand extends Command
     public function handle(): int
     {
         $dryRun = $this->option('dry-run');
-        $limit = $this->limitOption();
         $sourceKey = $this->sourceOption();
-        $stage = $this->stageOption();
+
+        try {
+            $limit = $this->limitOption();
+            $stage = $this->stageOption();
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::INVALID;
+        }
 
         Log::info('News item processing enqueue command started.', [
             'dry_run' => $dryRun,
@@ -64,8 +68,6 @@ class EnqueueProcessingCommand extends Command
         $plannedCounts = [
             'content' => 0,
             'analysis' => 0,
-            'translation' => 0,
-            'summary' => 0,
         ];
 
         foreach ($items as $item) {
@@ -116,20 +118,16 @@ class EnqueueProcessingCommand extends Command
             'skipped_item_count' => $skippedCount,
             'content_job_count' => $plannedCounts['content'],
             'analysis_job_count' => $plannedCounts['analysis'],
-            'translation_job_count' => $plannedCounts['translation'],
-            'summary_job_count' => $plannedCounts['summary'],
         ]);
 
         $this->info(sprintf(
-            'Processing enqueue finished. Candidates: %d, %s: %d, skipped: %d, content: %d, analysis: %d, translation: %d, summary: %d.',
+            'Processing enqueue finished. Candidates: %d, %s: %d, skipped: %d, content: %d, analysis: %d.',
             count($items),
             $dryRun ? 'planned' : 'queued',
             $dispatchedCount,
             $skippedCount,
             $plannedCounts['content'],
             $plannedCounts['analysis'],
-            $plannedCounts['translation'],
-            $plannedCounts['summary'],
         ));
 
         return self::SUCCESS;
@@ -162,14 +160,11 @@ class EnqueueProcessingCommand extends Command
 
         $item->forceFill([
             $plan->statusField => 'queued',
-            'processing_error' => null,
         ])->save();
 
         match ($plan->jobClass) {
             FetchNewsItemArticleContentJob::class => FetchNewsItemArticleContentJob::dispatch($item->id),
             AnalyzeNewsItemJob::class => AnalyzeNewsItemJob::dispatch($item->id),
-            TranslateNewsItemJob::class => TranslateNewsItemJob::dispatch($item->id),
-            SummarizeNewsItemJob::class => SummarizeNewsItemJob::dispatch($item->id),
             default => throw new InvalidArgumentException("Unsupported processing job [{$plan->jobClass}]."),
         };
 
@@ -211,8 +206,6 @@ class EnqueueProcessingCommand extends Command
             'reason' => $plan->reason,
             'article_content_status' => $item->article_content_status,
             'analysis_status' => $item->analysis_status,
-            'translation_status' => $item->translation_status,
-            'summary_status' => $item->summary_status,
         ]);
     }
 
@@ -241,18 +234,13 @@ class EnqueueProcessingCommand extends Command
     private function stageOption(): ?string
     {
         $stage = $this->stringOption('stage');
-        $only = $this->stringOption('only');
-
-        if ($stage === null && $only !== null) {
-            $stage = $only;
-        }
 
         if ($stage === null) {
             return null;
         }
 
-        if (! in_array($stage, ['content', 'analysis', 'translation', 'summary'], true)) {
-            throw new InvalidArgumentException('The --stage option must be content, analysis, translation, or summary.');
+        if (! in_array($stage, ['content', 'analysis'], true)) {
+            throw new InvalidArgumentException('The --stage option must be content or analysis.');
         }
 
         return $stage;
@@ -289,10 +277,6 @@ class EnqueueProcessingCommand extends Command
     private function configuredBatchLimit(): ?int
     {
         $value = config('digestpipe.analysis.batch_limit');
-
-        if (! is_int($value) || $value < 1) {
-            $value = config('digestpipe.ai.batch_limit');
-        }
 
         if (! is_int($value) || $value < 1) {
             return null;

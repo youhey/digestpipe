@@ -57,12 +57,8 @@ class NewsItemIngestor
                 'published_at' => $item->publishedAt,
                 'fetched_at' => $fetchedAt,
                 'content_hash' => $item->contentHash(),
-                'processing_status' => 'fetched',
-                'translation_status' => 'pending',
-                'summary_status' => 'pending',
-                'analysis_status' => 'pending',
                 'article_content_status' => 'pending',
-                'error_message' => null,
+                'analysis_status' => 'pending',
             ]);
 
             ++$createdCount;

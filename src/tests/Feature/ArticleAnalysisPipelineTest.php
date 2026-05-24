@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Analysis\ArticleAnalysisException;
 use App\Analysis\ArticleAnalysisResult;
 use App\Analysis\ArticleAnalyzer;
 use App\Analysis\FakeArticleAnalyzer;
 use App\Analysis\OpenAiArticleAnalyzer;
 use App\Jobs\AnalyzeNewsItemJob;
 use App\Models\NewsItem;
-use App\Processing\AiProcessingException;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -139,7 +139,7 @@ class ArticleAnalysisPipelineTest extends TestCase
             ]), 200),
         ]);
 
-        $this->expectException(AiProcessingException::class);
+        $this->expectException(ArticleAnalysisException::class);
         $this->expectExceptionMessage('Article analysis response [title] was missing or invalid.');
 
         $this->app->make(ArticleAnalyzer::class)->analyze($this->createNewsItem([
@@ -155,7 +155,7 @@ class ArticleAnalysisPipelineTest extends TestCase
             throw new ConnectionException('Connection timed out.');
         });
 
-        $this->expectException(AiProcessingException::class);
+        $this->expectException(ArticleAnalysisException::class);
         $this->expectExceptionMessage('OpenAI analysis request failed: connection error.');
 
         $this->app->make(ArticleAnalyzer::class)->analyze($this->createNewsItem([
@@ -219,17 +219,12 @@ class ArticleAnalysisPipelineTest extends TestCase
             'published_at' => CarbonImmutable::parse('2026-05-23 12:00:00'),
             'fetched_at' => CarbonImmutable::parse('2026-05-23 12:05:00'),
             'content_hash' => hash('sha256', 'analysis-content' . serialize($attributes)),
-            'processing_status' => 'fetched',
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
             'article_content_status' => 'pending',
             'article_content_error' => null,
             'analysis_status' => 'pending',
             'analysis_json' => null,
             'analysis_model' => null,
             'analysis_error' => null,
-            'error_message' => null,
-            'processing_error' => null,
         ], $attributes));
     }
 
@@ -274,6 +269,6 @@ class FailingArticleAnalyzer implements ArticleAnalyzer
      */
     public function analyze(NewsItem $item): ArticleAnalysisResult
     {
-        throw new AiProcessingException('Stub analysis failure.');
+        throw new ArticleAnalysisException('Stub analysis failure.');
     }
 }

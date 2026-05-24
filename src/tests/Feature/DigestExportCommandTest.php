@@ -276,9 +276,6 @@ class DigestExportCommandTest extends TestCase
             'published_at' => CarbonImmutable::parse('2026-05-23 12:00:00'),
             'fetched_at' => CarbonImmutable::parse('2026-05-23 12:05:00'),
             'content_hash' => hash('sha256', 'digest-content-' . $sequence),
-            'processing_status' => 'fetched',
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
             'article_content_status' => 'completed',
             'article_content_text' => null,
             'article_content_error' => null,
@@ -287,8 +284,6 @@ class DigestExportCommandTest extends TestCase
             'analysis_model' => null,
             'analysis_error' => null,
             'analyzed_at' => null,
-            'error_message' => null,
-            'processing_error' => null,
         ], $attributes));
     }
 

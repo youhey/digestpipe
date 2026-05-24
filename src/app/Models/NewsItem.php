@@ -20,22 +20,15 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable|null $published_at
  * @property CarbonImmutable $fetched_at
  * @property string $content_hash
- * @property string $processing_status
- * @property string $translation_status
- * @property string $summary_status
+ * @property string $article_content_status
+ * @property string|null $article_content_text
+ * @property CarbonImmutable|null $article_content_fetched_at
+ * @property string|null $article_content_error
  * @property string $analysis_status
  * @property array<string, mixed>|null $analysis_json
  * @property string|null $analysis_model
  * @property string|null $analysis_error
  * @property CarbonImmutable|null $analyzed_at
- * @property string $article_content_status
- * @property string|null $article_content_text
- * @property string|null $article_content_error
- * @property string|null $translated_title
- * @property string|null $translated_description
- * @property string|null $summary
- * @property string|null $processing_error
- * @property string|null $error_message
  */
 class NewsItem extends Model
 {
@@ -52,27 +45,15 @@ class NewsItem extends Model
         'published_at',
         'fetched_at',
         'content_hash',
-        'processing_status',
-        'translation_status',
-        'summary_status',
+        'article_content_status',
+        'article_content_text',
+        'article_content_fetched_at',
+        'article_content_error',
         'analysis_status',
         'analysis_json',
         'analysis_model',
         'analysis_error',
         'analyzed_at',
-        'article_content_status',
-        'article_content_text',
-        'article_content_fetched_at',
-        'article_content_error',
-        'translated_title',
-        'translated_description',
-        'summary',
-        'processing_error',
-        'translation_started_at',
-        'translation_completed_at',
-        'summary_started_at',
-        'summary_completed_at',
-        'error_message',
     ];
 
     /**
@@ -86,6 +67,14 @@ class NewsItem extends Model
     }
 
     /**
+     * Downstream applicationへ構造化したdigestとして渡せるかを返します。
+     */
+    public function readyForDigest(): bool
+    {
+        return $this->hasCompletedAnalysis();
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -96,10 +85,6 @@ class NewsItem extends Model
             'analysis_json' => 'array',
             'analyzed_at' => 'immutable_datetime',
             'article_content_fetched_at' => 'immutable_datetime',
-            'translation_started_at' => 'immutable_datetime',
-            'translation_completed_at' => 'immutable_datetime',
-            'summary_started_at' => 'immutable_datetime',
-            'summary_completed_at' => 'immutable_datetime',
         ];
     }
 }

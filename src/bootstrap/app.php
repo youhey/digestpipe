@@ -1,6 +1,5 @@
 <?php
 
-use App\Console\Commands\EnqueueContentFetchCommand;
 use App\Console\Commands\EnqueueProcessingCommand;
 use App\Console\Commands\ExportDigestsCommand;
 use App\Console\Commands\FetchFeedsCommand;
@@ -15,7 +14,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withCommands([
-        EnqueueContentFetchCommand::class,
         EnqueueProcessingCommand::class,
         ExportDigestsCommand::class,
         FetchFeedsCommand::class,

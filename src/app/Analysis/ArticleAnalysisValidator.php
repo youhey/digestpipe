@@ -2,8 +2,6 @@
 
 namespace App\Analysis;
 
-use App\Processing\AiProcessingException;
-
 /**
  * ニュース記事の分析結果 JSON Schema v1 を検証して正規化
  */
@@ -21,7 +19,7 @@ class ArticleAnalysisValidator
         $schemaVersion = $json['schema_version'] ?? null;
 
         if ($schemaVersion !== $this->schemaVersion()) {
-            throw new AiProcessingException('Article analysis response schema_version was invalid.');
+            throw new ArticleAnalysisException('Article analysis response schema_version was invalid.');
         }
 
         $this->requireArray($json, 'title');
@@ -33,7 +31,7 @@ class ArticleAnalysisValidator
         $classification = $json['classification'];
 
         if (! is_array($title) || ! is_array($content) || ! is_array($classification)) {
-            throw new AiProcessingException('Article analysis response shape was invalid.');
+            throw new ArticleAnalysisException('Article analysis response shape was invalid.');
         }
 
         /** @var array<string, mixed> $title */
@@ -128,7 +126,7 @@ class ArticleAnalysisValidator
     private function requireArray(array $data, string $key): void
     {
         if (! is_array($data[$key] ?? null)) {
-            throw new AiProcessingException("Article analysis response [{$key}] was missing or invalid.");
+            throw new ArticleAnalysisException("Article analysis response [{$key}] was missing or invalid.");
         }
     }
 
@@ -140,7 +138,7 @@ class ArticleAnalysisValidator
         $value = $data[$key] ?? null;
 
         if (! is_string($value) || trim($value) === '') {
-            throw new AiProcessingException("Article analysis response [{$key}] was missing or invalid.");
+            throw new ArticleAnalysisException("Article analysis response [{$key}] was missing or invalid.");
         }
     }
 
@@ -152,12 +150,12 @@ class ArticleAnalysisValidator
         $value = $data[$key] ?? null;
 
         if (! is_array($value) || (! $allowEmpty && $value === [])) {
-            throw new AiProcessingException("Article analysis response [{$key}] was missing or invalid.");
+            throw new ArticleAnalysisException("Article analysis response [{$key}] was missing or invalid.");
         }
 
         foreach ($value as $item) {
             if (! is_string($item) || trim($item) === '') {
-                throw new AiProcessingException("Article analysis response [{$key}] contained an invalid item.");
+                throw new ArticleAnalysisException("Article analysis response [{$key}] contained an invalid item.");
             }
         }
     }
@@ -170,7 +168,7 @@ class ArticleAnalysisValidator
         $value = $data[$key] ?? null;
 
         if (! is_int($value) || $value < $min || $value > $max) {
-            throw new AiProcessingException("Article analysis response [{$key}] was outside the allowed range.");
+            throw new ArticleAnalysisException("Article analysis response [{$key}] was outside the allowed range.");
         }
     }
 
@@ -182,13 +180,13 @@ class ArticleAnalysisValidator
         $value = $data[$key] ?? null;
 
         if (! is_int($value) && ! is_float($value)) {
-            throw new AiProcessingException("Article analysis response [{$key}] was outside the allowed range.");
+            throw new ArticleAnalysisException("Article analysis response [{$key}] was outside the allowed range.");
         }
 
         $floatValue = (float) $value;
 
         if ($floatValue < $min || $floatValue > $max) {
-            throw new AiProcessingException("Article analysis response [{$key}] was outside the allowed range.");
+            throw new ArticleAnalysisException("Article analysis response [{$key}] was outside the allowed range.");
         }
     }
 }

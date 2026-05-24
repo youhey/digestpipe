@@ -2,9 +2,8 @@
 
 namespace App\Analysis;
 
+use App\Items\NewsItemTextSelector;
 use App\Models\NewsItem;
-use App\Processing\AiProcessingException;
-use App\Processing\NewsItemTextSelector;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -48,7 +47,7 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
         $inputText = $this->textSelector->bodyText($item);
 
         if ($inputText === null || trim($inputText) === '') {
-            throw new AiProcessingException('Article analysis input was empty.');
+            throw new ArticleAnalysisException('Article analysis input was empty.');
         }
 
         $inputText = $this->limitInputText($inputText);
@@ -105,11 +104,11 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
                 ->retry($this->maxRetries() + 1, static fn (int $attempt): int => 250 * $attempt, throw: false)
                 ->post(self::ENDPOINT, $payload);
         } catch (ConnectionException $exception) {
-            throw new AiProcessingException('OpenAI analysis request failed: connection error.', previous: $exception);
+            throw new ArticleAnalysisException('OpenAI analysis request failed: connection error.', previous: $exception);
         }
 
         if (! $response->successful()) {
-            throw new AiProcessingException($this->errorMessage($response));
+            throw new ArticleAnalysisException($this->errorMessage($response));
         }
 
         $jsonText = $this->extractOutputText($response);
@@ -132,7 +131,7 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
         $value = config('digestpipe.openai.api_key');
 
         if (! is_string($value) || trim($value) === '') {
-            throw new AiProcessingException('OpenAI API key is not configured.');
+            throw new ArticleAnalysisException('OpenAI API key is not configured.');
         }
 
         return trim($value);
@@ -147,7 +146,7 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
         }
 
         if (! is_string($value) || trim($value) === '') {
-            throw new AiProcessingException('OpenAI analysis model is not configured.');
+            throw new ArticleAnalysisException('OpenAI analysis model is not configured.');
         }
 
         return trim($value);
@@ -204,7 +203,7 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
         $output = $response->json('output');
 
         if (! is_array($output)) {
-            throw new AiProcessingException('OpenAI analysis response did not include output text.');
+            throw new ArticleAnalysisException('OpenAI analysis response did not include output text.');
         }
 
         foreach ($output as $outputItem) {
@@ -231,7 +230,7 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
             }
         }
 
-        throw new AiProcessingException('OpenAI analysis response output text was empty.');
+        throw new ArticleAnalysisException('OpenAI analysis response output text was empty.');
     }
 
     /**
@@ -242,11 +241,11 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
         try {
             $data = json_decode($jsonText, true, flags: JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
-            throw new AiProcessingException('OpenAI analysis response was not valid JSON.', previous: $exception);
+            throw new ArticleAnalysisException('OpenAI analysis response was not valid JSON.', previous: $exception);
         }
 
         if (! is_array($data)) {
-            throw new AiProcessingException('OpenAI analysis response JSON was not an object.');
+            throw new ArticleAnalysisException('OpenAI analysis response JSON was not an object.');
         }
 
         /** @var array<string, mixed> $data */

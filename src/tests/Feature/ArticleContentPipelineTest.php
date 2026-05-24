@@ -3,14 +3,12 @@
 namespace Tests\Feature;
 
 use App\Articles\ArticleTextExtractor;
+use App\Items\NewsItemTextSelector;
 use App\Jobs\FetchNewsItemArticleContentJob;
 use App\Models\NewsItem;
-use App\Processing\FakeNewsAiProcessor;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Testing\PendingCommand;
 use Tests\TestCase;
 
 /**
@@ -21,60 +19,6 @@ class ArticleContentPipelineTest extends TestCase
     use RefreshDatabase;
 
     private int $newsItemSequence = 0;
-
-    public function testEnqueueContentFetchCommandCanRun(): void
-    {
-        Queue::fake();
-        $item = $this->createNewsItem();
-
-        $this->enqueueContentFetch()
-            ->assertSuccessful();
-
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
-    }
-
-    public function testDryRunDoesNotDispatchJobsOrChangeStatuses(): void
-    {
-        Queue::fake();
-        $item = $this->createNewsItem();
-
-        $this->enqueueContentFetch(['--dry-run' => true])
-            ->assertSuccessful();
-
-        Queue::assertNothingPushed();
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'article_content_status' => 'pending',
-        ]);
-    }
-
-    public function testPendingArticleContentItemsAreQueued(): void
-    {
-        Queue::fake();
-        $item = $this->createNewsItem();
-
-        $this->enqueueContentFetch()
-            ->assertSuccessful();
-
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, 1);
-        $this->assertDatabaseHas('news_items', [
-            'id' => $item->id,
-            'article_content_status' => 'queued',
-        ]);
-    }
-
-    public function testSourceFilteringWorks(): void
-    {
-        Queue::fake();
-        $this->createNewsItem(['source_key' => 'hacker_news']);
-        $reutersItem = $this->createNewsItem(['source_key' => 'reuters_top']);
-
-        $this->enqueueContentFetch(['--source' => 'reuters_top'])
-            ->assertSuccessful();
-
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, 1);
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $reutersItem->id);
-    }
 
     public function testFetchJobStoresExtractedArticleTextFromHtml(): void
     {
@@ -170,7 +114,7 @@ class ArticleContentPipelineTest extends TestCase
         ]);
     }
 
-    public function testTranslationInputPrefersArticleContentText(): void
+    public function testTextSelectorPrefersArticleContentText(): void
     {
         $item = $this->createNewsItem([
             'title' => 'Original title',
@@ -178,12 +122,12 @@ class ArticleContentPipelineTest extends TestCase
             'article_content_text' => 'Extracted article text',
         ]);
 
-        $result = (new FakeNewsAiProcessor())->translate($item);
+        $text = (new NewsItemTextSelector())->bodyText($item);
 
-        self::assertSame('[ja] Extracted article text', $result->description);
+        self::assertSame('Extracted article text', $text);
     }
 
-    public function testRawHtmlIsNotPassedToTranslationServices(): void
+    public function testTextSelectorStripsRawHtml(): void
     {
         $item = $this->createNewsItem([
             'title' => 'Original title',
@@ -191,21 +135,9 @@ class ArticleContentPipelineTest extends TestCase
             'article_content_text' => '<article><p>Extracted <strong>article</strong> text</p></article>',
         ]);
 
-        $result = (new FakeNewsAiProcessor())->translate($item);
+        $text = (new NewsItemTextSelector())->bodyText($item);
 
-        self::assertSame('[ja] Extracted article text', $result->description);
-    }
-
-    /**
-     * @param array<string, bool|int|string> $parameters
-     */
-    private function enqueueContentFetch(array $parameters = []): PendingCommand
-    {
-        $command = $this->artisan('digestpipe:items:enqueue-content-fetch', $parameters);
-
-        assert($command instanceof PendingCommand);
-
-        return $command;
+        self::assertSame('Extracted article text', $text);
     }
 
     /**
@@ -228,13 +160,9 @@ class ArticleContentPipelineTest extends TestCase
             'published_at' => CarbonImmutable::parse('2026-05-23 12:00:00'),
             'fetched_at' => CarbonImmutable::parse('2026-05-23 12:05:00'),
             'content_hash' => hash('sha256', 'article-content-' . $sequence),
-            'processing_status' => 'fetched',
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
             'article_content_status' => 'pending',
             'article_content_error' => null,
-            'error_message' => null,
-            'processing_error' => null,
+            'analysis_status' => 'pending',
         ], $attributes));
     }
 

@@ -4,8 +4,6 @@ namespace App\Items;
 
 use App\Jobs\AnalyzeNewsItemJob;
 use App\Jobs\FetchNewsItemArticleContentJob;
-use App\Jobs\SummarizeNewsItemJob;
-use App\Jobs\TranslateNewsItemJob;
 
 /**
  * ニュース記事アイテムのプロセス間の連携状態
@@ -74,30 +72,6 @@ class NewsItemProcessingPlan
     public static function analysis(string $reason): self
     {
         return new self('analysis', AnalyzeNewsItemJob::class, 'analysis_status', $reason);
-    }
-
-    /**
-     * 次にニュース記事の翻訳を必要としている状態を生成して返す
-     *
-     * @param string $reason
-     *
-     * @return self
-     */
-    public static function translation(string $reason): self
-    {
-        return new self('translation', TranslateNewsItemJob::class, 'translation_status', $reason);
-    }
-
-    /**
-     * 次にニュース記事の要約を必要としている状態を生成して返す
-     *
-     * @param string $reason
-     *
-     * @return self
-     */
-    public static function summary(string $reason): self
-    {
-        return new self('summary', SummarizeNewsItemJob::class, 'summary_status', $reason);
     }
 
     /**

@@ -256,7 +256,7 @@ Do not force technical terms into Japanese when the English term is clearer or a
 
 For public properties, prefer a short one-line `@var` comment that gives the type and meaning.
 
-For public methods, include a short behavior summary and add `@param`, `@return`, and `@throws` tags when they clarify the contract. Make sure the summary preserves important preconditions. For example, a summary job that only handles translated items should be described as handling translated news items, not merely as summarizing news items.
+For public methods, include a short behavior summary and add `@param`, `@return`, and `@throws` tags when they clarify the contract. Make sure the summary preserves important preconditions. For example, a job that only handles completed article content should be described as handling content-ready news items, not merely as handling news items.
 
 `Constructor` is acceptable as the constructor summary when the parameters already make the dependency setup clear.
 
@@ -322,9 +322,7 @@ If Redis queues are introduced later, keep the queue connection configurable.
 
 ## AI Processing
 
-The primary AI pipeline analyzes source content and stores structured digest JSON. digestpipe is not primarily a translation application; downstream applications can translate, rewrite, narrate, or personalize the structured output.
-
-Translation and summary jobs remain available as legacy compatibility paths for now, but they should not be treated as the future primary pipeline.
+The primary AI pipeline analyzes source content and stores structured digest JSON. digestpipe is not primarily a translation application; downstream applications can translate, rewrite, narrate, personalize, rank, group, or combine the structured output.
 
 The fake AI driver must remain available for tests and safe local development.
 
@@ -332,8 +330,6 @@ OpenAI-backed processing is selected through Laravel config and environment vari
 
 ```env
 DIGESTPIPE_AI_DRIVER=fake
-DIGESTPIPE_AI_BATCH_LIMIT=3
-DIGESTPIPE_AI_DAILY_LIMIT=30
 DIGESTPIPE_ANALYSIS_MODEL=gpt-4o-mini
 DIGESTPIPE_ANALYSIS_BATCH_LIMIT=10
 DIGESTPIPE_ANALYSIS_DAILY_LIMIT=100
@@ -357,13 +353,13 @@ For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker 
 
 Article content extraction must be deterministic and non-AI. Prefer modest DOM-based extraction from source article HTML, and do not add a headless browser unless there is a concrete requirement.
 
-Analysis input should prefer extracted `article_content_text`, then meaningful `excerpt`, then title-only fallback. Do not send raw HTML or large article bodies to AI services. Translation and summary compatibility paths should follow the same input hygiene.
+Analysis input should prefer extracted `article_content_text`, then meaningful `excerpt`, then title-only fallback. Do not send raw HTML or large article bodies to AI services.
 
-Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. It is state-aware and dispatches only one next valid job per item in this order: article content fetch, article analysis. Do not manually enqueue translation or summary as part of the normal pipeline; use explicit legacy stages only when compatibility testing requires them.
+Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. It is state-aware and dispatches only one next valid job per item in this order: article content fetch, article analysis.
 
-Treat an item as ready for downstream digest use only when `analysis_status=completed` and `analysis_json` is present. Do not enqueue legacy translation or summary as a default follow-up after completed analysis.
+Treat an item as ready for downstream digest use only when `analysis_status=completed` and `analysis_json` is present.
 
-Use `digestpipe:digests:export` as the read-only export surface for completed structured digest records. Do not add HTTP JSON API endpoints until API authentication and legacy cleanup are explicitly addressed. Exported records should include source metadata, article metadata, processing metadata, and `analysis_json`; do not export raw `article_content_text` by default.
+Use `digestpipe:digests:export` as the read-only export surface for completed structured digest records. Do not add HTTP JSON API endpoints until API authentication is explicitly addressed. Exported records should include source metadata, article metadata, processing metadata, and `analysis_json`; do not export raw `article_content_text` by default.
 
 ## Object Storage
 

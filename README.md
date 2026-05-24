@@ -71,11 +71,9 @@ docker compose exec -T php-cli php artisan digestpipe:digests:export --limit=20
 
 Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. The command is state-aware and dispatches only the next valid job for each item: article content fetch, then article analysis. The analysis output is structured digest JSON for downstream applications.
 
-`digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--source`, and `--stage=content|analysis|translation|summary`. `--limit` limits the number of jobs dispatched in one command run. Translation and summary stages remain available as legacy secondary paths, but they are not the default pipeline direction.
+`digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--source`, and `--stage=content|analysis`. `--limit` limits the number of jobs dispatched in one command run.
 
-A news item is ready for downstream digest use when `analysis_status=completed` and `analysis_json` is present. The normal pipeline does not enqueue translation or summary after that point.
-
-`digestpipe:items:enqueue-content-fetch` remains available for focused debugging and supports `--limit`, `--dry-run`, and `--source`.
+A news item is ready for downstream digest use when `analysis_status=completed` and `analysis_json` is present.
 
 digestpipe treats RSS items as discovery signals, not always as full article content. For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker News discussion URL, and `description` usually contains only a Comments link. The content fetch pipeline enriches items by fetching and extracting source article text before AI analysis. Discussion/comment extraction is planned separately.
 
@@ -85,7 +83,7 @@ The primary output of digestpipe is structured digest JSON. Each exported digest
 
 Downstream applications can translate, rewrite, narrate, personalize, rank, group, or combine these digest records. Raw extracted article content is not exported by default.
 
-For now, digestpipe exposes this output through an Artisan command. A JSON API is intentionally deferred until legacy cleanup and authentication design are handled.
+For now, digestpipe exposes this output through an Artisan command. A JSON API is intentionally deferred until authentication design is handled.
 
 ```bash
 docker compose exec -T php-cli php artisan digestpipe:digests:export --limit=20
@@ -98,14 +96,12 @@ Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`,
 
 ## AI Processing Driver
 
-The primary AI pipeline analyzes source content and stores structured digest JSON. Translation and summary remain as compatibility paths for now; downstream applications can later translate, rewrite, narrate, or personalize the structured output.
+The primary AI pipeline analyzes source content and stores structured digest JSON. Downstream applications can later translate, rewrite, narrate, or personalize the structured output.
 
 The AI pipeline supports a safe fake driver and an OpenAI-backed driver.
 
 ```dotenv
 DIGESTPIPE_AI_DRIVER=fake
-DIGESTPIPE_AI_BATCH_LIMIT=3
-DIGESTPIPE_AI_DAILY_LIMIT=30
 DIGESTPIPE_ANALYSIS_MODEL=gpt-4o-mini
 DIGESTPIPE_ANALYSIS_BATCH_LIMIT=10
 DIGESTPIPE_ANALYSIS_DAILY_LIMIT=100
@@ -123,8 +119,6 @@ For a cautious first OpenAI run, keep limits low:
 
 ```dotenv
 DIGESTPIPE_AI_DRIVER=openai
-DIGESTPIPE_AI_BATCH_LIMIT=1
-DIGESTPIPE_AI_DAILY_LIMIT=10
 DIGESTPIPE_ANALYSIS_BATCH_LIMIT=1
 DIGESTPIPE_ANALYSIS_DAILY_LIMIT=10
 OPENAI_MODEL=gpt-5.5
@@ -136,8 +130,6 @@ For lower-cost local trials:
 
 ```dotenv
 DIGESTPIPE_AI_DRIVER=openai
-DIGESTPIPE_AI_BATCH_LIMIT=3
-DIGESTPIPE_AI_DAILY_LIMIT=30
 DIGESTPIPE_ANALYSIS_BATCH_LIMIT=3
 DIGESTPIPE_ANALYSIS_DAILY_LIMIT=30
 OPENAI_MODEL=gpt-4o-mini

@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Processing;
+namespace App\Items;
 
 use App\Models\NewsItem;
 
 /**
- * ニュース記事アイテムから AI 処理へ渡す本文入力を選択
+ * ニュース記事アイテムから分析へ渡す本文入力を選択
  */
 class NewsItemTextSelector
 {
     /**
-     * 記事本文、意味のある `excerpt` `title` の順で入力用テキストを選択して返す
+     * 記事本文、意味のある `excerpt`、`title` の順で入力用テキストを選択して返す
      *
      * @param NewsItem $item
      *

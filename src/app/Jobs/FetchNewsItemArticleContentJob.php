@@ -240,7 +240,7 @@ class FetchNewsItemArticleContentJob implements ShouldQueue
     {
         $value = config('digestpipe.content.user_agent');
 
-        return is_string($value) && trim($value) !== '' ? trim($value) : 'digestpipe/0.1 (+personal news summarizer)';
+        return is_string($value) && trim($value) !== '' ? trim($value) : 'digestpipe/0.1 (+structured digest pipeline)';
     }
 
     private static function shortMessage(string $message): string

@@ -121,10 +121,8 @@ class FetchFeedsCommandTest extends TestCase
             'source_url' => 'https://news.example.test/one',
             'discussion_url' => null,
             'title' => 'First item',
-            'processing_status' => 'fetched',
-            'translation_status' => 'pending',
-            'summary_status' => 'pending',
             'article_content_status' => 'pending',
+            'analysis_status' => 'pending',
         ]);
 
         $item = NewsItem::query()->firstOrFail();

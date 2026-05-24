@@ -2,8 +2,8 @@
 
 namespace App\Analysis;
 
+use App\Items\NewsItemTextSelector;
 use App\Models\NewsItem;
-use App\Processing\NewsItemTextSelector;
 
 /**
  * 外部 API を利用しないでニュース記事の分析結果 JSON を生成
