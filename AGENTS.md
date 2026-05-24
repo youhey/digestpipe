@@ -325,6 +325,8 @@ Article content extraction must be deterministic and non-AI. Prefer modest DOM-b
 
 Translation and summary input should prefer extracted `article_content_text`, then meaningful `excerpt`, then title-only fallback. Do not send raw HTML or large article bodies to AI services.
 
+Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. It is state-aware and dispatches only one next valid job per item in this order: article content fetch, translation, summary. Do not manually enqueue translation or summary before article content processing has completed.
+
 ## Object Storage
 
 Use MinIO locally as an S3-compatible object storage service.

@@ -2,6 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Items\NewsItemProcessingPlan;
+use App\Items\NewsItemProcessingPlanner;
+use App\Jobs\FetchNewsItemArticleContentJob;
 use App\Jobs\SummarizeNewsItemJob;
 use App\Jobs\TranslateNewsItemJob;
 use App\Models\NewsItem;
@@ -10,68 +13,123 @@ use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /**
- * 未処理news itemの翻訳・要約jobをqueueへ投入するbatch commandです。
+ * News itemの状態を見て、次に必要なprocessing jobをqueueへ投入するbatch commandです。
  */
 class EnqueueProcessingCommand extends Command
 {
     protected $signature = 'digestpipe:items:enqueue-processing
-        {--limit= : Maximum news items to enqueue}
+        {--limit= : Maximum jobs to enqueue}
         {--dry-run : Inspect candidate items without dispatching jobs or changing statuses}
-        {--only= : Enqueue only one processing type: translation or summary}';
+        {--source= : Enqueue only one source key}
+        {--stage= : Enqueue only one stage: content, translation, or summary}
+        {--only= : Backward-compatible alias for --stage=translation or --stage=summary}';
 
-    protected $description = 'Enqueue translation and summary jobs for fetched news items.';
+    protected $description = 'State-aware orchestrator for article content, translation, and summary jobs.';
+
+    private readonly NewsItemProcessingPlanner $planner;
 
     /**
-     * 未処理news itemを検索し、必要なprocessing jobをdispatchします。
+     * Processing orchestration commandを作成します。
+     */
+    public function __construct(NewsItemProcessingPlanner $planner)
+    {
+        $this->planner = $planner;
+
+        parent::__construct();
+    }
+
+    /**
+     * News itemごとに次の有効なprocessing jobを1つだけdispatchします。
      */
     public function handle(): int
     {
         $dryRun = $this->option('dry-run');
         $limit = $this->limitOption();
-        $mode = $this->modeOption();
+        $sourceKey = $this->sourceOption();
+        $stage = $this->stageOption();
 
         Log::info('News item processing enqueue command started.', [
             'dry_run' => $dryRun,
-            'mode' => $mode,
+            'source_filter' => $sourceKey,
+            'stage_filter' => $stage,
             'limit' => $limit,
         ]);
 
-        $remaining = $limit;
-        $translationCandidates = [];
-        $summaryCandidates = [];
+        $items = $this->candidateItems($sourceKey);
+        $dispatchedCount = 0;
+        $skippedCount = 0;
+        $plannedCounts = [
+            'content' => 0,
+            'translation' => 0,
+            'summary' => 0,
+        ];
 
-        if ($mode === 'translation' || $mode === 'both') {
-            $translationCandidates = $this->translationCandidates($remaining);
-            $remaining = $this->remainingLimit($remaining, count($translationCandidates));
+        foreach ($items as $item) {
+            if ($limit !== null && $dispatchedCount >= $limit) {
+                break;
+            }
+
+            $plan = $this->planner->plan($item);
+
+            if ($stage !== null && $plan->stage !== $stage) {
+                ++$skippedCount;
+                $this->logDecision($item, $plan, $dryRun, 'stage_filtered');
+
+                continue;
+            }
+
+            if (! $plan->shouldDispatch()) {
+                ++$skippedCount;
+                $this->logDecision($item, $plan, $dryRun, 'skipped');
+
+                continue;
+            }
+
+            $this->logDecision($item, $plan, $dryRun, 'selected');
+
+            if ($dryRun) {
+                $this->line(sprintf(
+                    'DRY RUN: news_item=%d source=%s stage=%s job=%s reason=%s',
+                    $item->id,
+                    $item->source_key,
+                    $plan->stage,
+                    $this->shortJobName($plan),
+                    $plan->reason,
+                ));
+            } else {
+                $this->markQueuedAndDispatch($item, $plan);
+            }
+
+            ++$dispatchedCount;
+
+            if ($plan->stage !== null) {
+                ++$plannedCounts[$plan->stage];
+            }
         }
-
-        if (($mode === 'summary' || $mode === 'both') && $remaining !== 0) {
-            $summaryCandidates = $this->summaryCandidates($remaining);
-        }
-
-        $queuedTranslationCount = $this->enqueueTranslationJobs($translationCandidates, $dryRun);
-        $queuedSummaryCount = $this->enqueueSummaryJobs($summaryCandidates, $dryRun);
-        $candidateCount = count($translationCandidates) + count($summaryCandidates);
-        $queuedJobCount = $queuedTranslationCount + $queuedSummaryCount;
-        $skippedItemCount = $candidateCount - $queuedJobCount;
 
         Log::info('News item processing enqueue command finished.', [
             'dry_run' => $dryRun,
-            'mode' => $mode,
+            'source_filter' => $sourceKey,
+            'stage_filter' => $stage,
             'limit' => $limit,
-            'candidate_item_count' => $candidateCount,
-            'queued_translation_job_count' => $queuedTranslationCount,
-            'queued_summary_job_count' => $queuedSummaryCount,
-            'queued_job_count' => $queuedJobCount,
-            'skipped_item_count' => $skippedItemCount,
+            'candidate_item_count' => count($items),
+            'dispatched_job_count' => $dryRun ? 0 : $dispatchedCount,
+            'planned_job_count' => $dryRun ? $dispatchedCount : 0,
+            'skipped_item_count' => $skippedCount,
+            'content_job_count' => $plannedCounts['content'],
+            'translation_job_count' => $plannedCounts['translation'],
+            'summary_job_count' => $plannedCounts['summary'],
         ]);
 
         $this->info(sprintf(
-            'Processing enqueue finished. Candidates: %d, queued: %d, translation: %d, summary: %d.',
-            $candidateCount,
-            $queuedJobCount,
-            $queuedTranslationCount,
-            $queuedSummaryCount,
+            'Processing enqueue finished. Candidates: %d, %s: %d, skipped: %d, content: %d, translation: %d, summary: %d.',
+            count($items),
+            $dryRun ? 'planned' : 'queued',
+            $dispatchedCount,
+            $skippedCount,
+            $plannedCounts['content'],
+            $plannedCounts['translation'],
+            $plannedCounts['summary'],
         ));
 
         return self::SUCCESS;
@@ -80,134 +138,117 @@ class EnqueueProcessingCommand extends Command
     /**
      * @return list<NewsItem>
      */
-    private function translationCandidates(?int $limit): array
+    private function candidateItems(?string $sourceKey): array
     {
-        /** @var list<NewsItem> $items */
-        $items = NewsItem::query()
-            ->where('translation_status', 'pending')
-            ->get()
-            ->all();
+        $query = NewsItem::query();
 
-        usort($items, static fn (NewsItem $left, NewsItem $right): int => $left->id <=> $right->id);
-
-        if ($limit !== null) {
-            $items = array_slice($items, 0, $limit);
+        if ($sourceKey !== null) {
+            $query->where('source_key', $sourceKey);
         }
 
-        Log::info('News item translation candidates resolved.', [
-            'candidate_item_count' => count($items),
-        ]);
+        /** @var list<NewsItem> $items */
+        $items = $query->get()->all();
+
+        usort($items, static fn (NewsItem $left, NewsItem $right): int => $left->id <=> $right->id);
 
         return $items;
     }
 
-    /**
-     * @return list<NewsItem>
-     */
-    private function summaryCandidates(?int $limit): array
+    private function markQueuedAndDispatch(NewsItem $item, NewsItemProcessingPlan $plan): void
     {
-        /** @var list<NewsItem> $items */
-        $items = NewsItem::query()
-            ->where('translation_status', 'completed')
-            ->where('summary_status', 'pending')
-            ->get()
-            ->all();
-
-        usort($items, static fn (NewsItem $left, NewsItem $right): int => $left->id <=> $right->id);
-
-        if ($limit !== null) {
-            $items = array_slice($items, 0, $limit);
+        if ($plan->statusField === null || $plan->jobClass === null) {
+            return;
         }
 
-        Log::info('News item summary candidates resolved.', [
-            'candidate_item_count' => count($items),
+        $item->forceFill([
+            $plan->statusField => 'queued',
+            'processing_error' => null,
+        ])->save();
+
+        match ($plan->jobClass) {
+            FetchNewsItemArticleContentJob::class => FetchNewsItemArticleContentJob::dispatch($item->id),
+            TranslateNewsItemJob::class => TranslateNewsItemJob::dispatch($item->id),
+            SummarizeNewsItemJob::class => SummarizeNewsItemJob::dispatch($item->id),
+            default => throw new InvalidArgumentException("Unsupported processing job [{$plan->jobClass}]."),
+        };
+
+        Log::info('News item processing job queued.', [
+            'news_item_id' => $item->id,
+            'source_key' => $item->source_key,
+            'stage' => $plan->stage,
+            'job' => $this->shortJobName($plan),
+            'reason' => $plan->reason,
+            'status_field' => $plan->statusField,
         ]);
-
-        return $items;
     }
 
-    /**
-     * @param list<NewsItem> $items
-     */
-    private function enqueueTranslationJobs(array $items, bool $dryRun): int
+    private function logDecision(NewsItem $item, NewsItemProcessingPlan $plan, bool $dryRun, string $decision): void
     {
-        foreach ($items as $item) {
-            Log::info('News item translation job selected.', [
-                'news_item_id' => $item->id,
-                'dry_run' => $dryRun,
-            ]);
-
-            if ($dryRun) {
-                continue;
-            }
-
-            $item->forceFill([
-                'translation_status' => 'queued',
-                'processing_error' => null,
-            ])->save();
-
-            TranslateNewsItemJob::dispatch($item->id);
-
-            Log::info('News item translation job queued.', [
-                'news_item_id' => $item->id,
-            ]);
-        }
-
-        return $dryRun ? 0 : count($items);
+        Log::info('News item processing decision.', [
+            'news_item_id' => $item->id,
+            'source_key' => $item->source_key,
+            'decision' => $decision,
+            'dry_run' => $dryRun,
+            'stage' => $plan->stage,
+            'job' => $this->shortJobName($plan),
+            'reason' => $plan->reason,
+            'article_content_status' => $item->article_content_status,
+            'translation_status' => $item->translation_status,
+            'summary_status' => $item->summary_status,
+        ]);
     }
 
-    /**
-     * @param list<NewsItem> $items
-     */
-    private function enqueueSummaryJobs(array $items, bool $dryRun): int
+    private function shortJobName(NewsItemProcessingPlan $plan): ?string
     {
-        foreach ($items as $item) {
-            Log::info('News item summary job selected.', [
-                'news_item_id' => $item->id,
-                'dry_run' => $dryRun,
-            ]);
-
-            if ($dryRun) {
-                continue;
-            }
-
-            $item->forceFill([
-                'summary_status' => 'queued',
-                'processing_error' => null,
-            ])->save();
-
-            SummarizeNewsItemJob::dispatch($item->id);
-
-            Log::info('News item summary job queued.', [
-                'news_item_id' => $item->id,
-            ]);
-        }
-
-        return $dryRun ? 0 : count($items);
-    }
-
-    private function remainingLimit(?int $limit, int $used): ?int
-    {
-        if ($limit === null) {
+        if ($plan->jobClass === null) {
             return null;
         }
 
-        return max(0, $limit - $used);
+        $parts = explode('\\', $plan->jobClass);
+
+        return end($parts);
     }
 
-    private function modeOption(): string
+    private function sourceOption(): ?string
     {
-        $value = $this->option('only');
+        $value = $this->option('source');
 
-        if ($value === null || $value === '') {
-            return 'both';
+        if (! is_string($value) || trim($value) === '') {
+            return null;
         }
 
-        if ($value !== 'translation' && $value !== 'summary') {
-            throw new InvalidArgumentException('The --only option must be translation or summary.');
+        return trim($value);
+    }
+
+    private function stageOption(): ?string
+    {
+        $stage = $this->stringOption('stage');
+        $only = $this->stringOption('only');
+
+        if ($stage === null && $only !== null) {
+            $stage = $only;
         }
 
-        return $value;
+        if ($stage === null) {
+            return null;
+        }
+
+        if (! in_array($stage, ['content', 'translation', 'summary'], true)) {
+            throw new InvalidArgumentException('The --stage option must be content, translation, or summary.');
+        }
+
+        return $stage;
+    }
+
+    private function stringOption(string $name): ?string
+    {
+        $value = $this->option($name);
+
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return trim($value);
     }
 
     private function limitOption(): ?int
