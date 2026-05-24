@@ -74,6 +74,16 @@ class NewsItem extends Model
     ];
 
     /**
+     * Downstream digestへ渡せるanalysis JSONが完成しているかを返します。
+     */
+    public function hasCompletedAnalysis(): bool
+    {
+        return $this->analysis_status === 'completed'
+            && is_array($this->analysis_json)
+            && $this->analysis_json !== [];
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array

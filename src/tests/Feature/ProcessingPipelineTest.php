@@ -109,6 +109,8 @@ class ProcessingPipelineTest extends TestCase
         $item = $this->createNewsItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'pending',
+            'translation_status' => 'pending',
+            'summary_status' => 'pending',
         ]);
 
         $this->enqueueProcessing()
@@ -116,9 +118,13 @@ class ProcessingPipelineTest extends TestCase
 
         Queue::assertPushed(AnalyzeNewsItemJob::class, 1);
         Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $item->id);
+        Queue::assertNotPushed(TranslateNewsItemJob::class);
+        Queue::assertNotPushed(SummarizeNewsItemJob::class);
         $this->assertDatabaseHas('news_items', [
             'id' => $item->id,
             'analysis_status' => 'queued',
+            'translation_status' => 'pending',
+            'summary_status' => 'pending',
         ]);
     }
 
@@ -171,16 +177,23 @@ class ProcessingPipelineTest extends TestCase
     public function testCompletedAnalysisEnqueuesNothingByDefault(): void
     {
         Queue::fake();
-        $this->createNewsItem([
+        $item = $this->createNewsItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Completed analysis'),
+            'translation_status' => 'pending',
+            'summary_status' => 'pending',
         ]);
 
         $this->enqueueProcessing()
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'translation_status' => 'pending',
+            'summary_status' => 'pending',
+        ]);
     }
 
     public function testLegacyTranslationStageEnqueuesTranslationJob(): void
@@ -318,6 +331,64 @@ class ProcessingPipelineTest extends TestCase
         self::assertSame('content', $decisions[0]['stage'] ?? null);
         self::assertSame('FetchNewsItemArticleContentJob', $decisions[0]['job'] ?? null);
         self::assertSame('article_content_pending', $decisions[0]['reason'] ?? null);
+    }
+
+    public function testDryRunOutputsAnalysisDecisionWithoutMutation(): void
+    {
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'article_content_status' => 'completed',
+            'analysis_status' => 'pending',
+        ]);
+
+        $this->enqueueProcessing(['--dry-run' => true])
+            ->expectsOutputToContain('DRY RUN: news_item=' . $item->id . ' source=example stage=analysis job=AnalyzeNewsItemJob reason=article_content_completed_analysis_pending')
+            ->assertSuccessful();
+
+        Queue::assertNothingPushed();
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'analysis_status' => 'pending',
+        ]);
+    }
+
+    public function testDryRunOutputsNoDefaultFollowUpForCompletedAnalysis(): void
+    {
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'article_content_status' => 'completed',
+            'analysis_status' => 'completed',
+            'analysis_json' => $this->analysisJson('Completed analysis'),
+        ]);
+
+        $this->enqueueProcessing(['--dry-run' => true])
+            ->expectsOutputToContain('DRY RUN: news_item=' . $item->id . ' source=example stage=none job=none reason=analysis_completed')
+            ->assertSuccessful();
+
+        Queue::assertNothingPushed();
+    }
+
+    public function testCompletedAnalysisHelperRequiresCompletedAnalysisJson(): void
+    {
+        $readyItem = $this->createNewsItem([
+            'article_content_status' => 'completed',
+            'analysis_status' => 'completed',
+            'analysis_json' => $this->analysisJson('Ready analysis'),
+        ]);
+        $missingJsonItem = $this->createNewsItem([
+            'article_content_status' => 'completed',
+            'analysis_status' => 'completed',
+            'analysis_json' => null,
+        ]);
+        $pendingItem = $this->createNewsItem([
+            'article_content_status' => 'completed',
+            'analysis_status' => 'pending',
+            'analysis_json' => $this->analysisJson('Not ready analysis'),
+        ]);
+
+        self::assertTrue($readyItem->hasCompletedAnalysis());
+        self::assertFalse($missingJsonItem->hasCompletedAnalysis());
+        self::assertFalse($pendingItem->hasCompletedAnalysis());
     }
 
     public function testTranslateNewsItemJobUpdatesTranslationFieldsAndStatus(): void

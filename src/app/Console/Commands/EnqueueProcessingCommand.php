@@ -83,6 +83,7 @@ class EnqueueProcessingCommand extends Command
             if (! $plan->shouldDispatch()) {
                 ++$skippedCount;
                 $this->logDecision($item, $plan, $dryRun, 'skipped');
+                $this->writeDryRunLine($dryRun, $item, $plan);
 
                 continue;
             }
@@ -90,14 +91,7 @@ class EnqueueProcessingCommand extends Command
             $this->logDecision($item, $plan, $dryRun, 'selected');
 
             if ($dryRun) {
-                $this->line(sprintf(
-                    'DRY RUN: news_item=%d source=%s stage=%s job=%s reason=%s',
-                    $item->id,
-                    $item->source_key,
-                    $plan->stage,
-                    $this->shortJobName($plan),
-                    $plan->reason,
-                ));
+                $this->writeDryRunLine($dryRun, $item, $plan);
             } else {
                 $this->markQueuedAndDispatch($item, $plan);
             }
@@ -185,6 +179,22 @@ class EnqueueProcessingCommand extends Command
             'reason' => $plan->reason,
             'status_field' => $plan->statusField,
         ]);
+    }
+
+    private function writeDryRunLine(bool $dryRun, NewsItem $item, NewsItemProcessingPlan $plan): void
+    {
+        if (! $dryRun) {
+            return;
+        }
+
+        $this->line(sprintf(
+            'DRY RUN: news_item=%d source=%s stage=%s job=%s reason=%s',
+            $item->id,
+            $item->source_key,
+            $plan->stage ?? 'none',
+            $this->shortJobName($plan) ?? 'none',
+            $plan->reason,
+        ));
     }
 
     private function logDecision(NewsItem $item, NewsItemProcessingPlan $plan, bool $dryRun, string $decision): void

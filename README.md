@@ -72,6 +72,8 @@ Use `digestpipe:items:enqueue-processing` as the primary item processing orchest
 
 `digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--source`, and `--stage=content|analysis|translation|summary`. `--limit` limits the number of jobs dispatched in one command run. Translation and summary stages remain available as legacy secondary paths, but they are not the default pipeline direction.
 
+A news item is ready for downstream digest use when `analysis_status=completed` and `analysis_json` is present. The normal pipeline does not enqueue translation or summary after that point.
+
 `digestpipe:items:enqueue-content-fetch` remains available for focused debugging and supports `--limit`, `--dry-run`, and `--source`.
 
 digestpipe treats RSS items as discovery signals, not always as full article content. For Hacker News RSS, `link` is the source article URL, `comments` is the Hacker News discussion URL, and `description` usually contains only a Comments link. The content fetch pipeline enriches items by fetching and extracting source article text before AI analysis. Discussion/comment extraction is planned separately.

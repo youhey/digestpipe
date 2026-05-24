@@ -336,6 +336,8 @@ Analysis input should prefer extracted `article_content_text`, then meaningful `
 
 Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. It is state-aware and dispatches only one next valid job per item in this order: article content fetch, article analysis. Do not manually enqueue translation or summary as part of the normal pipeline; use explicit legacy stages only when compatibility testing requires them.
 
+Treat an item as ready for downstream digest use only when `analysis_status=completed` and `analysis_json` is present. Do not enqueue legacy translation or summary as a default follow-up after completed analysis.
+
 ## Object Storage
 
 Use MinIO locally as an S3-compatible object storage service.
