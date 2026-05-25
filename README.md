@@ -156,7 +156,7 @@ The actual `src/.env` file should be created locally and must not be committed.
 Laravel reads application settings from `src/.env`; Docker Compose only defines the local containers and middleware services.
 
 ```dotenv
-DB_CONNECTION=pgsql
+DB_CONNECTION=mysql
 CACHE_STORE=redis
 SESSION_DRIVER=redis
 QUEUE_CONNECTION=database
@@ -164,7 +164,7 @@ FILESYSTEM_DISK=s3
 LOG_CHANNEL=stderr
 ```
 
-The local stack uses PostgreSQL for the database, Valkey for cache and session storage, and MinIO for object storage.
+The local stack uses MySQL for the database, Valkey for cache and session storage, and MinIO for object storage.
 SQLite is not used as the default database for this project.
 
 Default local URLs:
@@ -200,3 +200,6 @@ Logs should be emitted to stderr, and database, cache, session, queue, and stora
 
 Docker Compose and nginx configuration are intended for local development only.
 The production environment must not depend on custom nginx configuration or mutable container state.
+
+Laravel Cloud deployment is expected to use Laravel MySQL.
+Use the database environment variables injected by the attached Laravel MySQL resource, and do not hard-code production database hosts, users, passwords, or connection options in application code.

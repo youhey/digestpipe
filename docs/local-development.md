@@ -13,7 +13,7 @@ Docker Compose should only define the local containers and middleware services.
 - `php-fpm`: Provides the PHP-FPM runtime for the Laravel web application.
 - `nginx`: Forwards HTTP requests to `php-fpm`.
 - `node`: Runs Node.js, npm, and Vite commands.
-- `postgres`: Local PostgreSQL database.
+- `mysql`: Local MySQL database.
 - `valkey`: Redis-compatible cache and session backend.
 - `minio`: S3-compatible object storage.
 

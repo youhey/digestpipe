@@ -3,13 +3,12 @@ FROM php:8.4-fpm
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libicu-dev \
-        libpq-dev \
         libzip-dev \
         unzip \
     && docker-php-ext-install \
         bcmath \
         intl \
-        pdo_pgsql \
+        pdo_mysql \
         zip \
     && pecl install redis \
     && docker-php-ext-enable redis \

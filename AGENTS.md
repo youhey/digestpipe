@@ -65,8 +65,8 @@ Required services:
     - Local HTTP frontend
 - `node`
     - Node.js, npm, and Vite tooling
-- `postgres`
-    - PostgreSQL database
+- `mysql`
+    - MySQL database
 - `valkey`
     - Redis-compatible cache and session backend
 - `minio`
@@ -86,7 +86,7 @@ Node.js, npm, and Vite commands should use `node`.
 The Laravel application should default to the following local development settings:
 
 ```env
-DB_CONNECTION=pgsql
+DB_CONNECTION=mysql
 CACHE_STORE=redis
 SESSION_DRIVER=redis
 QUEUE_CONNECTION=database
@@ -123,7 +123,7 @@ The `src/.env.example` file should be suitable for local Docker Compose developm
 
 It should include example values for:
 
-- PostgreSQL
+- MySQL
 - Valkey
 - MinIO
 - Laravel app URL
@@ -156,6 +156,14 @@ The root-level `composer.lock` is a Laravel Cloud detection workaround copied fr
 Do not treat the repository root as the Laravel application root. The Laravel app remains under `src/`.
 
 Do not edit the root-level `composer.lock` manually. Update dependencies in `src/`, then refresh the copied lock file.
+
+## Laravel Cloud MySQL
+
+Laravel Cloud deployment should use Laravel MySQL for this project.
+
+Use database environment variables injected by the attached Laravel MySQL resource. Do not add Laravel Cloud Serverless Postgres, Neon, SNI, SSL, or endpoint option workarounds unless the database platform changes again.
+
+Custom Laravel Cloud environment variables should not override `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, or `DATABASE_URL` unless there is a clear operational reason.
 
 ## Build and Deploy Expectations
 
@@ -293,7 +301,7 @@ Prefer explicit service names:
 php-cli
 php-fpm
 nginx
-postgres
+mysql
 valkey
 minio
 ```
@@ -302,11 +310,11 @@ Do not use Docker Compose as a production deployment model. It is only for local
 
 ## Database
 
-Use PostgreSQL as the default database.
+Use MySQL as the default database.
 
-Migrations should be database-portable where reasonable, but PostgreSQL compatibility is the priority.
+Migrations should be database-portable where reasonable, but MySQL compatibility is the priority.
 
-Avoid MySQL-specific SQL.
+Avoid PostgreSQL-specific SQL.
 
 Avoid raw SQL unless necessary.
 
@@ -487,11 +495,12 @@ Settings required to bootstrap middleware containers may remain in `docker-compo
 Examples:
 
 ```yaml
-postgres:
+mysql:
   environment:
-    POSTGRES_DB: digestpipe
-    POSTGRES_USER: digestpipe
-    POSTGRES_PASSWORD: digestpipe
+    MYSQL_DATABASE: digestpipe
+    MYSQL_USER: digestpipe
+    MYSQL_PASSWORD: digestpipe
+    MYSQL_ROOT_PASSWORD: root
 
 minio:
   environment:
@@ -501,11 +510,11 @@ minio:
 
 However, the database, cache, session, queue, storage, and logging backends used by Laravel are application-layer settings. They must be defined in `src/.env.example` / `src/.env`.
 
-Even when values overlap, such as `POSTGRES_DB` and `DB_DATABASE`, they belong to different layers.
+Even when values overlap, such as `MYSQL_DATABASE` and `DB_DATABASE`, they belong to different layers.
 
 ```txt
-POSTGRES_DB   # Initial database name created by the PostgreSQL container
-DB_DATABASE   # Database name used by the Laravel application connection
+MYSQL_DATABASE  # Initial database name created by the MySQL container
+DB_DATABASE     # Database name used by the Laravel application connection
 ```
 
 This kind of duplication is acceptable because the variables configure different layers.
@@ -531,7 +540,7 @@ It is acceptable for `src/.env.example` to include sample values required for th
 Examples:
 
 ```env
-DB_HOST=postgres
+DB_HOST=mysql
 DB_DATABASE=digestpipe
 DB_USERNAME=digestpipe
 DB_PASSWORD=digestpipe
