@@ -5,6 +5,7 @@ use App\Console\Commands\EnqueueProcessingCommand;
 use App\Console\Commands\ExportDigestsCommand;
 use App\Console\Commands\FetchFeedsCommand;
 use App\Console\Commands\RotateApiTokenCommand;
+use App\Console\Commands\SelectionReportCommand;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ExportDigestsCommand::class,
         FetchFeedsCommand::class,
         RotateApiTokenCommand::class,
+        SelectionReportCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

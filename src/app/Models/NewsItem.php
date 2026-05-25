@@ -34,6 +34,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $analysis_model
  * @property string|null $analysis_error
  * @property CarbonImmutable|null $analyzed_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  */
 class NewsItem extends Model
 {
