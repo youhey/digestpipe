@@ -19,13 +19,13 @@ For manual operation windows, run the local polling helper from the repository
 root:
 
 ```bash
-./scripts/digestpipe-poll.sh digestpipe-main-hzt8l1.laravel.cloud
+./scripts/digestpipe-poll.sh example.laravel.cloud
 ```
 
 With an explicit interval:
 
 ```bash
-./scripts/digestpipe-poll.sh digestpipe-main-hzt8l1.laravel.cloud 300
+./scripts/digestpipe-poll.sh example.laravel.cloud 300
 ```
 
 For local development, `localhost` and `localhost:<port>` use `http://`:

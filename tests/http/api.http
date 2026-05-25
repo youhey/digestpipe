@@ -1,0 +1,86 @@
+### Articles index
+GET {{baseUrl}}/api/articles
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+> {%
+client.test("articles index returns 200", function () {
+  client.assert(response.status === 200, "Expected articles index to return 200.");
+});
+
+client.test("articles index returns the shared JSON shape", function () {
+  const contentType = response.headers.valueOf("Content-Type");
+
+  client.assert(contentType !== null && contentType.includes("application/json"), "Expected JSON response.");
+  client.assert(response.body.hasOwnProperty("data"), "Expected response to include data.");
+  client.assert(response.body.hasOwnProperty("meta"), "Expected response to include meta.");
+});
+%}
+
+### Articles index with limit
+GET {{baseUrl}}/api/articles?limit=1
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+> {%
+client.test("articles index with limit returns 200", function () {
+  client.assert(response.status === 200, "Expected limited articles index to return 200.");
+});
+
+client.test("articles index with limit returns JSON", function () {
+  const contentType = response.headers.valueOf("Content-Type");
+
+  client.assert(contentType !== null && contentType.includes("application/json"), "Expected JSON response.");
+  client.assert(response.body.hasOwnProperty("data"), "Expected response to include data.");
+  client.assert(response.body.hasOwnProperty("meta"), "Expected response to include meta.");
+});
+%}
+
+### Articles index with date range
+GET {{baseUrl}}/api/articles?from={{from}}&to={{to}}&limit={{defaultLimit}}
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+> {%
+client.test("articles index with date range returns 200", function () {
+  client.assert(response.status === 200, "Expected date range articles index to return 200.");
+});
+
+client.test("articles index with date range returns JSON", function () {
+  const contentType = response.headers.valueOf("Content-Type");
+
+  client.assert(contentType !== null && contentType.includes("application/json"), "Expected JSON response.");
+  client.assert(response.body.hasOwnProperty("data"), "Expected response to include data.");
+  client.assert(response.body.hasOwnProperty("meta"), "Expected response to include meta.");
+});
+%}
+
+### Article detail
+# Set articleId in tests/http/http-client.private.env.json before running this request.
+GET {{baseUrl}}/api/articles/{{articleId}}
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+> {%
+client.test("article detail returns 200 for an API-visible article", function () {
+  client.assert(response.status === 200, "Expected article detail to return 200. Set articleId to a completed analysis item.");
+});
+
+client.test("article detail returns JSON", function () {
+  const contentType = response.headers.valueOf("Content-Type");
+
+  client.assert(contentType !== null && contentType.includes("application/json"), "Expected JSON response.");
+  client.assert(response.body.hasOwnProperty("data"), "Expected response to include data.");
+});
+%}
+
+### Missing article detail
+GET {{baseUrl}}/api/articles/999999999
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+> {%
+client.test("missing article detail returns 404", function () {
+  client.assert(response.status === 404, "Expected missing article detail to return 404.");
+});
+%}

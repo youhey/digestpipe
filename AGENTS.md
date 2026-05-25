@@ -413,6 +413,16 @@ The API response shape should stay aligned with `DigestExportItemBuilder` and `d
 
 When API behavior changes, update `docs/api.md` in the same task. Do not document planned API features as current behavior.
 
+## HTTP Client Smoke Tests
+
+Root `tests/http/` contains PhpStorm HTTP Client smoke tests for manual integration checks.
+
+Do not place these files under `src/tests`. Laravel application tests remain under `src/tests`.
+
+Do not put secrets in committed HTTP Client files. Keep real API tokens in `tests/http/http-client.private.env.json`, which must stay ignored.
+
+Do not wire these smoke tests into `make test` yet. Keep assertions broad, stable, and environment-independent.
+
 ## Object Storage
 
 Use MinIO locally as an S3-compatible object storage service.

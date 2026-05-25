@@ -1,0 +1,62 @@
+### Root route returns cacheable 404
+GET {{baseUrl}}/
+
+> {%
+client.test("root route returns 404", function () {
+  client.assert(response.status === 404, "Expected root route to return 404.");
+});
+
+client.test("root route is cacheable and not the Laravel welcome page", function () {
+  const cacheControl = response.headers.valueOf("Cache-Control");
+  const body = String(response.body);
+
+  client.assert(cacheControl !== null && cacheControl.length > 0, "Expected Cache-Control header.");
+  client.assert(!body.includes("Laravel"), "Expected response body not to contain Laravel welcome page text.");
+});
+%}
+
+### Health endpoint is public and lightweight
+GET {{baseUrl}}/up
+
+> {%
+client.test("health endpoint returns 200 without authorization", function () {
+  client.assert(response.status === 200, "Expected health endpoint to return 200.");
+});
+
+client.test("health endpoint does not expose private application data", function () {
+  const body = String(response.body);
+
+  client.assert(!body.includes("analysis_json"), "Expected health endpoint not to expose analysis data.");
+  client.assert(!body.includes("OPENAI_API_KEY"), "Expected health endpoint not to expose OpenAI settings.");
+  client.assert(!body.includes("DIGESTPIPE_API_TOKEN"), "Expected health endpoint not to expose API token names.");
+});
+%}
+
+### Articles index rejects unauthenticated requests
+GET {{baseUrl}}/api/articles?limit={{defaultLimit}}
+Accept: application/json
+
+> {%
+client.test("articles index requires authentication", function () {
+  client.assert(response.status === 401, "Expected unauthenticated articles request to return 401.");
+});
+%}
+
+### Articles index accepts authenticated requests
+GET {{baseUrl}}/api/articles?limit={{defaultLimit}}
+Authorization: Bearer {{apiToken}}
+Accept: application/json
+
+> {%
+client.test("authenticated articles index returns 200", function () {
+  client.assert(response.status === 200, "Expected authenticated articles request to return 200.");
+});
+
+client.test("authenticated articles index returns JSON", function () {
+  const contentType = response.headers.valueOf("Content-Type");
+
+  client.assert(contentType !== null && contentType.includes("application/json"), "Expected JSON response.");
+  client.assert(response.body.hasOwnProperty("data"), "Expected response to include data.");
+  client.assert(response.body.hasOwnProperty("meta"), "Expected response to include meta.");
+});
+%}

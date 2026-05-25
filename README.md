@@ -98,6 +98,8 @@ Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`,
 
 The private read-only Article JSON API is documented in [docs/api.md](docs/api.md).
 
+Optional PhpStorm HTTP Client smoke tests are documented in [docs/http-client-tests.md](docs/http-client-tests.md).
+
 ## Operations
 
 Operational notes, including the optional local Laravel Cloud wake polling helper
