@@ -6,12 +6,12 @@ use App\Models\NewsItem;
 use UnexpectedValueException;
 
 /**
- * RSS レベルの title / excerpt だけでニュース記事アイテムを選別する
+ * ニュース記事アイテムを本文取得前後の2段階で選別する
  */
 class NewsItemSelector
 {
     /**
-     * ニュース記事アイテムの title / excerpt を評価して選別結果を返す
+     * ニュース記事アイテムを通常の最終 selection として評価する
      *
      * @param NewsItem $item
      *
@@ -19,7 +19,86 @@ class NewsItemSelector
      */
     public function evaluate(NewsItem $item): NewsItemSelectionResult
     {
-        $text = $item->title . "\n" . ($item->excerpt ?? '');
+        return $this->evaluatePostContent($item);
+    }
+
+    /**
+     * 本文取得前の title / excerpt で保守的な selection 結果を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return NewsItemSelectionResult
+     */
+    public function evaluatePreContent(NewsItem $item): NewsItemSelectionResult
+    {
+        $evaluation = $this->evaluateText($item->title . "\n" . ($item->excerpt ?? ''));
+
+        if ($evaluation->score <= $this->integerConfig('skip_threshold')) {
+            return new NewsItemSelectionResult(
+                $evaluation->score,
+                'skipped',
+                $evaluation->matchedGoodKeywords,
+                $evaluation->matchedBadKeywords,
+                'below_skip_threshold',
+            );
+        }
+
+        return new NewsItemSelectionResult(
+            $evaluation->score,
+            'needs_content',
+            $evaluation->matchedGoodKeywords,
+            $evaluation->matchedBadKeywords,
+            'pre_content_selection_deferred',
+        );
+    }
+
+    /**
+     * 本文取得後の title / excerpt / article content で最終 selection 結果を返す
+     *
+     * @param NewsItem $item
+     *
+     * @return NewsItemSelectionResult
+     */
+    public function evaluatePostContent(NewsItem $item): NewsItemSelectionResult
+    {
+        $text = implode("\n", array_filter([
+            $item->title,
+            $item->excerpt,
+            $item->article_content_text,
+        ], static fn (?string $value): bool => $value !== null && $value !== ''));
+        $evaluation = $this->evaluateText($text);
+
+        if ($evaluation->score >= $this->integerConfig('analysis_threshold')) {
+            return new NewsItemSelectionResult(
+                $evaluation->score,
+                'selected',
+                $evaluation->matchedGoodKeywords,
+                $evaluation->matchedBadKeywords,
+                'above_analysis_threshold',
+            );
+        }
+
+        return new NewsItemSelectionResult(
+            $evaluation->score,
+            'skipped',
+            $evaluation->matchedGoodKeywords,
+            $evaluation->matchedBadKeywords,
+            'below_analysis_threshold',
+        );
+    }
+
+    /**
+     * selection 設定が有効かどうかを返す
+     *
+     * @return bool
+     */
+    public function enabled(): bool
+    {
+        return (bool) config('digestpipe.selection.enabled', true);
+    }
+
+    private function evaluateText(string $text): NewsItemSelectionResult
+    {
         $score = $this->integerConfig('default_score');
 
         $matchedGoodKeywords = [];
@@ -38,25 +117,7 @@ class NewsItemSelector
             }
         }
 
-        if ($score <= $this->integerConfig('skip_threshold')) {
-            return new NewsItemSelectionResult($score, 'skipped', $matchedGoodKeywords, $matchedBadKeywords, 'below_skip_threshold');
-        }
-
-        if ($score >= $this->integerConfig('analysis_threshold')) {
-            return new NewsItemSelectionResult($score, 'selected', $matchedGoodKeywords, $matchedBadKeywords, 'above_analysis_threshold');
-        }
-
-        return new NewsItemSelectionResult($score, 'skipped', $matchedGoodKeywords, $matchedBadKeywords, 'below_analysis_threshold');
-    }
-
-    /**
-     * selection 設定が有効かどうかを返す
-     *
-     * @return bool
-     */
-    public function enabled(): bool
-    {
-        return (bool) config('digestpipe.selection.enabled', true);
+        return new NewsItemSelectionResult($score, 'evaluated', $matchedGoodKeywords, $matchedBadKeywords, 'score_evaluated');
     }
 
     private function matches(string $text, string $keyword): bool

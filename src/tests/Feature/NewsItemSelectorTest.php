@@ -37,20 +37,29 @@ class NewsItemSelectorTest extends TestCase
         ]);
     }
 
-    public function testPositiveKeywordScoringSelectsItem(): void
+    public function testPreContentPositiveKeywordDefersFinalSelection(): void
     {
-        $result = $this->selector()->evaluate($this->newsItem('Laravel deployment guide', null));
+        $result = $this->selector()->evaluatePreContent($this->newsItem('Laravel deployment guide', null));
 
         self::assertSame(15, $result->score);
-        self::assertSame('selected', $result->status);
+        self::assertSame('needs_content', $result->status);
         self::assertSame(['Laravel'], $result->matchedGoodKeywords);
         self::assertSame([], $result->matchedBadKeywords);
-        self::assertSame('above_analysis_threshold', $result->reason);
+        self::assertSame('pre_content_selection_deferred', $result->reason);
     }
 
-    public function testNegativeKeywordScoringSkipsItem(): void
+    public function testPreContentLowScoreDefersFinalSelection(): void
     {
-        $result = $this->selector()->evaluate($this->newsItem('Crypto and blockchain update', null));
+        $result = $this->selector()->evaluatePreContent($this->newsItem('Plain release note', null));
+
+        self::assertSame(0, $result->score);
+        self::assertSame('needs_content', $result->status);
+        self::assertSame('pre_content_selection_deferred', $result->reason);
+    }
+
+    public function testPreContentHardNegativeSkipsItem(): void
+    {
+        $result = $this->selector()->evaluatePreContent($this->newsItem('Crypto and blockchain update', null));
 
         self::assertSame(-200, $result->score);
         self::assertSame('skipped', $result->status);
@@ -69,18 +78,31 @@ class NewsItemSelectorTest extends TestCase
         self::assertSame(['token'], $result->matchedBadKeywords);
     }
 
-    public function testItemBelowAnalysisThresholdIsSkipped(): void
+    public function testPostContentItemBelowAnalysisThresholdIsSkipped(): void
     {
-        $result = $this->selector()->evaluate($this->newsItem('Plain release note', null));
+        $result = $this->selector()->evaluatePostContent($this->newsItem('Plain release note', null));
 
         self::assertSame(0, $result->score);
         self::assertSame('skipped', $result->status);
         self::assertSame('below_analysis_threshold', $result->reason);
     }
 
+    public function testPostContentArticleTextCanSelectItem(): void
+    {
+        $item = $this->newsItem('Plain title', 'Plain excerpt');
+        $item->article_content_text = 'This article explains Laravel deployment.';
+
+        $result = $this->selector()->evaluatePostContent($item);
+
+        self::assertSame(15, $result->score);
+        self::assertSame('selected', $result->status);
+        self::assertSame(['Laravel'], $result->matchedGoodKeywords);
+        self::assertSame('above_analysis_threshold', $result->reason);
+    }
+
     public function testJapaneseKeywordMatchingSelectsItem(): void
     {
-        $result = $this->selector()->evaluate($this->newsItem('自宅サーバーの運用メモ', null));
+        $result = $this->selector()->evaluatePostContent($this->newsItem('自宅サーバーの運用メモ', null));
 
         self::assertSame(12, $result->score);
         self::assertSame('selected', $result->status);

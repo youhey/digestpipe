@@ -3,11 +3,11 @@
 namespace App\Items;
 
 /**
- * ニュース記事アイテムの RSS レベル選別結果
+ * ニュース記事アイテムの selection 評価結果
  */
 class NewsItemSelectionResult
 {
-    /** @var int RSS レベル情報から算出した選別スコア */
+    /** @var int selection 対象テキストから算出したスコア */
     public readonly int $score;
 
     /** @var string 選別後の Status */

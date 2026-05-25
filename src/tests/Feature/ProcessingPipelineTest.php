@@ -193,9 +193,31 @@ class ProcessingPipelineTest extends TestCase
         Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
         $this->assertDatabaseHas('news_items', [
             'id' => $item->id,
-            'selection_status' => 'selected',
+            'selection_status' => 'needs_content',
             'selection_score' => 15,
-            'selection_reason' => 'above_analysis_threshold',
+            'selection_reason' => 'pre_content_selection_deferred',
+            'article_content_status' => 'queued',
+        ]);
+    }
+
+    public function testPreContentLowScoreItemCanEnqueueContentFetch(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'title' => 'Plain article without keywords',
+            'excerpt' => 'Short feed excerpt',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'selection_status' => 'needs_content',
+            'selection_score' => 0,
+            'selection_reason' => 'pre_content_selection_deferred',
             'article_content_status' => 'queued',
         ]);
     }
@@ -283,6 +305,86 @@ class ProcessingPipelineTest extends TestCase
             'id' => $item->id,
             'selection_status' => 'selected',
             'analysis_status' => 'queued',
+        ]);
+    }
+
+    public function testPostContentLowScoreItemIsSkippedBeforeAnalysis(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'title' => 'Plain article without keywords',
+            'excerpt' => 'Short feed excerpt',
+            'selection_status' => 'needs_content',
+            'selection_score' => 0,
+            'selection_reason' => 'pre_content_selection_deferred',
+            'article_content_status' => 'completed',
+            'article_content_text' => 'Article body with no configured keyword.',
+            'analysis_status' => 'pending',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertNothingPushed();
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'selection_status' => 'skipped',
+            'selection_score' => 0,
+            'selection_reason' => 'below_analysis_threshold',
+            'analysis_status' => 'pending',
+        ]);
+    }
+
+    public function testPostContentThresholdScoreItemIsSelectedAndEnqueuesAnalysis(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'title' => 'Plain article title',
+            'excerpt' => 'Short feed excerpt',
+            'selection_status' => 'needs_content',
+            'selection_score' => 0,
+            'selection_reason' => 'pre_content_selection_deferred',
+            'article_content_status' => 'completed',
+            'article_content_text' => 'The article explains AWS deployment.',
+            'analysis_status' => 'pending',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $item->id);
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'selection_status' => 'selected',
+            'selection_score' => 12,
+            'selection_reason' => 'above_analysis_threshold',
+            'analysis_status' => 'queued',
+        ]);
+    }
+
+    public function testHackerNewsLikeCommentsExcerptCanProceedToContentFetch(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'source_key' => 'hacker_news',
+            'source_name' => 'Hacker News',
+            'title' => 'A database internals article',
+            'excerpt' => '<a href="https://news.ycombinator.com/item?id=123">Comments</a>',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'selection_status' => 'needs_content',
+            'selection_score' => 0,
+            'selection_reason' => 'pre_content_selection_deferred',
+            'article_content_status' => 'queued',
         ]);
     }
 

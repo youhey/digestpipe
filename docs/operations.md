@@ -67,3 +67,22 @@ The report includes summary counts, source breakdowns, matched keyword counts,
 and recent selected/skipped item examples. The time window uses
 `selection_evaluated_at` when available, then falls back to the required
 `fetched_at` timestamp.
+
+## Selection Rollback
+
+Use the selection rollback command when selection rules changed and skipped
+items need to be evaluated again from the application runtime:
+
+```bash
+php artisan digestpipe:selection:rollback --source=hacker_news --status=skipped
+```
+
+This command is intentionally narrow. It requires a source key, supports only
+`--status=skipped`, and resets only selection fields back to a pending state.
+Items that already moved into article content fetching or analysis are skipped.
+
+Inspect the target records first:
+
+```bash
+php artisan digestpipe:selection:rollback --source=hacker_news --status=skipped --dry-run
+```

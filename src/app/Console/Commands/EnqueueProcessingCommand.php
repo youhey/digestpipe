@@ -76,6 +76,7 @@ class EnqueueProcessingCommand extends Command
             'analysis' => 0,
         ];
         $selectionCounts = [
+            'needs_content' => 0,
             'selected' => 0,
             'skipped' => 0,
             'bypassed' => 0,
@@ -89,7 +90,7 @@ class EnqueueProcessingCommand extends Command
             $selectionResult = $this->selectItem($item, $dryRun);
 
             if ($selectionResult !== null) {
-                ++$selectionCounts[$selectionResult->status];
+                $selectionCounts[$selectionResult->status] = ($selectionCounts[$selectionResult->status] ?? 0) + 1;
             } elseif (! $this->selector->enabled()) {
                 ++$selectionCounts['bypassed'];
             }
@@ -103,9 +104,9 @@ class EnqueueProcessingCommand extends Command
                 continue;
             }
 
-            if ($this->selector->enabled() && $selectionResult === null && $item->selection_status !== 'selected') {
+            if ($this->selector->enabled() && ! $this->selectionAllowsPlanning($item, $selectionResult)) {
                 ++$skippedCount;
-                $plan = NewsItemProcessingPlan::none('selection_' . $item->selection_status);
+                $plan = NewsItemProcessingPlan::none('selection_' . $this->effectiveSelectionStatus($item, $selectionResult));
                 $this->logDecision($item, $plan, $dryRun, 'selection_blocked');
                 $this->writeDryRunLine($dryRun, $item, $plan);
 
@@ -155,6 +156,7 @@ class EnqueueProcessingCommand extends Command
             'skipped_item_count' => $skippedCount,
             'content_job_count' => $plannedCounts['content'],
             'analysis_job_count' => $plannedCounts['analysis'],
+            'selection_needs_content_count' => $selectionCounts['needs_content'],
             'selection_selected_count' => $selectionCounts['selected'],
             'selection_skipped_count' => $selectionCounts['skipped'],
             'selection_bypassed_count' => $selectionCounts['bypassed'],
@@ -183,7 +185,13 @@ class EnqueueProcessingCommand extends Command
             return null;
         }
 
-        $result = $this->selector->evaluate($item);
+        if ($item->selection_status === 'needs_content' && ! $this->hasFinalSelectionInput($item)) {
+            return null;
+        }
+
+        $result = $this->hasFinalSelectionInput($item)
+            ? $this->selector->evaluatePostContent($item)
+            : $this->selector->evaluatePreContent($item);
 
         Log::debug('News item selection evaluated.', [
             'news_item_id' => $item->id,
@@ -207,6 +215,35 @@ class EnqueueProcessingCommand extends Command
         }
 
         return $result;
+    }
+
+    private function selectionAllowsPlanning(NewsItem $item, ?NewsItemSelectionResult $selectionResult): bool
+    {
+        $status = $this->effectiveSelectionStatus($item, $selectionResult);
+
+        if ($status === 'selected') {
+            return true;
+        }
+
+        if ($status !== 'needs_content') {
+            return false;
+        }
+
+        return in_array($item->article_content_status, ['pending', 'queued', 'processing'], true);
+    }
+
+    private function effectiveSelectionStatus(NewsItem $item, ?NewsItemSelectionResult $selectionResult): string
+    {
+        if ($selectionResult instanceof NewsItemSelectionResult) {
+            return $selectionResult->status;
+        }
+
+        return $item->selection_status;
+    }
+
+    private function hasFinalSelectionInput(NewsItem $item): bool
+    {
+        return in_array($item->article_content_status, ['completed', 'skipped'], true);
     }
 
     /**
