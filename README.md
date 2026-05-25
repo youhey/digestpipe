@@ -143,6 +143,12 @@ OPENAI_MAX_RETRIES=2
 
 Automated tests must not call the real OpenAI API. Use HTTP fakes or the fake AI driver.
 
+## Job Database
+
+This project uses Laravel MySQL on Laravel Cloud.
+
+Laravel Cloud Serverless Postgres was evaluated, but it is not currently used because the project prioritizes simple deployment behavior, Tokyo region availability, and predictable local/cloud parity.
+
 ## Database Reset Behavior
 
 `make up` runs `php artisan migrate:refresh` and `php artisan db:seed`.
