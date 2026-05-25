@@ -619,6 +619,14 @@ Keep documentation short, practical, and close to the current implementation.
 
 When introducing a new local service or tool, update the README or relevant document.
 
+## Project Scripts
+
+Project-level operational scripts live under the repository root `scripts/` directory.
+
+Do not place Laravel application scripts under `src/scripts` unless they are part of the Laravel application itself.
+
+Use `scripts/digestpipe-poll.sh` only as a local manual operation helper for polling Laravel's `GET /up` health endpoint during manual operation windows. Do not depend on the poller in tests, application logic, scheduler logic, or queue processing.
+
 ## Commit Hygiene
 
 Keep commits focused.

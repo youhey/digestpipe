@@ -98,6 +98,11 @@ Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`,
 
 The private read-only Article JSON API is documented in [docs/api.md](docs/api.md).
 
+## Operations
+
+Operational notes, including the optional local Laravel Cloud wake polling helper
+for `GET /up`, are documented in [docs/operations.md](docs/operations.md).
+
 ## AI Processing Driver
 
 The primary AI pipeline analyzes source content and stores structured digest JSON. Downstream applications can later translate, rewrite, narrate, or personalize the structured output.
