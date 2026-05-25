@@ -46,6 +46,10 @@ class DigestExportItemBuilder
                 'published_at' => $this->timestamp($item->published_at),
                 'fetched_at' => $this->timestamp($item->fetched_at),
             ],
+            'selection' => [
+                'status' => $item->selection_status,
+                'score' => $item->selection_score,
+            ],
             'analysis' => $item->analysis_json,
             'processing' => [
                 'analysis_model' => $item->analysis_model,

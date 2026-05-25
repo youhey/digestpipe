@@ -22,6 +22,13 @@ class ProcessingPipelineTest extends TestCase
 
     private int $newsItemSequence = 0;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['digestpipe.selection.enabled' => false]);
+    }
+
     public function testEnqueueCommandCanRun(): void
     {
         Queue::fake();
@@ -169,6 +176,114 @@ class ProcessingPipelineTest extends TestCase
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
+    }
+
+    public function testSelectionSelectedItemCanEnqueueContentFetch(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'title' => 'Laravel queues in production',
+            'excerpt' => 'Practical framework article',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'selection_status' => 'selected',
+            'selection_score' => 15,
+            'selection_reason' => 'above_analysis_threshold',
+            'article_content_status' => 'queued',
+        ]);
+    }
+
+    public function testSelectionSkippedItemDoesNotEnqueueContentFetchOrAnalysis(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'title' => 'Crypto blockchain token news',
+            'excerpt' => 'Investment update',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertNothingPushed();
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'selection_status' => 'skipped',
+            'selection_score' => -210,
+            'selection_reason' => 'below_skip_threshold',
+            'article_content_status' => 'pending',
+            'analysis_status' => 'pending',
+        ]);
+    }
+
+    public function testAlreadySkippedSelectionDoesNotEnqueueContentFetchOrAnalysis(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $this->createNewsItem([
+            'selection_status' => 'skipped',
+            'selection_score' => -100,
+            'selection_reason' => 'below_skip_threshold',
+            'article_content_status' => 'completed',
+            'analysis_status' => 'pending',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertNothingPushed();
+    }
+
+    public function testSelectionIsIdempotentForAlreadySelectedItems(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $evaluatedAt = CarbonImmutable::parse('2026-05-24T00:00:00Z');
+        $item = $this->createNewsItem([
+            'title' => 'Crypto title should not be re-evaluated',
+            'selection_status' => 'selected',
+            'selection_score' => 15,
+            'selection_reason' => 'above_analysis_threshold',
+            'selection_evaluated_at' => $evaluatedAt,
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
+        $item->refresh();
+        self::assertSame('selected', $item->selection_status);
+        self::assertSame(15, $item->selection_score);
+        self::assertSame($evaluatedAt->toJSON(), $item->selection_evaluated_at?->toJSON());
+    }
+
+    public function testSelectionSelectedCompletedContentCanEnqueueAnalysis(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createNewsItem([
+            'title' => 'AWS Laravel deployment',
+            'selection_status' => 'pending',
+            'article_content_status' => 'completed',
+            'analysis_status' => 'pending',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $item->id);
+        $this->assertDatabaseHas('news_items', [
+            'id' => $item->id,
+            'selection_status' => 'selected',
+            'analysis_status' => 'queued',
+        ]);
     }
 
     public function testLimitIsRespectedAsDispatchedJobCount(): void
@@ -381,5 +496,27 @@ class ProcessingPipelineTest extends TestCase
         $items = NewsItem::query()->where('article_content_status', $status)->get();
 
         self::assertCount($expectedCount, $items);
+    }
+
+    private function enableSelectionForTests(): void
+    {
+        config([
+            'digestpipe.selection' => [
+                'enabled' => true,
+                'default_score' => 0,
+                'analysis_threshold' => 10,
+                'skip_threshold' => -50,
+                'positive_keywords' => [
+                    'Laravel' => 15,
+                    'AWS' => 12,
+                    'PHP' => 5,
+                ],
+                'negative_keywords' => [
+                    'crypto' => -100,
+                    'blockchain' => -100,
+                    'token' => -10,
+                ],
+            ],
+        ]);
     }
 }

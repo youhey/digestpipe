@@ -57,6 +57,7 @@ class NewsItemIngestor
                 'published_at' => $item->publishedAt,
                 'fetched_at' => $fetchedAt,
                 'content_hash' => $item->contentHash(),
+                'selection_status' => 'pending',
                 'article_content_status' => 'pending',
                 'analysis_status' => 'pending',
             ]);

@@ -58,11 +58,22 @@ class ArticleApiTest extends TestCase
     public function testValidTokenCanAccessIndex(): void
     {
         $this->authenticate();
-        $item = $this->createNewsItem();
+        $item = $this->createNewsItem([
+            'selection_status' => 'selected',
+            'selection_score' => 12,
+            'selection_result' => [
+                'matched_good_keywords' => ['AWS'],
+                'matched_bad_keywords' => [],
+            ],
+        ]);
 
         $this->getJson('/api/articles')
             ->assertOk()
             ->assertJsonPath('data.0.id', $item->id)
+            ->assertJsonPath('data.0.selection.status', 'selected')
+            ->assertJsonPath('data.0.selection.score', 12)
+            ->assertJsonMissingPath('data.0.selection.matched_good_keywords')
+            ->assertJsonMissingPath('data.0.selection.matched_bad_keywords')
             ->assertJsonPath('meta.limit', 100);
     }
 
@@ -295,6 +306,16 @@ class ArticleApiTest extends TestCase
             'published_at' => CarbonImmutable::parse('2026-05-24T11:00:00Z'),
             'fetched_at' => CarbonImmutable::parse('2026-05-24T11:05:00Z'),
             'content_hash' => hash('sha256', 'api-article-content-' . $sequence),
+            'selection_status' => 'selected',
+            'selection_score' => 12,
+            'selection_reason' => 'above_analysis_threshold',
+            'selection_result' => [
+                'score' => 12,
+                'status' => 'selected',
+                'matched_good_keywords' => ['AWS'],
+                'matched_bad_keywords' => [],
+                'reason' => 'above_analysis_threshold',
+            ],
             'article_content_status' => 'completed',
             'article_content_text' => null,
             'article_content_error' => null,

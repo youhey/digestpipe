@@ -4,9 +4,12 @@ namespace App\Console\Commands;
 
 use App\Items\NewsItemProcessingPlan;
 use App\Items\NewsItemProcessingPlanner;
+use App\Items\NewsItemSelectionResult;
+use App\Items\NewsItemSelector;
 use App\Jobs\AnalyzeNewsItemJob;
 use App\Jobs\FetchNewsItemArticleContentJob;
 use App\Models\NewsItem;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
@@ -26,12 +29,15 @@ class EnqueueProcessingCommand extends Command
 
     private readonly NewsItemProcessingPlanner $planner;
 
+    private readonly NewsItemSelector $selector;
+
     /**
      * Processing orchestration commandを作成します。
      */
-    public function __construct(NewsItemProcessingPlanner $planner)
+    public function __construct(NewsItemProcessingPlanner $planner, NewsItemSelector $selector)
     {
         $this->planner = $planner;
+        $this->selector = $selector;
 
         parent::__construct();
     }
@@ -69,10 +75,41 @@ class EnqueueProcessingCommand extends Command
             'content' => 0,
             'analysis' => 0,
         ];
+        $selectionCounts = [
+            'selected' => 0,
+            'skipped' => 0,
+            'bypassed' => 0,
+        ];
 
         foreach ($items as $item) {
             if ($limit !== null && $dispatchedCount >= $limit) {
                 break;
+            }
+
+            $selectionResult = $this->selectItem($item, $dryRun);
+
+            if ($selectionResult !== null) {
+                ++$selectionCounts[$selectionResult->status];
+            } elseif (! $this->selector->enabled()) {
+                ++$selectionCounts['bypassed'];
+            }
+
+            if ($this->selector->enabled() && $selectionResult !== null && $selectionResult->status === 'skipped') {
+                ++$skippedCount;
+                $plan = NewsItemProcessingPlan::none($selectionResult->reason);
+                $this->logDecision($item, $plan, $dryRun, 'selection_skipped');
+                $this->writeDryRunLine($dryRun, $item, $plan);
+
+                continue;
+            }
+
+            if ($this->selector->enabled() && $selectionResult === null && $item->selection_status !== 'selected') {
+                ++$skippedCount;
+                $plan = NewsItemProcessingPlan::none('selection_' . $item->selection_status);
+                $this->logDecision($item, $plan, $dryRun, 'selection_blocked');
+                $this->writeDryRunLine($dryRun, $item, $plan);
+
+                continue;
             }
 
             $plan = $this->planner->plan($item, $stage);
@@ -118,6 +155,9 @@ class EnqueueProcessingCommand extends Command
             'skipped_item_count' => $skippedCount,
             'content_job_count' => $plannedCounts['content'],
             'analysis_job_count' => $plannedCounts['analysis'],
+            'selection_selected_count' => $selectionCounts['selected'],
+            'selection_skipped_count' => $selectionCounts['skipped'],
+            'selection_bypassed_count' => $selectionCounts['bypassed'],
         ]);
 
         $this->info(sprintf(
@@ -131,6 +171,42 @@ class EnqueueProcessingCommand extends Command
         ));
 
         return self::SUCCESS;
+    }
+
+    private function selectItem(NewsItem $item, bool $dryRun): ?NewsItemSelectionResult
+    {
+        if (! $this->selector->enabled()) {
+            return null;
+        }
+
+        if ($item->selection_status === 'selected' || $item->selection_status === 'skipped') {
+            return null;
+        }
+
+        $result = $this->selector->evaluate($item);
+
+        Log::debug('News item selection evaluated.', [
+            'news_item_id' => $item->id,
+            'source_key' => $item->source_key,
+            'dry_run' => $dryRun,
+            'selection_status' => $result->status,
+            'selection_score' => $result->score,
+            'selection_reason' => $result->reason,
+            'matched_good_keyword_count' => count($result->matchedGoodKeywords),
+            'matched_bad_keyword_count' => count($result->matchedBadKeywords),
+        ]);
+
+        if (! $dryRun) {
+            $item->forceFill([
+                'selection_status' => $result->status,
+                'selection_score' => $result->score,
+                'selection_reason' => $result->reason,
+                'selection_result' => $result->toArray(),
+                'selection_evaluated_at' => CarbonImmutable::now(),
+            ])->save();
+        }
+
+        return $result;
     }
 
     /**
@@ -204,6 +280,8 @@ class EnqueueProcessingCommand extends Command
             'stage' => $plan->stage,
             'job' => $this->shortJobName($plan),
             'reason' => $plan->reason,
+            'selection_status' => $item->selection_status,
+            'selection_score' => $item->selection_score,
             'article_content_status' => $item->article_content_status,
             'analysis_status' => $item->analysis_status,
         ]);

@@ -64,6 +64,7 @@ Rules:
 - Maximum limit is `500`.
 - Newest records are returned first.
 - Raw `article_content_text` is not returned.
+- Selection details are limited to `selection.status` and `selection.score`.
 
 Supported query parameters:
 
@@ -109,6 +110,10 @@ Response example:
         "discussion_url": "https://news.ycombinator.com/item?id=123",
         "published_at": "2026-05-24T00:00:00.000000Z",
         "fetched_at": "2026-05-24T00:01:00.000000Z"
+      },
+      "selection": {
+        "status": "selected",
+        "score": 12
       },
       "analysis": {
         "schema_version": "1.0",
@@ -165,6 +170,7 @@ Rules:
 - Returns `404` when the item does not exist.
 - Returns `404` when the item exists but is not API-visible because analysis is incomplete or missing.
 - Raw `article_content_text` is not returned.
+- Selection details are limited to `selection.status` and `selection.score`.
 
 Example:
 
@@ -190,6 +196,10 @@ Response example:
       "discussion_url": "https://news.ycombinator.com/item?id=123",
       "published_at": "2026-05-24T00:00:00.000000Z",
       "fetched_at": "2026-05-24T00:01:00.000000Z"
+    },
+    "selection": {
+      "status": "selected",
+      "score": 12
     },
     "analysis": {
       "schema_version": "1.0",
@@ -263,4 +273,5 @@ Returned when query parameters are invalid. Examples:
 - No `fields` filtering yet.
 - No topic filtering yet.
 - Raw article content is not exposed by default.
+- Internal selection results, including matched keywords, are not exposed.
 - Source-specific metadata is not implemented yet.

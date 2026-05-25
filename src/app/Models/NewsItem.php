@@ -20,6 +20,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable|null $published_at
  * @property CarbonImmutable $fetched_at
  * @property string $content_hash
+ * @property string $selection_status
+ * @property int|null $selection_score
+ * @property string|null $selection_reason
+ * @property array<string, mixed>|null $selection_result
+ * @property CarbonImmutable|null $selection_evaluated_at
  * @property string $article_content_status
  * @property string|null $article_content_text
  * @property CarbonImmutable|null $article_content_fetched_at
@@ -45,6 +50,11 @@ class NewsItem extends Model
         'published_at',
         'fetched_at',
         'content_hash',
+        'selection_status',
+        'selection_score',
+        'selection_reason',
+        'selection_result',
+        'selection_evaluated_at',
         'article_content_status',
         'article_content_text',
         'article_content_fetched_at',
@@ -82,6 +92,8 @@ class NewsItem extends Model
         return [
             'published_at' => 'immutable_datetime',
             'fetched_at' => 'immutable_datetime',
+            'selection_result' => 'array',
+            'selection_evaluated_at' => 'immutable_datetime',
             'analysis_json' => 'array',
             'analyzed_at' => 'immutable_datetime',
             'article_content_fetched_at' => 'immutable_datetime',
