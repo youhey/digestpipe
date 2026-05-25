@@ -159,6 +159,92 @@ Response example:
 }
 ```
 
+## Selection
+
+`selection` describes the deterministic keyword-based gate that runs before
+article analysis.
+
+Current shape:
+
+```json
+{
+  "status": "selected",
+  "score": 12
+}
+```
+
+The API intentionally exposes only the public selection status and score.
+Internal details such as matched keywords and selection reasons are not returned
+by the Article JSON API.
+
+### `selection.status`
+
+Selection status is the current item-level selection state.
+
+Current validation/storage:
+
+- Type: `string`
+- Enum: not enforced at the API layer
+
+Known status values produced by the current pipeline:
+
+```txt
+pending
+needs_content
+selected
+skipped
+```
+
+Meaning:
+
+- `pending`: Selection has not been evaluated yet.
+- `needs_content`: Pre-content selection did not hard-skip the item. Article
+  content should be fetched before final selection.
+- `selected`: The item passed final selection and may proceed to analysis.
+- `skipped`: The item was filtered out by selection and should not proceed to
+  analysis.
+
+### `selection.score`
+
+Selection score is the deterministic keyword score used by the selection gate.
+
+Current validation/storage:
+
+- Type: `integer|null`
+- `null`: Selection has not produced a score yet.
+- Fixed numeric range: not defined.
+
+The score starts from the configured `default_score` and adds the configured
+positive and negative keyword weights for keywords matched in the selection
+input text.
+
+Selection input differs by phase:
+
+- Pre-content selection uses `title` and `excerpt`.
+- Post-content selection uses `title`, `excerpt`, and `article_content_text`.
+
+Current default thresholds:
+
+```txt
+analysis_threshold = 1
+skip_threshold = -50
+```
+
+Current operational behavior:
+
+- Before article content is fetched, items with
+  `score <= skip_threshold` become `skipped`.
+- Before article content is fetched, all other items become `needs_content`.
+- After article content is fetched, items with
+  `score >= analysis_threshold` become `selected`.
+- After article content is fetched, items below `analysis_threshold` become
+  `skipped`.
+
+`selection.score` is not the same as `analysis.classification.importance`.
+Selection score is a deterministic pre-analysis gate based on configured
+keyword weights. `importance` is generated later by the article analysis model
+and is exported as downstream metadata.
+
 ## Analysis Classification
 
 `analysis.classification` is part of the stored `analysis_json`.
