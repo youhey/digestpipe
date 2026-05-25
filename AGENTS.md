@@ -149,6 +149,14 @@ Important rules:
 - Avoid adding runtime dependencies that require unmanaged system daemons.
 - Avoid assuming custom nginx behavior in production.
 
+## Laravel Cloud Repository Detection
+
+The root-level `composer.lock` is a Laravel Cloud detection workaround copied from `src/composer.lock`.
+
+Do not treat the repository root as the Laravel application root. The Laravel app remains under `src/`.
+
+Do not edit the root-level `composer.lock` manually. Update dependencies in `src/`, then refresh the copied lock file.
+
 ## Build and Deploy Expectations
 
 For Laravel Cloud, build-time tasks should include things such as:

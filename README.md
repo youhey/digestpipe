@@ -181,6 +181,15 @@ The `src/.env` file is used by the Laravel application.
 
 Laravel application settings should live in `src/.env.example` and `src/.env`, not in `docker-compose.yml`.
 
+## Laravel Cloud Detection Note
+
+The Laravel application lives under `src/`.
+
+A copy of `src/composer.lock` is kept at the repository root as a temporary Laravel Cloud framework detection workaround.
+The authoritative Composer project remains `src/composer.json` / `src/composer.lock`.
+
+If this workaround proves stable, the root-level lock file may be generated automatically by CI in a future change.
+
 ## Laravel Cloud Assumptions
 
 This project is designed to be deployed to Laravel Cloud.
