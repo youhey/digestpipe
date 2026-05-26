@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -15,7 +15,7 @@ class SelectionRollbackCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    private int $newsItemSequence = 0;
+    private int $digestItemSequence = 0;
 
     public function testSourceOptionIsRequired(): void
     {
@@ -50,7 +50,7 @@ class SelectionRollbackCommandTest extends TestCase
 
     public function testDryRunDoesNotUpdateRecords(): void
     {
-        $item = $this->createNewsItem();
+        $item = $this->createDigestItem();
 
         $exitCode = Artisan::call('digestpipe:selection:rollback', [
             '--source' => 'hacker_news',
@@ -64,7 +64,7 @@ class SelectionRollbackCommandTest extends TestCase
         self::assertStringContainsString('status: skipped', $output);
         self::assertStringContainsString('target records: 1', $output);
         self::assertStringContainsString('DRY RUN: no records were updated.', $output);
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'selection_status' => 'skipped',
             'selection_score' => -100,
@@ -74,7 +74,7 @@ class SelectionRollbackCommandTest extends TestCase
 
     public function testSkippedRecordsForSourceAreRolledBackToPending(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_text' => null,
             'analysis_json' => null,
         ]);
@@ -100,11 +100,11 @@ class SelectionRollbackCommandTest extends TestCase
 
     public function testOtherSourcesAreNotChanged(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
         ]);
-        $otherSourceItem = $this->createNewsItem([
+        $otherSourceItem = $this->createDigestItem([
             'source_key' => 'aws_news',
             'source_name' => 'AWS News',
         ]);
@@ -115,7 +115,7 @@ class SelectionRollbackCommandTest extends TestCase
         ]);
 
         self::assertSame(0, $exitCode);
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $otherSourceItem->id,
             'selection_status' => 'skipped',
             'selection_score' => -100,
@@ -125,7 +125,7 @@ class SelectionRollbackCommandTest extends TestCase
 
     public function testNonSkippedRecordsAreNotChanged(): void
     {
-        $selectedItem = $this->createNewsItem([
+        $selectedItem = $this->createDigestItem([
             'selection_status' => 'selected',
             'selection_score' => 20,
             'selection_reason' => 'above_analysis_threshold',
@@ -137,7 +137,7 @@ class SelectionRollbackCommandTest extends TestCase
         ]);
 
         self::assertSame(0, $exitCode);
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $selectedItem->id,
             'selection_status' => 'selected',
             'selection_score' => 20,
@@ -147,11 +147,11 @@ class SelectionRollbackCommandTest extends TestCase
 
     public function testDownstreamProcessedRecordsAreNotChanged(): void
     {
-        $contentStartedItem = $this->createNewsItem([
+        $contentStartedItem = $this->createDigestItem([
             'article_content_status' => 'completed',
             'article_content_text' => 'Fetched article content.',
         ]);
-        $analysisStartedItem = $this->createNewsItem([
+        $analysisStartedItem = $this->createDigestItem([
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson(),
         ]);
@@ -164,12 +164,12 @@ class SelectionRollbackCommandTest extends TestCase
         self::assertSame(0, $exitCode);
         $output = Artisan::output();
         self::assertStringContainsString('skipped due to downstream processing: 2', $output);
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $contentStartedItem->id,
             'selection_status' => 'skipped',
             'article_content_status' => 'completed',
         ]);
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $analysisStartedItem->id,
             'selection_status' => 'skipped',
             'analysis_status' => 'completed',
@@ -179,12 +179,12 @@ class SelectionRollbackCommandTest extends TestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function createNewsItem(array $attributes = []): NewsItem
+    private function createDigestItem(array $attributes = []): DigestItem
     {
-        ++$this->newsItemSequence;
-        $sequence = $this->newsItemSequence;
+        ++$this->digestItemSequence;
+        $sequence = $this->digestItemSequence;
 
-        return NewsItem::query()->create(array_merge([
+        return DigestItem::query()->create(array_merge([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'external_id' => 'selection-rollback-' . $sequence,

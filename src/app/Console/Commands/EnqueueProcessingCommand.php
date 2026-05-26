@@ -2,20 +2,20 @@
 
 namespace App\Console\Commands;
 
-use App\Items\NewsItemProcessingPlan;
-use App\Items\NewsItemProcessingPlanner;
-use App\Items\NewsItemSelectionResult;
-use App\Items\NewsItemSelector;
-use App\Jobs\AnalyzeNewsItemJob;
-use App\Jobs\FetchNewsItemArticleContentJob;
-use App\Models\NewsItem;
+use App\Items\DigestItemProcessingPlan;
+use App\Items\DigestItemProcessingPlanner;
+use App\Items\DigestItemSelectionResult;
+use App\Items\DigestItemSelector;
+use App\Jobs\AnalyzeDigestItemJob;
+use App\Jobs\FetchDigestItemArticleContentJob;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /**
- * 記事アイテムの状態から次に必要な処理を待ち行列に登録
+ * Digest Item の状態から次に必要な処理を待ち行列に登録
  */
 class EnqueueProcessingCommand extends Command
 {
@@ -27,14 +27,14 @@ class EnqueueProcessingCommand extends Command
 
     protected $description = 'State-aware orchestrator for article content and analysis jobs.';
 
-    private readonly NewsItemProcessingPlanner $planner;
+    private readonly DigestItemProcessingPlanner $planner;
 
-    private readonly NewsItemSelector $selector;
+    private readonly DigestItemSelector $selector;
 
     /**
      * Processing orchestration commandを作成します。
      */
-    public function __construct(NewsItemProcessingPlanner $planner, NewsItemSelector $selector)
+    public function __construct(DigestItemProcessingPlanner $planner, DigestItemSelector $selector)
     {
         $this->planner = $planner;
         $this->selector = $selector;
@@ -43,7 +43,7 @@ class EnqueueProcessingCommand extends Command
     }
 
     /**
-     * 記事アイテムごとに次に遷移するべき処理を1つだけ `dispatch` する
+     * Digest Item ごとに次に遷移するべき処理を1つだけ `dispatch` する
      *
      * @return int success=0 or failure=1 or invalid=2
      */
@@ -61,7 +61,7 @@ class EnqueueProcessingCommand extends Command
             return self::INVALID;
         }
 
-        Log::info('News item processing enqueue command started.', [
+        Log::info('Digest item processing enqueue command started.', [
             'dry_run' => $dryRun,
             'source_filter' => $sourceKey,
             'stage_filter' => $stage,
@@ -97,7 +97,7 @@ class EnqueueProcessingCommand extends Command
 
             if ($this->selector->enabled() && $selectionResult !== null && $selectionResult->status === 'skipped') {
                 ++$skippedCount;
-                $plan = NewsItemProcessingPlan::none($selectionResult->reason);
+                $plan = DigestItemProcessingPlan::none($selectionResult->reason);
                 $this->logDecision($item, $plan, $dryRun, 'selection_skipped');
                 $this->writeDryRunLine($dryRun, $item, $plan);
 
@@ -106,7 +106,7 @@ class EnqueueProcessingCommand extends Command
 
             if ($this->selector->enabled() && ! $this->selectionAllowsPlanning($item, $selectionResult)) {
                 ++$skippedCount;
-                $plan = NewsItemProcessingPlan::none('selection_' . $this->effectiveSelectionStatus($item, $selectionResult));
+                $plan = DigestItemProcessingPlan::none('selection_' . $this->effectiveSelectionStatus($item, $selectionResult));
                 $this->logDecision($item, $plan, $dryRun, 'selection_blocked');
                 $this->writeDryRunLine($dryRun, $item, $plan);
 
@@ -145,7 +145,7 @@ class EnqueueProcessingCommand extends Command
             }
         }
 
-        Log::info('News item processing enqueue command finished.', [
+        Log::info('Digest item processing enqueue command finished.', [
             'dry_run' => $dryRun,
             'source_filter' => $sourceKey,
             'stage_filter' => $stage,
@@ -175,7 +175,7 @@ class EnqueueProcessingCommand extends Command
         return self::SUCCESS;
     }
 
-    private function selectItem(NewsItem $item, bool $dryRun): ?NewsItemSelectionResult
+    private function selectItem(DigestItem $item, bool $dryRun): ?DigestItemSelectionResult
     {
         if (! $this->selector->enabled()) {
             return null;
@@ -193,8 +193,8 @@ class EnqueueProcessingCommand extends Command
             ? $this->selector->evaluatePostContent($item)
             : $this->selector->evaluatePreContent($item);
 
-        Log::debug('News item selection evaluated.', [
-            'news_item_id' => $item->id,
+        Log::debug('Digest item selection evaluated.', [
+            'digest_item_id' => $item->id,
             'source_key' => $item->source_key,
             'dry_run' => $dryRun,
             'selection_status' => $result->status,
@@ -217,7 +217,7 @@ class EnqueueProcessingCommand extends Command
         return $result;
     }
 
-    private function selectionAllowsPlanning(NewsItem $item, ?NewsItemSelectionResult $selectionResult): bool
+    private function selectionAllowsPlanning(DigestItem $item, ?DigestItemSelectionResult $selectionResult): bool
     {
         $status = $this->effectiveSelectionStatus($item, $selectionResult);
 
@@ -232,40 +232,40 @@ class EnqueueProcessingCommand extends Command
         return in_array($item->article_content_status, ['pending', 'queued', 'processing'], true);
     }
 
-    private function effectiveSelectionStatus(NewsItem $item, ?NewsItemSelectionResult $selectionResult): string
+    private function effectiveSelectionStatus(DigestItem $item, ?DigestItemSelectionResult $selectionResult): string
     {
-        if ($selectionResult instanceof NewsItemSelectionResult) {
+        if ($selectionResult instanceof DigestItemSelectionResult) {
             return $selectionResult->status;
         }
 
         return $item->selection_status;
     }
 
-    private function hasFinalSelectionInput(NewsItem $item): bool
+    private function hasFinalSelectionInput(DigestItem $item): bool
     {
         return in_array($item->article_content_status, ['completed', 'skipped'], true);
     }
 
     /**
-     * @return list<NewsItem>
+     * @return list<DigestItem>
      */
     private function candidateItems(?string $sourceKey): array
     {
-        $query = NewsItem::query();
+        $query = DigestItem::query();
 
         if ($sourceKey !== null) {
             $query->where('source_key', $sourceKey);
         }
 
-        /** @var list<NewsItem> $items */
+        /** @var list<DigestItem> $items */
         $items = $query->get()->all();
 
-        usort($items, static fn (NewsItem $left, NewsItem $right): int => $left->id <=> $right->id);
+        usort($items, static fn (DigestItem $left, DigestItem $right): int => $left->id <=> $right->id);
 
         return $items;
     }
 
-    private function markQueuedAndDispatch(NewsItem $item, NewsItemProcessingPlan $plan): void
+    private function markQueuedAndDispatch(DigestItem $item, DigestItemProcessingPlan $plan): void
     {
         if ($plan->statusField === null || $plan->jobClass === null) {
             return;
@@ -276,13 +276,13 @@ class EnqueueProcessingCommand extends Command
         ])->save();
 
         match ($plan->jobClass) {
-            FetchNewsItemArticleContentJob::class => FetchNewsItemArticleContentJob::dispatch($item->id),
-            AnalyzeNewsItemJob::class => AnalyzeNewsItemJob::dispatch($item->id),
+            FetchDigestItemArticleContentJob::class => FetchDigestItemArticleContentJob::dispatch($item->id),
+            AnalyzeDigestItemJob::class => AnalyzeDigestItemJob::dispatch($item->id),
             default => throw new InvalidArgumentException("Unsupported processing job [{$plan->jobClass}]."),
         };
 
-        Log::info('News item processing job queued.', [
-            'news_item_id' => $item->id,
+        Log::info('Digest item processing job queued.', [
+            'digest_item_id' => $item->id,
             'source_key' => $item->source_key,
             'stage' => $plan->stage,
             'job' => $this->shortJobName($plan),
@@ -291,14 +291,14 @@ class EnqueueProcessingCommand extends Command
         ]);
     }
 
-    private function writeDryRunLine(bool $dryRun, NewsItem $item, NewsItemProcessingPlan $plan): void
+    private function writeDryRunLine(bool $dryRun, DigestItem $item, DigestItemProcessingPlan $plan): void
     {
         if (! $dryRun) {
             return;
         }
 
         $this->line(sprintf(
-            'DRY RUN: news_item=%d source=%s stage=%s job=%s reason=%s',
+            'DRY RUN: digest_item=%d source=%s stage=%s job=%s reason=%s',
             $item->id,
             $item->source_key,
             $plan->stage ?? 'none',
@@ -307,10 +307,10 @@ class EnqueueProcessingCommand extends Command
         ));
     }
 
-    private function logDecision(NewsItem $item, NewsItemProcessingPlan $plan, bool $dryRun, string $decision): void
+    private function logDecision(DigestItem $item, DigestItemProcessingPlan $plan, bool $dryRun, string $decision): void
     {
-        Log::info('News item processing decision.', [
-            'news_item_id' => $item->id,
+        Log::info('Digest item processing decision.', [
+            'digest_item_id' => $item->id,
             'source_key' => $item->source_key,
             'decision' => $decision,
             'dry_run' => $dryRun,
@@ -324,7 +324,7 @@ class EnqueueProcessingCommand extends Command
         ]);
     }
 
-    private function shortJobName(NewsItemProcessingPlan $plan): ?string
+    private function shortJobName(DigestItemProcessingPlan $plan): ?string
     {
         if ($plan->jobClass === null) {
             return null;

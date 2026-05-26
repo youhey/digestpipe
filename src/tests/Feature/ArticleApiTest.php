@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Digests\DigestExportItemBuilder;
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,7 +17,7 @@ class ArticleApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    private int $newsItemSequence = 0;
+    private int $digestItemSequence = 0;
 
     protected function setUp(): void
     {
@@ -41,7 +41,7 @@ class ArticleApiTest extends TestCase
 
     public function testShowRequiresAuthentication(): void
     {
-        $item = $this->createNewsItem();
+        $item = $this->createDigestItem();
 
         $this->getJson('/api/articles/' . $item->id)
             ->assertUnauthorized();
@@ -58,7 +58,7 @@ class ArticleApiTest extends TestCase
     public function testValidTokenCanAccessIndex(): void
     {
         $this->authenticate();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'selection_status' => 'selected',
             'selection_score' => 12,
             'selection_result' => [
@@ -80,7 +80,7 @@ class ArticleApiTest extends TestCase
     public function testValidTokenCanAccessShow(): void
     {
         $this->authenticate();
-        $item = $this->createNewsItem();
+        $item = $this->createDigestItem();
 
         $this->getJson('/api/articles/' . $item->id)
             ->assertOk()
@@ -90,16 +90,16 @@ class ArticleApiTest extends TestCase
     public function testIndexReturnsOnlyCompletedAnalysisItems(): void
     {
         $this->authenticate();
-        $readyItem = $this->createNewsItem();
+        $readyItem = $this->createDigestItem();
 
         foreach (['pending', 'queued', 'processing', 'failed', 'skipped'] as $status) {
-            $this->createNewsItem([
+            $this->createDigestItem([
                 'analysis_status' => $status,
                 'analysis_json' => $this->analysisJson('Excluded ' . $status),
             ]);
         }
 
-        $this->createNewsItem([
+        $this->createDigestItem([
             'analysis_status' => 'completed',
             'analysis_json' => null,
         ]);
@@ -113,10 +113,10 @@ class ArticleApiTest extends TestCase
     public function testDefaultWindowReturnsRecentItemsAndExcludesOldItems(): void
     {
         $this->authenticate();
-        $recentItem = $this->createNewsItem([
+        $recentItem = $this->createDigestItem([
             'published_at' => CarbonImmutable::parse('2026-05-24T11:00:00Z'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'published_at' => CarbonImmutable::parse('2026-05-23T11:59:59Z'),
         ]);
 
@@ -132,22 +132,22 @@ class ArticleApiTest extends TestCase
     public function testFromToSourceAndLimitFiltersWork(): void
     {
         $this->authenticate();
-        $matchingItem = $this->createNewsItem([
+        $matchingItem = $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'published_at' => CarbonImmutable::parse('2026-05-24T10:00:00Z'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'reuters_top',
             'source_name' => 'Reuters Top News',
             'published_at' => CarbonImmutable::parse('2026-05-24T10:00:00Z'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'published_at' => CarbonImmutable::parse('2026-05-24T07:59:59Z'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'published_at' => CarbonImmutable::parse('2026-05-24T11:00:00Z'),
@@ -164,7 +164,7 @@ class ArticleApiTest extends TestCase
     public function testIndexUsesFetchedAtWhenPublishedAtIsMissing(): void
     {
         $this->authenticate();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'published_at' => null,
             'fetched_at' => CarbonImmutable::parse('2026-05-24T10:00:00Z'),
         ]);
@@ -202,7 +202,7 @@ class ArticleApiTest extends TestCase
     public function testIndexResponseShapeMatchesDigestExportItemBuilder(): void
     {
         $this->authenticate();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'source_url' => 'https://example.test/article',
@@ -226,7 +226,7 @@ class ArticleApiTest extends TestCase
     public function testShowReturnsOneCompletedAnalysisItemById(): void
     {
         $this->authenticate();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'analysis_json' => $this->analysisJson('Show brief', ['technology']),
         ]);
 
@@ -243,11 +243,11 @@ class ArticleApiTest extends TestCase
     public function testShowReturnsNotFoundForMissingOrIncompleteItems(): void
     {
         $this->authenticate();
-        $pendingItem = $this->createNewsItem([
+        $pendingItem = $this->createDigestItem([
             'analysis_status' => 'pending',
             'analysis_json' => $this->analysisJson('Pending brief'),
         ]);
-        $missingJsonItem = $this->createNewsItem([
+        $missingJsonItem = $this->createDigestItem([
             'analysis_status' => 'completed',
             'analysis_json' => null,
         ]);
@@ -263,7 +263,7 @@ class ArticleApiTest extends TestCase
     public function testShowDoesNotExposeRawArticleContent(): void
     {
         $this->authenticate();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_text' => 'Raw article content must not be exposed.',
         ]);
 
@@ -289,12 +289,12 @@ class ArticleApiTest extends TestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function createNewsItem(array $attributes = []): NewsItem
+    private function createDigestItem(array $attributes = []): DigestItem
     {
-        ++$this->newsItemSequence;
-        $sequence = $this->newsItemSequence;
+        ++$this->digestItemSequence;
+        $sequence = $this->digestItemSequence;
 
-        return NewsItem::query()->create(array_merge([
+        return DigestItem::query()->create(array_merge([
             'source_key' => 'example',
             'source_name' => 'Example Source',
             'external_id' => 'api-article-' . $sequence,

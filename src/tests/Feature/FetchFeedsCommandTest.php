@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Log\Events\MessageLogged;
@@ -30,7 +30,7 @@ class FetchFeedsCommandTest extends TestCase
         $this->fetchFeeds()
             ->assertSuccessful();
 
-        $this->assertDatabaseCount('news_items', 2);
+        $this->assertDatabaseCount('digest_items', 2);
     }
 
     public function testSourceOptionFetchesOnlyTheSelectedSource(): void
@@ -60,8 +60,8 @@ class FetchFeedsCommandTest extends TestCase
         $this->fetchFeeds(['--source' => 'reuters_top'])
             ->assertSuccessful();
 
-        $this->assertDatabaseCount('news_items', 1);
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseCount('digest_items', 1);
+        $this->assertDatabaseHas('digest_items', [
             'source_key' => 'reuters_top',
             'title' => 'Reuters item',
         ]);
@@ -83,7 +83,7 @@ class FetchFeedsCommandTest extends TestCase
         $this->fetchFeeds(['--dry-run' => true])
             ->assertSuccessful();
 
-        $this->assertDatabaseCount('news_items', 0);
+        $this->assertDatabaseCount('digest_items', 0);
     }
 
     public function testDuplicateItemsAreSkipped(): void
@@ -99,7 +99,7 @@ class FetchFeedsCommandTest extends TestCase
         $this->fetchFeeds()
             ->assertSuccessful();
 
-        $this->assertDatabaseCount('news_items', 2);
+        $this->assertDatabaseCount('digest_items', 2);
     }
 
     public function testValidFeedItemsAreStoredWithProcessingDefaults(): void
@@ -113,8 +113,8 @@ class FetchFeedsCommandTest extends TestCase
         $this->fetchFeeds(['--limit' => 1])
             ->assertSuccessful();
 
-        $this->assertDatabaseCount('news_items', 1);
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseCount('digest_items', 1);
+        $this->assertDatabaseHas('digest_items', [
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'external_id' => 'hn-1',
@@ -125,7 +125,7 @@ class FetchFeedsCommandTest extends TestCase
             'analysis_status' => 'pending',
         ]);
 
-        $item = NewsItem::query()->firstOrFail();
+        $item = DigestItem::query()->firstOrFail();
 
         self::assertNotSame('', $item->identity_hash);
         self::assertNotSame('', $item->content_hash);
@@ -149,7 +149,7 @@ class FetchFeedsCommandTest extends TestCase
         $this->fetchFeeds()
             ->assertSuccessful();
 
-        $this->assertDatabaseCount('news_items', 0);
+        $this->assertDatabaseCount('digest_items', 0);
         self::assertSame(500, $loggedWarnings[0]['http_status'] ?? null);
     }
 
@@ -171,7 +171,7 @@ class FetchFeedsCommandTest extends TestCase
         $this->fetchFeeds()
             ->assertSuccessful();
 
-        $this->assertDatabaseCount('news_items', 0);
+        $this->assertDatabaseCount('digest_items', 0);
         self::assertSame(RuntimeException::class, $loggedErrors[0]['exception_class'] ?? null);
     }
 
@@ -186,7 +186,7 @@ class FetchFeedsCommandTest extends TestCase
         $this->fetchFeeds()
             ->assertSuccessful();
 
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'source_key' => 'hacker_news',
             'source_url' => 'https://article.example.test/story',
             'discussion_url' => 'https://news.ycombinator.com/item?id=48248014',

@@ -3,11 +3,11 @@
 namespace App\Digests;
 
 use App\Feeds\FeedSourceRepository;
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonInterface;
 
 /**
- * ニュース記事アイテムから構造化 digest export 用の配列を生成
+ * Digest Itemから構造化 digest export 用の配列を生成
  */
 class DigestExportItemBuilder
 {
@@ -24,13 +24,13 @@ class DigestExportItemBuilder
     }
 
     /**
-     * ニュース記事アイテムを downstream 向けの digest record に変換する
+     * Digest Itemを downstream 向けの digest record に変換する
      *
-     * @param NewsItem $item
+     * @param DigestItem $item
      *
      * @return array<string, mixed>
      */
-    public function build(NewsItem $item): array
+    public function build(DigestItem $item): array
     {
         return [
             'id' => $item->id,

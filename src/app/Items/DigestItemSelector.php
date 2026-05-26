@@ -2,22 +2,22 @@
 
 namespace App\Items;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use UnexpectedValueException;
 
 /**
- * ニュース記事アイテムを本文取得前後の2段階で選別する
+ * Digest Itemを本文取得前後の2段階で選別する
  */
-class NewsItemSelector
+class DigestItemSelector
 {
     /**
-     * ニュース記事アイテムを通常の最終 selection として評価する
+     * Digest Itemを通常の最終 selection として評価する
      *
-     * @param NewsItem $item
+     * @param DigestItem $item
      *
-     * @return NewsItemSelectionResult
+     * @return DigestItemSelectionResult
      */
-    public function evaluate(NewsItem $item): NewsItemSelectionResult
+    public function evaluate(DigestItem $item): DigestItemSelectionResult
     {
         return $this->evaluatePostContent($item);
     }
@@ -25,16 +25,16 @@ class NewsItemSelector
     /**
      * 本文取得前の title / excerpt で保守的な selection 結果を返す
      *
-     * @param NewsItem $item
+     * @param DigestItem $item
      *
-     * @return NewsItemSelectionResult
+     * @return DigestItemSelectionResult
      */
-    public function evaluatePreContent(NewsItem $item): NewsItemSelectionResult
+    public function evaluatePreContent(DigestItem $item): DigestItemSelectionResult
     {
         $evaluation = $this->evaluateText($item->title . "\n" . ($item->excerpt ?? ''));
 
         if ($evaluation->score <= $this->integerConfig('skip_threshold')) {
-            return new NewsItemSelectionResult(
+            return new DigestItemSelectionResult(
                 $evaluation->score,
                 'skipped',
                 $evaluation->matchedGoodKeywords,
@@ -43,7 +43,7 @@ class NewsItemSelector
             );
         }
 
-        return new NewsItemSelectionResult(
+        return new DigestItemSelectionResult(
             $evaluation->score,
             'needs_content',
             $evaluation->matchedGoodKeywords,
@@ -55,11 +55,11 @@ class NewsItemSelector
     /**
      * 本文取得後の title / excerpt / article content で最終 selection 結果を返す
      *
-     * @param NewsItem $item
+     * @param DigestItem $item
      *
-     * @return NewsItemSelectionResult
+     * @return DigestItemSelectionResult
      */
-    public function evaluatePostContent(NewsItem $item): NewsItemSelectionResult
+    public function evaluatePostContent(DigestItem $item): DigestItemSelectionResult
     {
         $text = implode("\n", array_filter([
             $item->title,
@@ -69,7 +69,7 @@ class NewsItemSelector
         $evaluation = $this->evaluateText($text);
 
         if ($evaluation->score >= $this->integerConfig('analysis_threshold')) {
-            return new NewsItemSelectionResult(
+            return new DigestItemSelectionResult(
                 $evaluation->score,
                 'selected',
                 $evaluation->matchedGoodKeywords,
@@ -78,7 +78,7 @@ class NewsItemSelector
             );
         }
 
-        return new NewsItemSelectionResult(
+        return new DigestItemSelectionResult(
             $evaluation->score,
             'skipped',
             $evaluation->matchedGoodKeywords,
@@ -97,7 +97,7 @@ class NewsItemSelector
         return (bool) config('digestpipe.selection.enabled', true);
     }
 
-    private function evaluateText(string $text): NewsItemSelectionResult
+    private function evaluateText(string $text): DigestItemSelectionResult
     {
         $score = $this->integerConfig('default_score');
 
@@ -117,7 +117,7 @@ class NewsItemSelector
             }
         }
 
-        return new NewsItemSelectionResult($score, 'evaluated', $matchedGoodKeywords, $matchedBadKeywords, 'score_evaluated');
+        return new DigestItemSelectionResult($score, 'evaluated', $matchedGoodKeywords, $matchedBadKeywords, 'score_evaluated');
     }
 
     private function matches(string $text, string $keyword): bool

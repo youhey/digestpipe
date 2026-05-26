@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
@@ -10,7 +10,7 @@ use InvalidArgumentException;
 use JsonException;
 
 /**
- * ニュース記事アイテムの selection 結果を集計して出力
+ * Digest Itemの selection 結果を集計して出力
  *
  * @phpstan-type SummaryRow array{total: int, selected: int, skipped: int, pending: int, other: int, average_score: float|null, min_score: int|null, max_score: int|null}
  * @phpstan-type SourceRow array{source_key: string, total: int, selected: int, skipped: int, pending: int, other: int, average_score: float|null, min_score: int|null, max_score: int|null}
@@ -65,20 +65,20 @@ class SelectionReportCommand extends Command
     }
 
     /**
-     * @return list<NewsItem>
+     * @return list<DigestItem>
      */
     private function items(CarbonImmutable $from, CarbonImmutable $to, ?string $source): array
     {
-        /** @var list<NewsItem> $items */
-        $items = NewsItem::query()->get()->all();
+        /** @var list<DigestItem> $items */
+        $items = DigestItem::query()->get()->all();
 
         return array_values(array_filter(
             $items,
-            fn (NewsItem $item): bool => $this->matchesFilters($item, $from, $to, $source)
+            fn (DigestItem $item): bool => $this->matchesFilters($item, $from, $to, $source)
         ));
     }
 
-    private function matchesFilters(NewsItem $item, CarbonImmutable $from, CarbonImmutable $to, ?string $source): bool
+    private function matchesFilters(DigestItem $item, CarbonImmutable $from, CarbonImmutable $to, ?string $source): bool
     {
         if ($source !== null && $item->source_key !== $source) {
             return false;
@@ -89,13 +89,13 @@ class SelectionReportCommand extends Command
         return $timestamp >= $from && $timestamp <= $to;
     }
 
-    private function reportTimestamp(NewsItem $item): CarbonInterface
+    private function reportTimestamp(DigestItem $item): CarbonInterface
     {
         return $item->selection_evaluated_at ?? $item->fetched_at;
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return SelectionReport
      */
@@ -124,7 +124,7 @@ class SelectionReportCommand extends Command
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return SummaryRow
      */
@@ -137,7 +137,7 @@ class SelectionReportCommand extends Command
             'selected' => $this->statusCount($items, 'selected'),
             'skipped' => $this->statusCount($items, 'skipped'),
             'pending' => $this->statusCount($items, 'pending'),
-            'other' => count(array_filter($items, fn (NewsItem $item): bool => $this->isOtherStatus($item))),
+            'other' => count(array_filter($items, fn (DigestItem $item): bool => $this->isOtherStatus($item))),
             'average_score' => $scores === [] ? null : round(array_sum($scores) / count($scores), 2),
             'min_score' => $scores === [] ? null : min($scores),
             'max_score' => $scores === [] ? null : max($scores),
@@ -145,13 +145,13 @@ class SelectionReportCommand extends Command
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return list<SourceRow>
      */
     private function sourceBreakdown(array $items): array
     {
-        /** @var array<string, list<NewsItem>> $grouped */
+        /** @var array<string, list<DigestItem>> $grouped */
         $grouped = [];
 
         foreach ($items as $item) {
@@ -171,7 +171,7 @@ class SelectionReportCommand extends Command
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return list<KeywordRow>
      */
@@ -201,7 +201,7 @@ class SelectionReportCommand extends Command
     /**
      * @return list<string>
      */
-    private function matchedKeywords(NewsItem $item, string $field): array
+    private function matchedKeywords(DigestItem $item, string $field): array
     {
         $selectionResult = $item->selection_result;
 
@@ -219,7 +219,7 @@ class SelectionReportCommand extends Command
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return list<RecentRow>
      */
@@ -227,10 +227,10 @@ class SelectionReportCommand extends Command
     {
         $filtered = array_values(array_filter(
             $items,
-            static fn (NewsItem $item): bool => $item->selection_status === $status
+            static fn (DigestItem $item): bool => $item->selection_status === $status
         ));
 
-        usort($filtered, fn (NewsItem $left, NewsItem $right): int => [
+        usort($filtered, fn (DigestItem $left, DigestItem $right): int => [
             $this->reportTimestamp($right)->getTimestamp(),
             $right->id,
         ] <=> [
@@ -239,7 +239,7 @@ class SelectionReportCommand extends Command
         ]);
 
         return array_map(
-            static fn (NewsItem $item): array => [
+            static fn (DigestItem $item): array => [
                 'id' => $item->id,
                 'source_key' => $item->source_key,
                 'selection_score' => $item->selection_score,
@@ -251,27 +251,27 @@ class SelectionReportCommand extends Command
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return list<int>
      */
     private function scores(array $items): array
     {
         return array_values(array_filter(
-            array_map(static fn (NewsItem $item): ?int => $item->selection_score, $items),
+            array_map(static fn (DigestItem $item): ?int => $item->selection_score, $items),
             static fn (?int $score): bool => $score !== null
         ));
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      */
     private function statusCount(array $items, string $status): int
     {
-        return count(array_filter($items, static fn (NewsItem $item): bool => $item->selection_status === $status));
+        return count(array_filter($items, static fn (DigestItem $item): bool => $item->selection_status === $status));
     }
 
-    private function isOtherStatus(NewsItem $item): bool
+    private function isOtherStatus(DigestItem $item): bool
     {
         return ! in_array($item->selection_status, ['selected', 'skipped', 'pending'], true);
     }

@@ -3,9 +3,9 @@
 namespace App\Items;
 
 /**
- * ニュース記事アイテムの selection 評価結果
+ * Digest Itemの selection 評価結果
  */
-class NewsItemSelectionResult
+class DigestItemSelectionResult
 {
     /** @var int selection 対象テキストから算出したスコア */
     public readonly int $score;

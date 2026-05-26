@@ -7,7 +7,7 @@ namespace App\Feeds;
  */
 class ParsedFeed
 {
-    /** @var list<FeedItem> 正規化したニュースのリスト */
+    /** @var list<FeedItem> 正規化した Feed Item のリスト */
     public readonly array $items;
 
     /** @var int 必須項目の不足などで無視したアイテム数 */

@@ -2,15 +2,15 @@
 
 namespace App\Items;
 
-use App\Jobs\AnalyzeNewsItemJob;
-use App\Jobs\FetchNewsItemArticleContentJob;
+use App\Jobs\AnalyzeDigestItemJob;
+use App\Jobs\FetchDigestItemArticleContentJob;
 
 /**
- * ニュース記事アイテムのプロセス間の連携状態
+ * Digest Itemのプロセス間の連携状態
  *
  * 次に処理するべきプロセスを判定するための状態
  */
-class NewsItemProcessingPlan
+class DigestItemProcessingPlan
 {
     /** @var string|null 処理を割り当てるステージ */
     public readonly ?string $stage;
@@ -51,7 +51,7 @@ class NewsItemProcessingPlan
     }
 
     /**
-     * 次にニュース記事の本文取得を必要としている状態を生成して返す
+     * 次にDigest Itemの本文取得を必要としている状態を生成して返す
      *
      * @param string $reason
      *
@@ -59,11 +59,11 @@ class NewsItemProcessingPlan
      */
     public static function contentFetch(string $reason): self
     {
-        return new self('content', FetchNewsItemArticleContentJob::class, 'article_content_status', $reason);
+        return new self('content', FetchDigestItemArticleContentJob::class, 'article_content_status', $reason);
     }
 
     /**
-     * 次にニュース記事の分析を必要としている状態を生成して返す
+     * 次にDigest Itemの分析を必要としている状態を生成して返す
      *
      * @param string $reason
      *
@@ -71,11 +71,11 @@ class NewsItemProcessingPlan
      */
     public static function analysis(string $reason): self
     {
-        return new self('analysis', AnalyzeNewsItemJob::class, 'analysis_status', $reason);
+        return new self('analysis', AnalyzeDigestItemJob::class, 'analysis_status', $reason);
     }
 
     /**
-     * ニュース記事には次に必要な処理がない状態を生成して返す
+     * Digest Itemには次に必要な処理がない状態を生成して返す
      *
      * @param string $reason
      *

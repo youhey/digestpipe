@@ -2,30 +2,30 @@
 
 namespace App\Analysis;
 
-use App\Items\NewsItemTextSelector;
-use App\Models\NewsItem;
+use App\Items\DigestItemTextSelector;
+use App\Models\DigestItem;
 
 /**
- * 外部 API を利用しないでニュース記事の分析結果 JSON を生成
+ * 外部 API を利用しないでDigest Itemの分析結果 JSON を生成
  */
 class FakeArticleAnalyzer implements ArticleAnalyzer
 {
-    private readonly NewsItemTextSelector $textSelector;
+    private readonly DigestItemTextSelector $textSelector;
 
     /**
      * Constructor
      *
-     * @param NewsItemTextSelector|null $textSelector
+     * @param DigestItemTextSelector|null $textSelector
      */
-    public function __construct(?NewsItemTextSelector $textSelector = null)
+    public function __construct(?DigestItemTextSelector $textSelector = null)
     {
-        $this->textSelector = $textSelector ?? new NewsItemTextSelector();
+        $this->textSelector = $textSelector ?? new DigestItemTextSelector();
     }
 
     /**
-     * ニュース記事アイテムから固定形式の構造化した JSON を返す
+     * Digest Itemから固定形式の構造化した JSON を返す
      */
-    public function analyze(NewsItem $item): ArticleAnalysisResult
+    public function analyze(DigestItem $item): ArticleAnalysisResult
     {
         $text = $this->textSelector->bodyText($item) ?? $item->title;
 

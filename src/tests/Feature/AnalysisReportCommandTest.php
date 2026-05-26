@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -15,18 +15,18 @@ class AnalysisReportCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    private int $newsItemSequence = 0;
+    private int $digestItemSequence = 0;
 
     public function testReportsOverallContentTypeCounts(): void
     {
-        $this->createNewsItem(['analysis_json' => $this->analysisJson('news/article')]);
-        $this->createNewsItem(['analysis_json' => $this->analysisJson('news/article')]);
-        $this->createNewsItem(['analysis_json' => $this->analysisJson('blog post')]);
-        $this->createNewsItem([
+        $this->createDigestItem(['analysis_json' => $this->analysisJson('news/article')]);
+        $this->createDigestItem(['analysis_json' => $this->analysisJson('news/article')]);
+        $this->createDigestItem(['analysis_json' => $this->analysisJson('blog post')]);
+        $this->createDigestItem([
             'analysis_status' => 'pending',
             'analysis_json' => $this->analysisJson('pending_type'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'analysis_status' => 'completed',
             'analysis_json' => null,
         ]);
@@ -41,17 +41,17 @@ class AnalysisReportCommandTest extends TestCase
 
     public function testReportsSourceLevelContentTypeCounts(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'analysis_json' => $this->analysisJson('blog post'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'analysis_json' => $this->analysisJson('blog post'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'aws_news',
             'source_name' => 'AWS News',
             'analysis_json' => $this->analysisJson('announcement'),
@@ -66,12 +66,12 @@ class AnalysisReportCommandTest extends TestCase
 
     public function testListsRecentSamples(): void
     {
-        $older = $this->createNewsItem([
+        $older = $this->createDigestItem([
             'title' => 'Older analyzed item',
             'analysis_json' => $this->analysisJson('news_report'),
             'analyzed_at' => CarbonImmutable::parse('2026-05-25T10:00:00Z'),
         ]);
-        $newer = $this->createNewsItem([
+        $newer = $this->createDigestItem([
             'title' => 'Newer analyzed item',
             'analysis_json' => $this->analysisJson('announcement'),
             'analyzed_at' => CarbonImmutable::parse('2026-05-25T11:00:00Z'),
@@ -88,12 +88,12 @@ class AnalysisReportCommandTest extends TestCase
 
     public function testSourceOptionFiltersAllSections(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'analysis_json' => $this->analysisJson('blog post'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'aws_news',
             'source_name' => 'AWS News',
             'analysis_json' => $this->analysisJson('announcement'),
@@ -109,7 +109,7 @@ class AnalysisReportCommandTest extends TestCase
 
     public function testEmptyAnalyzedDataPrintsUsefulMessage(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'analysis_status' => 'pending',
             'analysis_json' => $this->analysisJson('news_article'),
         ]);
@@ -144,12 +144,12 @@ class AnalysisReportCommandTest extends TestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function createNewsItem(array $attributes = []): NewsItem
+    private function createDigestItem(array $attributes = []): DigestItem
     {
-        ++$this->newsItemSequence;
-        $sequence = $this->newsItemSequence;
+        ++$this->digestItemSequence;
+        $sequence = $this->digestItemSequence;
 
-        return NewsItem::query()->create(array_merge([
+        return DigestItem::query()->create(array_merge([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'external_id' => 'analysis-report-' . $sequence,

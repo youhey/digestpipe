@@ -5,7 +5,7 @@ namespace App\Feeds;
 use Carbon\CarbonImmutable;
 
 /**
- * RSS フィードから単一のニュースを取り出して正規化したデータ構造
+ * RSS フィードから単一の Feed Item を取り出して正規化したデータ構造
  */
 class FeedItem
 {

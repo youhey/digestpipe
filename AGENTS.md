@@ -275,7 +275,7 @@ Use comments to describe the role of the class, method, or public property in th
 
 Keep summaries short and concrete. Prefer project vocabulary such as:
 
-- `ニュース記事アイテム`
+- `Digest Item`
 - `RSS フィード情報源`
 - `分析結果 JSON`
 - `構造化した JSON`
@@ -288,7 +288,7 @@ Do not force technical terms into Japanese when the English term is clearer or a
 
 For public properties, prefer a short one-line `@var` comment that gives the type and meaning.
 
-For public methods, include a short behavior summary and add `@param`, `@return`, and `@throws` tags when they clarify the contract. Make sure the summary preserves important preconditions. For example, a job that only handles completed article content should be described as handling content-ready news items, not merely as handling news items.
+For public methods, include a short behavior summary and add `@param`, `@return`, and `@throws` tags when they clarify the contract. Make sure the summary preserves important preconditions. For example, a job that only handles completed article content should be described as handling content-ready digest items, not merely as handling digest items.
 
 `Constructor` is acceptable as the constructor summary when the parameters already make the dependency setup clear.
 

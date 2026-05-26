@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Digests\DigestExportItemBuilder;
 use App\Http\Controllers\Controller;
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Carbon\Exceptions\InvalidFormatException;
@@ -51,7 +51,7 @@ class ArticleController extends Controller
 
         $items = $this->filteredItems($from, $to, $source, $limit);
         $records = array_map(
-            fn (NewsItem $item): array => $this->builder->build($item),
+            fn (DigestItem $item): array => $this->builder->build($item),
             $items,
         );
 
@@ -75,11 +75,11 @@ class ArticleController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $item = NewsItem::query()
+        $item = DigestItem::query()
             ->where('analysis_status', 'completed')
             ->find($id);
 
-        if (! $item instanceof NewsItem || ! $item->hasCompletedAnalysis()) {
+        if (! $item instanceof DigestItem || ! $item->hasCompletedAnalysis()) {
             abort(404);
         }
 
@@ -115,22 +115,22 @@ class ArticleController extends Controller
     }
 
     /**
-     * @return list<NewsItem>
+     * @return list<DigestItem>
      */
     private function filteredItems(CarbonImmutable $from, CarbonImmutable $to, ?string $source, int $limit): array
     {
-        /** @var list<NewsItem> $items */
-        $items = NewsItem::query()
+        /** @var list<DigestItem> $items */
+        $items = DigestItem::query()
             ->where('analysis_status', 'completed')
             ->get()
             ->all();
 
         $items = array_values(array_filter(
             $items,
-            fn (NewsItem $item): bool => $this->matchesIndexFilters($item, $from, $to, $source)
+            fn (DigestItem $item): bool => $this->matchesIndexFilters($item, $from, $to, $source)
         ));
 
-        usort($items, fn (NewsItem $left, NewsItem $right): int => [
+        usort($items, fn (DigestItem $left, DigestItem $right): int => [
             $this->effectiveTimestamp($right)->getTimestamp(),
             $right->id,
         ] <=> [
@@ -141,7 +141,7 @@ class ArticleController extends Controller
         return array_slice($items, 0, $limit);
     }
 
-    private function matchesIndexFilters(NewsItem $item, CarbonImmutable $from, CarbonImmutable $to, ?string $source): bool
+    private function matchesIndexFilters(DigestItem $item, CarbonImmutable $from, CarbonImmutable $to, ?string $source): bool
     {
         if (! $item->hasCompletedAnalysis()) {
             return false;
@@ -156,7 +156,7 @@ class ArticleController extends Controller
         return $timestamp >= $from && $timestamp <= $to;
     }
 
-    private function effectiveTimestamp(NewsItem $item): CarbonInterface
+    private function effectiveTimestamp(DigestItem $item): CarbonInterface
     {
         return $item->published_at ?? $item->fetched_at;
     }

@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Feeds\DigestItemIngestor;
 use App\Feeds\FeedFetcher;
 use App\Feeds\FeedSourceRepository;
-use App\Feeds\NewsItemIngestor;
 use App\Feeds\RssFeedParser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -12,7 +12,7 @@ use InvalidArgumentException;
 use Throwable;
 
 /**
- * RSS 情報源からニュースを取得して未登録の記事アイテムを永続化
+ * RSS 情報源から Feed Item を取得して未登録の Digest Item を永続化
  */
 class FetchFeedsCommand extends Command
 {
@@ -21,7 +21,7 @@ class FetchFeedsCommand extends Command
         {--dry-run : Fetch and parse feeds without writing records}
         {--limit= : Maximum feed items to process per source}';
 
-    protected $description = 'Fetch configured RSS feeds and store new news items.';
+    protected $description = 'Fetch configured RSS feeds and store new digest items.';
 
     private readonly FeedSourceRepository $sources;
 
@@ -29,12 +29,12 @@ class FetchFeedsCommand extends Command
 
     private readonly RssFeedParser $parser;
 
-    private readonly NewsItemIngestor $ingestor;
+    private readonly DigestItemIngestor $ingestor;
 
     /**
      * Constructor
      */
-    public function __construct(FeedSourceRepository $sources, FeedFetcher $fetcher, RssFeedParser $parser, NewsItemIngestor $ingestor)
+    public function __construct(FeedSourceRepository $sources, FeedFetcher $fetcher, RssFeedParser $parser, DigestItemIngestor $ingestor)
     {
         $this->sources = $sources;
         $this->fetcher = $fetcher;
@@ -45,7 +45,7 @@ class FetchFeedsCommand extends Command
     }
 
     /**
-     * 設定されている RSS 情報源からニュースを取得して DB に保存する
+     * 設定されている RSS 情報源から Feed Item を取得して DB に保存する
      *
      * @return int success=0 or failure=1 or invalid=2
      */

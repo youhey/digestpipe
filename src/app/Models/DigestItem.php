@@ -6,7 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * RSS フィードから取得したニュース記事アイテム
+ * RSS フィードから取得したDigest Item
  *
  * @property int $id
  * @property string $source_key
@@ -37,7 +37,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-class NewsItem extends Model
+class DigestItem extends Model
 {
     /** @var list<string> */
     protected $fillable = [

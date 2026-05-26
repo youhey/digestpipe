@@ -70,6 +70,22 @@ php artisan schedule:clear-cache
 This command is for recovery and investigation. Do not run it periodically as
 part of normal operation.
 
+## Queued Job Compatibility
+
+Internal Digest Item jobs currently use these class names:
+
+```txt
+App\Jobs\FetchDigestItemArticleContentJob
+App\Jobs\AnalyzeDigestItemJob
+```
+
+Temporary compatibility wrappers remain for older queued payloads that reference
+the previous `NewsItem` job class names. These wrappers delegate to the current
+Digest Item jobs.
+
+Before removing the wrappers in a later cleanup, drain or discard any queued
+payloads that still reference the old job class names.
+
 ## Selection Report
 
 Use the selection report command to inspect keyword-based item selection from

@@ -11,7 +11,7 @@ use Throwable;
 use UnexpectedValueException;
 
 /**
- * RSS 2.0 / RDF feed XML からニュース記事のアイテム候補を抽出
+ * RSS 2.0 / RDF feed XML からDigest Itemのアイテム候補を抽出
  */
 class RssFeedParser
 {

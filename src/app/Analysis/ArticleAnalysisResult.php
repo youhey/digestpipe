@@ -3,7 +3,7 @@
 namespace App\Analysis;
 
 /**
- * ニュース記事の分析結果を構造化した JSON および使用したモデル名
+ * Digest Itemの分析結果を構造化した JSON および使用したモデル名
  */
 class ArticleAnalysisResult
 {

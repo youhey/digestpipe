@@ -2,21 +2,21 @@
 
 namespace App\Items;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 
 /**
- * ニュース記事アイテムから分析へ渡す本文入力を選択
+ * Digest Itemから分析へ渡す本文入力を選択
  */
-class NewsItemTextSelector
+class DigestItemTextSelector
 {
     /**
      * 記事本文、意味のある `excerpt`、`title` の順で入力用テキストを選択して返す
      *
-     * @param NewsItem $item
+     * @param DigestItem $item
      *
      * @return string|null
      */
-    public function bodyText(NewsItem $item): ?string
+    public function bodyText(DigestItem $item): ?string
     {
         $text = $this->cleanText($item->article_content_text);
 

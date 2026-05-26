@@ -7,8 +7,8 @@ use App\Analysis\ArticleAnalysisResult;
 use App\Analysis\ArticleAnalyzer;
 use App\Analysis\FakeArticleAnalyzer;
 use App\Analysis\OpenAiArticleAnalyzer;
-use App\Jobs\AnalyzeNewsItemJob;
-use App\Models\NewsItem;
+use App\Jobs\AnalyzeDigestItemJob;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -25,13 +25,13 @@ class ArticleAnalysisPipelineTest extends TestCase
 
     public function testFakeAnalyzerStoresValidJsonAndCompletionFields(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'completed',
             'article_content_text' => 'This article explains a concrete source-language story for downstream digest JSON.',
             'analysis_status' => 'queued',
         ]);
 
-        (new AnalyzeNewsItemJob($item->id))->handle(new FakeArticleAnalyzer());
+        (new AnalyzeDigestItemJob($item->id))->handle(new FakeArticleAnalyzer());
 
         $item->refresh();
 
@@ -50,15 +50,15 @@ class ArticleAnalysisPipelineTest extends TestCase
 
     public function testAnalysisJobMarksFailedOnProviderException(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'completed',
             'article_content_text' => 'Usable article content.',
             'analysis_status' => 'queued',
         ]);
 
-        (new AnalyzeNewsItemJob($item->id))->handle(new FailingArticleAnalyzer());
+        (new AnalyzeDigestItemJob($item->id))->handle(new FailingArticleAnalyzer());
 
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'analysis_status' => 'failed',
             'analysis_error' => 'Stub analysis failure.',
@@ -67,7 +67,7 @@ class ArticleAnalysisPipelineTest extends TestCase
 
     public function testAnalysisJobSkipsUnusableInput(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => '',
             'excerpt' => null,
             'article_content_status' => 'skipped',
@@ -75,9 +75,9 @@ class ArticleAnalysisPipelineTest extends TestCase
             'analysis_status' => 'queued',
         ]);
 
-        (new AnalyzeNewsItemJob($item->id))->handle(new FakeArticleAnalyzer());
+        (new AnalyzeDigestItemJob($item->id))->handle(new FakeArticleAnalyzer());
 
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'analysis_status' => 'skipped',
             'analysis_error' => 'Article analysis input was not usable.',
@@ -98,7 +98,7 @@ class ArticleAnalysisPipelineTest extends TestCase
             'https://api.openai.com/v1/responses' => Http::response($this->openAiOutput($this->analysisJson('Short source-language brief.')), 200),
         ]);
 
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'completed',
             'article_content_text' => '<article><p>Extracted <strong>article</strong> text.</p></article>',
             'excerpt' => 'RSS excerpt',
@@ -142,7 +142,7 @@ class ArticleAnalysisPipelineTest extends TestCase
         $this->expectException(ArticleAnalysisException::class);
         $this->expectExceptionMessage('Article analysis response [title] was missing or invalid.');
 
-        $this->app->make(ArticleAnalyzer::class)->analyze($this->createNewsItem([
+        $this->app->make(ArticleAnalyzer::class)->analyze($this->createDigestItem([
             'article_content_status' => 'completed',
             'article_content_text' => 'Usable article content.',
         ]));
@@ -158,7 +158,7 @@ class ArticleAnalysisPipelineTest extends TestCase
         $this->expectException(ArticleAnalysisException::class);
         $this->expectExceptionMessage('OpenAI analysis request failed: connection error.');
 
-        $this->app->make(ArticleAnalyzer::class)->analyze($this->createNewsItem([
+        $this->app->make(ArticleAnalyzer::class)->analyze($this->createDigestItem([
             'article_content_status' => 'completed',
             'article_content_text' => 'Usable article content.',
         ]));
@@ -205,9 +205,9 @@ class ArticleAnalysisPipelineTest extends TestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function createNewsItem(array $attributes = []): NewsItem
+    private function createDigestItem(array $attributes = []): DigestItem
     {
-        return NewsItem::query()->create(array_merge([
+        return DigestItem::query()->create(array_merge([
             'source_key' => 'example',
             'source_name' => 'Example Source',
             'external_id' => 'analysis-external-' . hash('sha256', serialize($attributes)),
@@ -267,7 +267,7 @@ class FailingArticleAnalyzer implements ArticleAnalyzer
     /**
      * 常にanalysis失敗を発生させます。
      */
-    public function analyze(NewsItem $item): ArticleAnalysisResult
+    public function analyze(DigestItem $item): ArticleAnalysisResult
     {
         throw new ArticleAnalysisException('Stub analysis failure.');
     }

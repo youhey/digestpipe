@@ -3,7 +3,7 @@
 namespace App\Feeds;
 
 /**
- * RSS フィード情報源からニュース取得した集計結果
+ * RSS フィード情報源から Digest Item を取り込んだ集計結果
  */
 class IngestFeedItemsResult
 {

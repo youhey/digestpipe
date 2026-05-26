@@ -2,20 +2,20 @@
 
 namespace App\Feeds;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
- * 正規化したニュース記事アイテムを永続化
+ * 正規化したDigest Itemを永続化
  */
-class NewsItemIngestor
+class DigestItemIngestor
 {
     /**
-     * ニュース記事のアイテムを DB に保存
+     * Digest Itemのアイテムを DB に保存
      *
      * @param FeedSource $source RSS フィード情報源
-     * @param list<FeedItem> $items ニュース記事アイテムのリスト
+     * @param list<FeedItem> $items Digest Itemのリスト
      * @param bool $dryRun dry-run フラグ
      *
      * @return IngestFeedItemsResult
@@ -28,7 +28,7 @@ class NewsItemIngestor
 
         foreach ($items as $item) {
             $identityHash = $item->identityHash();
-            $exists = DB::table('news_items')
+            $exists = DB::table('digest_items')
                 ->where('source_key', $source->key)
                 ->where('identity_hash', $identityHash)
                 ->exists();
@@ -45,7 +45,7 @@ class NewsItemIngestor
                 continue;
             }
 
-            NewsItem::query()->create([
+            DigestItem::query()->create([
                 'source_key' => $source->key,
                 'source_name' => $source->name,
                 'external_id' => $item->externalId,

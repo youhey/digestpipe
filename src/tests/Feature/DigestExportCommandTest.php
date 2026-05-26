@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -15,11 +15,11 @@ class DigestExportCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    private int $newsItemSequence = 0;
+    private int $digestItemSequence = 0;
 
     public function testJsonExportIncludesOnlyCompletedAnalysisItems(): void
     {
-        $readyItem = $this->createNewsItem([
+        $readyItem = $this->createDigestItem([
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Ready brief', ['technology']),
             'analysis_model' => 'gpt-test',
@@ -27,13 +27,13 @@ class DigestExportCommandTest extends TestCase
         ]);
 
         foreach (['pending', 'queued', 'processing', 'failed', 'skipped'] as $status) {
-            $this->createNewsItem([
+            $this->createDigestItem([
                 'analysis_status' => $status,
                 'analysis_json' => $this->analysisJson('Excluded brief', ['technology']),
             ]);
         }
 
-        $this->createNewsItem([
+        $this->createDigestItem([
             'analysis_status' => 'completed',
             'analysis_json' => null,
         ]);
@@ -49,7 +49,7 @@ class DigestExportCommandTest extends TestCase
     public function testJsonExportIncludesStableMetadataAndStoredAnalysisWithoutRawArticleContent(): void
     {
         $analysis = $this->analysisJson('Stable brief', ['technology']);
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'source_url' => 'https://example.test/article',
@@ -86,12 +86,12 @@ class DigestExportCommandTest extends TestCase
 
     public function testJsonlExportOutputsOneDigestRecordPerLine(): void
     {
-        $firstItem = $this->createNewsItem([
+        $firstItem = $this->createDigestItem([
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('First brief', ['technology']),
             'published_at' => CarbonImmutable::parse('2026-05-24 12:00:00'),
         ]);
-        $secondItem = $this->createNewsItem([
+        $secondItem = $this->createDigestItem([
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Second brief', ['business']),
             'published_at' => CarbonImmutable::parse('2026-05-23 12:00:00'),
@@ -118,28 +118,28 @@ class DigestExportCommandTest extends TestCase
 
     public function testFiltersAndLimitAreApplied(): void
     {
-        $matchingItem = $this->createNewsItem([
+        $matchingItem = $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'published_at' => CarbonImmutable::parse('2026-05-20 12:00:00'),
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Matching brief', ['technology'], 'news_article'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'reuters_top',
             'source_name' => 'Reuters Top News',
             'published_at' => CarbonImmutable::parse('2026-05-20 12:00:00'),
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Wrong source', ['technology'], 'news_article'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'published_at' => CarbonImmutable::parse('2026-04-30 12:00:00'),
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Wrong date', ['technology'], 'news_article'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'published_at' => CarbonImmutable::parse('2026-05-20 12:00:00'),
@@ -259,12 +259,12 @@ class DigestExportCommandTest extends TestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function createNewsItem(array $attributes = []): NewsItem
+    private function createDigestItem(array $attributes = []): DigestItem
     {
-        ++$this->newsItemSequence;
-        $sequence = $this->newsItemSequence;
+        ++$this->digestItemSequence;
+        $sequence = $this->digestItemSequence;
 
-        return NewsItem::query()->create(array_merge([
+        return DigestItem::query()->create(array_merge([
             'source_key' => 'example',
             'source_name' => 'Example Source',
             'external_id' => 'digest-export-' . $sequence,

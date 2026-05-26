@@ -2,13 +2,13 @@
 
 namespace App\Console\Commands;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
 
 /**
- * selection だけで停止したニュース記事アイテムを再評価可能な状態へ戻す
+ * selection だけで停止したDigest Itemを再評価可能な状態へ戻す
  */
 class SelectionRollbackCommand extends Command
 {
@@ -80,45 +80,45 @@ class SelectionRollbackCommand extends Command
     }
 
     /**
-     * @return list<NewsItem>
+     * @return list<DigestItem>
      */
     private function matchingItems(string $source, string $status): array
     {
-        /** @var list<NewsItem> $items */
-        $items = NewsItem::query()
+        /** @var list<DigestItem> $items */
+        $items = DigestItem::query()
             ->where('source_key', $source)
             ->where('selection_status', $status)
             ->get()
             ->all();
 
-        usort($items, static fn (NewsItem $left, NewsItem $right): int => $left->id <=> $right->id);
+        usort($items, static fn (DigestItem $left, DigestItem $right): int => $left->id <=> $right->id);
 
         return $items;
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
-     * @return list<NewsItem>
+     * @return list<DigestItem>
      */
     private function targetItems(array $items): array
     {
         return array_values(array_filter(
             $items,
-            static fn (NewsItem $item): bool => $item->article_content_status === 'pending'
+            static fn (DigestItem $item): bool => $item->article_content_status === 'pending'
                 && $item->analysis_status === 'pending',
         ));
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return list<array{id: int, source_key: string, selection_score: int|null, title: string}>
      */
     private function sampleItems(array $items): array
     {
         return array_map(
-            static fn (NewsItem $item): array => [
+            static fn (DigestItem $item): array => [
                 'id' => $item->id,
                 'source_key' => $item->source_key,
                 'selection_score' => $item->selection_score,

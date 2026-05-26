@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\AnalyzeNewsItemJob;
-use App\Jobs\FetchNewsItemArticleContentJob;
-use App\Models\NewsItem;
+use App\Jobs\AnalyzeDigestItemJob;
+use App\Jobs\FetchDigestItemArticleContentJob;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
@@ -20,7 +20,7 @@ class ProcessingPipelineTest extends TestCase
 {
     use RefreshDatabase;
 
-    private int $newsItemSequence = 0;
+    private int $digestItemSequence = 0;
 
     protected function setUp(): void
     {
@@ -32,24 +32,24 @@ class ProcessingPipelineTest extends TestCase
     public function testEnqueueCommandCanRun(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem();
+        $item = $this->createDigestItem();
 
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, static fn (FetchDigestItemArticleContentJob $job): bool => $job->digestItemId === $item->id);
     }
 
     public function testDryRunDoesNotDispatchJobsOrChangeStatuses(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem();
+        $item = $this->createDigestItem();
 
         $this->enqueueProcessing(['--dry-run' => true])
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'article_content_status' => 'pending',
             'analysis_status' => 'pending',
@@ -59,14 +59,14 @@ class ProcessingPipelineTest extends TestCase
     public function testPendingArticleContentEnqueuesContentFetchJob(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem();
+        $item = $this->createDigestItem();
 
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, 1);
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 1);
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, static fn (FetchDigestItemArticleContentJob $job): bool => $job->digestItemId === $item->id);
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'article_content_status' => 'queued',
         ]);
@@ -75,7 +75,7 @@ class ProcessingPipelineTest extends TestCase
     public function testQueuedArticleContentDoesNotEnqueueDuplicateContentFetchJob(): void
     {
         Queue::fake();
-        $this->createNewsItem([
+        $this->createDigestItem([
             'article_content_status' => 'queued',
         ]);
 
@@ -88,7 +88,7 @@ class ProcessingPipelineTest extends TestCase
     public function testProcessingArticleContentDoesNotEnqueueAnalysis(): void
     {
         Queue::fake();
-        $this->createNewsItem([
+        $this->createDigestItem([
             'article_content_status' => 'processing',
         ]);
 
@@ -101,7 +101,7 @@ class ProcessingPipelineTest extends TestCase
     public function testCompletedArticleContentWithPendingAnalysisEnqueuesAnalysisJob(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'pending',
         ]);
@@ -109,9 +109,9 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(AnalyzeNewsItemJob::class, 1);
-        Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
+        Queue::assertPushed(AnalyzeDigestItemJob::class, 1);
+        Queue::assertPushed(AnalyzeDigestItemJob::class, static fn (AnalyzeDigestItemJob $job): bool => $job->digestItemId === $item->id);
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'analysis_status' => 'queued',
         ]);
@@ -120,7 +120,7 @@ class ProcessingPipelineTest extends TestCase
     public function testSkippedArticleContentFallsBackToAnalysis(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'skipped',
             'analysis_status' => 'pending',
         ]);
@@ -128,8 +128,8 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
+        Queue::assertPushed(AnalyzeDigestItemJob::class, static fn (AnalyzeDigestItemJob $job): bool => $job->digestItemId === $item->id);
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'analysis_status' => 'queued',
         ]);
@@ -138,7 +138,7 @@ class ProcessingPipelineTest extends TestCase
     public function testQueuedAnalysisDoesNotEnqueueDuplicateAnalysisJob(): void
     {
         Queue::fake();
-        $this->createNewsItem([
+        $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'queued',
         ]);
@@ -152,7 +152,7 @@ class ProcessingPipelineTest extends TestCase
     public function testProcessingAnalysisDoesNotEnqueueDuplicateAnalysisJob(): void
     {
         Queue::fake();
-        $this->createNewsItem([
+        $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'processing',
         ]);
@@ -166,7 +166,7 @@ class ProcessingPipelineTest extends TestCase
     public function testCompletedAnalysisEnqueuesNothingByDefault(): void
     {
         Queue::fake();
-        $this->createNewsItem([
+        $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Completed analysis'),
@@ -182,7 +182,7 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enableSelectionForTests();
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'Laravel queues in production',
             'excerpt' => 'Practical framework article',
         ]);
@@ -190,8 +190,8 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, static fn (FetchDigestItemArticleContentJob $job): bool => $job->digestItemId === $item->id);
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'selection_status' => 'needs_content',
             'selection_score' => 15,
@@ -204,7 +204,7 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enableSelectionForTests();
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'Plain article without keywords',
             'excerpt' => 'Short feed excerpt',
         ]);
@@ -212,8 +212,8 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, static fn (FetchDigestItemArticleContentJob $job): bool => $job->digestItemId === $item->id);
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'selection_status' => 'needs_content',
             'selection_score' => 0,
@@ -226,7 +226,7 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enableSelectionForTests();
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'Crypto blockchain token news',
             'excerpt' => 'Investment update',
         ]);
@@ -235,7 +235,7 @@ class ProcessingPipelineTest extends TestCase
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'selection_status' => 'skipped',
             'selection_score' => -210,
@@ -249,7 +249,7 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enableSelectionForTests();
         Queue::fake();
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_status' => 'skipped',
             'selection_score' => -100,
             'selection_reason' => 'below_skip_threshold',
@@ -268,7 +268,7 @@ class ProcessingPipelineTest extends TestCase
         $this->enableSelectionForTests();
         Queue::fake();
         $evaluatedAt = CarbonImmutable::parse('2026-05-24T00:00:00Z');
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'Crypto title should not be re-evaluated',
             'selection_status' => 'selected',
             'selection_score' => 15,
@@ -279,7 +279,7 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, static fn (FetchDigestItemArticleContentJob $job): bool => $job->digestItemId === $item->id);
         $item->refresh();
         self::assertSame('selected', $item->selection_status);
         self::assertSame(15, $item->selection_score);
@@ -290,7 +290,7 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enableSelectionForTests();
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'AWS Laravel deployment',
             'selection_status' => 'pending',
             'article_content_status' => 'completed',
@@ -300,8 +300,8 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
+        Queue::assertPushed(AnalyzeDigestItemJob::class, static fn (AnalyzeDigestItemJob $job): bool => $job->digestItemId === $item->id);
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'selection_status' => 'selected',
             'analysis_status' => 'queued',
@@ -312,7 +312,7 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enableSelectionForTests();
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'Plain article without keywords',
             'excerpt' => 'Short feed excerpt',
             'selection_status' => 'needs_content',
@@ -327,7 +327,7 @@ class ProcessingPipelineTest extends TestCase
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'selection_status' => 'skipped',
             'selection_score' => 0,
@@ -340,7 +340,7 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enableSelectionForTests();
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'Plain article title',
             'excerpt' => 'Short feed excerpt',
             'selection_status' => 'needs_content',
@@ -354,8 +354,8 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
+        Queue::assertPushed(AnalyzeDigestItemJob::class, static fn (AnalyzeDigestItemJob $job): bool => $job->digestItemId === $item->id);
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'selection_status' => 'selected',
             'selection_score' => 12,
@@ -368,7 +368,7 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enableSelectionForTests();
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'title' => 'A database internals article',
@@ -378,8 +378,8 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing()
             ->assertSuccessful();
 
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $item->id);
-        $this->assertDatabaseHas('news_items', [
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, static fn (FetchDigestItemArticleContentJob $job): bool => $job->digestItemId === $item->id);
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'selection_status' => 'needs_content',
             'selection_score' => 0,
@@ -391,38 +391,38 @@ class ProcessingPipelineTest extends TestCase
     public function testLimitIsRespectedAsDispatchedJobCount(): void
     {
         Queue::fake();
-        $this->createNewsItem();
-        $this->createNewsItem();
+        $this->createDigestItem();
+        $this->createDigestItem();
 
         $this->enqueueProcessing(['--limit' => 1])
             ->assertSuccessful();
 
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, 1);
-        $this->assertDatabaseCount('news_items', 2);
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 1);
+        $this->assertDatabaseCount('digest_items', 2);
         $this->assertDatabaseCountByArticleContentStatus('queued', 1);
     }
 
     public function testSourceFilterWorks(): void
     {
         Queue::fake();
-        $this->createNewsItem(['source_key' => 'hacker_news']);
-        $reutersItem = $this->createNewsItem(['source_key' => 'reuters_top']);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $reutersItem = $this->createDigestItem(['source_key' => 'reuters_top']);
 
         $this->enqueueProcessing(['--source' => 'reuters_top'])
             ->assertSuccessful();
 
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, 1);
-        Queue::assertPushed(FetchNewsItemArticleContentJob::class, static fn (FetchNewsItemArticleContentJob $job): bool => $job->newsItemId === $reutersItem->id);
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 1);
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, static fn (FetchDigestItemArticleContentJob $job): bool => $job->digestItemId === $reutersItem->id);
         $this->assertDatabaseCountByArticleContentStatus('queued', 1);
     }
 
     public function testStageFilterCanLimitToAnalysis(): void
     {
         Queue::fake();
-        $this->createNewsItem([
+        $this->createDigestItem([
             'article_content_status' => 'pending',
         ]);
-        $analysisItem = $this->createNewsItem([
+        $analysisItem = $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'pending',
         ]);
@@ -430,9 +430,9 @@ class ProcessingPipelineTest extends TestCase
         $this->enqueueProcessing(['--stage' => 'analysis'])
             ->assertSuccessful();
 
-        Queue::assertNotPushed(FetchNewsItemArticleContentJob::class);
-        Queue::assertPushed(AnalyzeNewsItemJob::class, 1);
-        Queue::assertPushed(AnalyzeNewsItemJob::class, static fn (AnalyzeNewsItemJob $job): bool => $job->newsItemId === $analysisItem->id);
+        Queue::assertNotPushed(FetchDigestItemArticleContentJob::class);
+        Queue::assertPushed(AnalyzeDigestItemJob::class, 1);
+        Queue::assertPushed(AnalyzeDigestItemJob::class, static fn (AnalyzeDigestItemJob $job): bool => $job->digestItemId === $analysisItem->id);
     }
 
     public function testInvalidStageReturnsError(): void
@@ -444,39 +444,39 @@ class ProcessingPipelineTest extends TestCase
     public function testDryRunOutputsDecisionInformation(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem();
+        $item = $this->createDigestItem();
         $decisions = [];
 
         Log::listen(static function (MessageLogged $message) use (&$decisions): void {
-            if ($message->message === 'News item processing decision.') {
+            if ($message->message === 'Digest item processing decision.') {
                 $decisions[] = $message->context;
             }
         });
 
         $this->enqueueProcessing(['--dry-run' => true])
-            ->expectsOutputToContain('DRY RUN: news_item=' . $item->id)
+            ->expectsOutputToContain('DRY RUN: digest_item=' . $item->id)
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
         self::assertSame('content', $decisions[0]['stage'] ?? null);
-        self::assertSame('FetchNewsItemArticleContentJob', $decisions[0]['job'] ?? null);
+        self::assertSame('FetchDigestItemArticleContentJob', $decisions[0]['job'] ?? null);
         self::assertSame('article_content_pending', $decisions[0]['reason'] ?? null);
     }
 
     public function testDryRunOutputsAnalysisDecisionWithoutMutation(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'pending',
         ]);
 
         $this->enqueueProcessing(['--dry-run' => true])
-            ->expectsOutputToContain('DRY RUN: news_item=' . $item->id . ' source=example stage=analysis job=AnalyzeNewsItemJob reason=article_content_completed_analysis_pending')
+            ->expectsOutputToContain('DRY RUN: digest_item=' . $item->id . ' source=example stage=analysis job=AnalyzeDigestItemJob reason=article_content_completed_analysis_pending')
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'analysis_status' => 'pending',
         ]);
@@ -485,14 +485,14 @@ class ProcessingPipelineTest extends TestCase
     public function testDryRunOutputsNoDefaultFollowUpForCompletedAnalysis(): void
     {
         Queue::fake();
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Completed analysis'),
         ]);
 
         $this->enqueueProcessing(['--dry-run' => true])
-            ->expectsOutputToContain('DRY RUN: news_item=' . $item->id . ' source=example stage=none job=none reason=analysis_completed')
+            ->expectsOutputToContain('DRY RUN: digest_item=' . $item->id . ' source=example stage=none job=none reason=analysis_completed')
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
@@ -500,17 +500,17 @@ class ProcessingPipelineTest extends TestCase
 
     public function testCompletedAnalysisHelpersRequireCompletedAnalysisJson(): void
     {
-        $readyItem = $this->createNewsItem([
+        $readyItem = $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Ready analysis'),
         ]);
-        $missingJsonItem = $this->createNewsItem([
+        $missingJsonItem = $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'completed',
             'analysis_json' => null,
         ]);
-        $pendingItem = $this->createNewsItem([
+        $pendingItem = $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'pending',
             'analysis_json' => $this->analysisJson('Not ready analysis'),
@@ -537,12 +537,12 @@ class ProcessingPipelineTest extends TestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function createNewsItem(array $attributes = []): NewsItem
+    private function createDigestItem(array $attributes = []): DigestItem
     {
-        ++$this->newsItemSequence;
-        $sequence = $this->newsItemSequence;
+        ++$this->digestItemSequence;
+        $sequence = $this->digestItemSequence;
 
-        return NewsItem::query()->create(array_merge([
+        return DigestItem::query()->create(array_merge([
             'source_key' => 'example',
             'source_name' => 'Example Source',
             'external_id' => 'external-' . $sequence,
@@ -595,7 +595,7 @@ class ProcessingPipelineTest extends TestCase
 
     private function assertDatabaseCountByArticleContentStatus(string $status, int $expectedCount): void
     {
-        $items = NewsItem::query()->where('article_content_status', $status)->get();
+        $items = DigestItem::query()->where('article_content_status', $status)->get();
 
         self::assertCount($expectedCount, $items);
     }

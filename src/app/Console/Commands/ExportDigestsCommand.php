@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Digests\DigestExportItemBuilder;
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Console\Command;
@@ -74,7 +74,7 @@ class ExportDigestsCommand extends Command
         }
 
         $records = array_map(
-            fn (NewsItem $item): array => $this->builder->build($item),
+            fn (DigestItem $item): array => $this->builder->build($item),
             $this->items($limit, $from, $to),
         );
 
@@ -96,7 +96,7 @@ class ExportDigestsCommand extends Command
     }
 
     /**
-     * @return list<NewsItem>
+     * @return list<DigestItem>
      */
     private function items(int $limit, CarbonImmutable|false|null $from, CarbonImmutable|false|null $to): array
     {
@@ -104,18 +104,18 @@ class ExportDigestsCommand extends Command
         $topic = $this->stringOption('topic');
         $contentType = $this->stringOption('content-type');
 
-        /** @var list<NewsItem> $items */
-        $items = NewsItem::query()
+        /** @var list<DigestItem> $items */
+        $items = DigestItem::query()
             ->where('analysis_status', 'completed')
             ->get()
             ->all();
 
         $filteredItems = array_values(array_filter(
             $items,
-            fn (NewsItem $item): bool => $this->matchesFilters($item, $source, $topic, $contentType, $from, $to)
+            fn (DigestItem $item): bool => $this->matchesFilters($item, $source, $topic, $contentType, $from, $to)
         ));
 
-        usort($filteredItems, static fn (NewsItem $left, NewsItem $right): int => [
+        usort($filteredItems, static fn (DigestItem $left, DigestItem $right): int => [
             $right->published_at?->getTimestamp() ?? 0,
             $right->id,
         ] <=> [
@@ -126,7 +126,7 @@ class ExportDigestsCommand extends Command
         return array_slice($filteredItems, 0, $limit);
     }
 
-    private function matchesFilters(NewsItem $item, ?string $source, ?string $topic, ?string $contentType, CarbonImmutable|false|null $from, CarbonImmutable|false|null $to): bool
+    private function matchesFilters(DigestItem $item, ?string $source, ?string $topic, ?string $contentType, CarbonImmutable|false|null $from, CarbonImmutable|false|null $to): bool
     {
         if (! $item->hasCompletedAnalysis()) {
             return false;
@@ -158,7 +158,7 @@ class ExportDigestsCommand extends Command
     /**
      * @return list<string>
      */
-    private function analysisTopics(NewsItem $item): array
+    private function analysisTopics(DigestItem $item): array
     {
         $analysisJson = $item->analysis_json;
 
@@ -181,7 +181,7 @@ class ExportDigestsCommand extends Command
         return array_values(array_filter($topics, static fn (mixed $topic): bool => is_string($topic)));
     }
 
-    private function analysisContentType(NewsItem $item): ?string
+    private function analysisContentType(DigestItem $item): ?string
     {
         $analysisJson = $item->analysis_json;
 

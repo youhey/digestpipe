@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Items\NewsItemSelector;
-use App\Models\NewsItem;
+use App\Items\DigestItemSelector;
+use App\Models\DigestItem;
 use Tests\TestCase;
 
 /**
  * @internal
  */
-class NewsItemSelectorTest extends TestCase
+class DigestItemSelectorTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -39,7 +39,7 @@ class NewsItemSelectorTest extends TestCase
 
     public function testPreContentPositiveKeywordDefersFinalSelection(): void
     {
-        $result = $this->selector()->evaluatePreContent($this->newsItem('Laravel deployment guide', null));
+        $result = $this->selector()->evaluatePreContent($this->digestItem('Laravel deployment guide', null));
 
         self::assertSame(15, $result->score);
         self::assertSame('needs_content', $result->status);
@@ -50,7 +50,7 @@ class NewsItemSelectorTest extends TestCase
 
     public function testPreContentLowScoreDefersFinalSelection(): void
     {
-        $result = $this->selector()->evaluatePreContent($this->newsItem('Plain release note', null));
+        $result = $this->selector()->evaluatePreContent($this->digestItem('Plain release note', null));
 
         self::assertSame(0, $result->score);
         self::assertSame('needs_content', $result->status);
@@ -59,7 +59,7 @@ class NewsItemSelectorTest extends TestCase
 
     public function testPreContentHardNegativeSkipsItem(): void
     {
-        $result = $this->selector()->evaluatePreContent($this->newsItem('Crypto and blockchain update', null));
+        $result = $this->selector()->evaluatePreContent($this->digestItem('Crypto and blockchain update', null));
 
         self::assertSame(-200, $result->score);
         self::assertSame('skipped', $result->status);
@@ -70,7 +70,7 @@ class NewsItemSelectorTest extends TestCase
 
     public function testMixedPositiveAndNegativeScoringUsesTotalScore(): void
     {
-        $result = $this->selector()->evaluate($this->newsItem('Laravel token handling', 'AWS article'));
+        $result = $this->selector()->evaluate($this->digestItem('Laravel token handling', 'AWS article'));
 
         self::assertSame(17, $result->score);
         self::assertSame('selected', $result->status);
@@ -80,7 +80,7 @@ class NewsItemSelectorTest extends TestCase
 
     public function testPostContentItemBelowAnalysisThresholdIsSkipped(): void
     {
-        $result = $this->selector()->evaluatePostContent($this->newsItem('Plain release note', null));
+        $result = $this->selector()->evaluatePostContent($this->digestItem('Plain release note', null));
 
         self::assertSame(0, $result->score);
         self::assertSame('skipped', $result->status);
@@ -89,7 +89,7 @@ class NewsItemSelectorTest extends TestCase
 
     public function testPostContentArticleTextCanSelectItem(): void
     {
-        $item = $this->newsItem('Plain title', 'Plain excerpt');
+        $item = $this->digestItem('Plain title', 'Plain excerpt');
         $item->article_content_text = 'This article explains Laravel deployment.';
 
         $result = $this->selector()->evaluatePostContent($item);
@@ -102,21 +102,21 @@ class NewsItemSelectorTest extends TestCase
 
     public function testJapaneseKeywordMatchingSelectsItem(): void
     {
-        $result = $this->selector()->evaluatePostContent($this->newsItem('自宅サーバーの運用メモ', null));
+        $result = $this->selector()->evaluatePostContent($this->digestItem('自宅サーバーの運用メモ', null));
 
         self::assertSame(12, $result->score);
         self::assertSame('selected', $result->status);
         self::assertSame(['自宅サーバー'], $result->matchedGoodKeywords);
     }
 
-    private function selector(): NewsItemSelector
+    private function selector(): DigestItemSelector
     {
-        return new NewsItemSelector();
+        return new DigestItemSelector();
     }
 
-    private function newsItem(string $title, ?string $excerpt): NewsItem
+    private function digestItem(string $title, ?string $excerpt): DigestItem
     {
-        return new NewsItem([
+        return new DigestItem([
             'title' => $title,
             'excerpt' => $excerpt,
         ]);

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -16,7 +16,7 @@ class SelectionReportCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    private int $newsItemSequence = 0;
+    private int $digestItemSequence = 0;
 
     protected function setUp(): void
     {
@@ -54,19 +54,19 @@ class SelectionReportCommandTest extends TestCase
 
     public function testSummaryCountsSelectionStatusesAndScores(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_status' => 'selected',
             'selection_score' => 12,
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_status' => 'skipped',
             'selection_score' => -100,
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_status' => 'pending',
             'selection_score' => null,
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_status' => 'needs_review',
             'selection_score' => 5,
         ]);
@@ -85,19 +85,19 @@ class SelectionReportCommandTest extends TestCase
 
     public function testSourceBreakdownGroupsSelectionMetricsBySource(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'selection_status' => 'selected',
             'selection_score' => 10,
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'selection_status' => 'skipped',
             'selection_score' => -20,
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'aws_news',
             'source_name' => 'AWS News',
             'selection_status' => 'pending',
@@ -116,22 +116,22 @@ class SelectionReportCommandTest extends TestCase
 
     public function testKeywordAggregationUsesSelectionResultJson(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_result' => [
                 'matched_good_keywords' => ['Laravel', 'AWS'],
                 'matched_bad_keywords' => ['crypto'],
             ],
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_result' => [
                 'matched_good_keywords' => ['Laravel'],
                 'matched_bad_keywords' => ['blockchain'],
             ],
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_result' => null,
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_result' => [
                 'matched_good_keywords' => 'Laravel',
             ],
@@ -151,12 +151,12 @@ class SelectionReportCommandTest extends TestCase
 
     public function testSourceOptionFiltersResults(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'selection_status' => 'selected',
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'source_key' => 'aws_news',
             'source_name' => 'AWS News',
             'selection_status' => 'skipped',
@@ -175,15 +175,15 @@ class SelectionReportCommandTest extends TestCase
 
     public function testHoursOptionFiltersBySelectionTimestampWithFetchedFallback(): void
     {
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_evaluated_at' => CarbonImmutable::parse('2026-05-25T11:00:00Z'),
             'fetched_at' => CarbonImmutable::parse('2026-05-23T11:00:00Z'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_evaluated_at' => null,
             'fetched_at' => CarbonImmutable::parse('2026-05-25T11:30:00Z'),
         ]);
-        $this->createNewsItem([
+        $this->createDigestItem([
             'selection_evaluated_at' => CarbonImmutable::parse('2026-05-23T12:00:00Z'),
             'fetched_at' => CarbonImmutable::parse('2026-05-25T11:45:00Z'),
         ]);
@@ -197,15 +197,15 @@ class SelectionReportCommandTest extends TestCase
 
     public function testRecentSelectedAndSkippedItemsRespectLimit(): void
     {
-        $oldSelected = $this->createNewsItem([
+        $oldSelected = $this->createDigestItem([
             'selection_status' => 'selected',
             'selection_evaluated_at' => CarbonImmutable::parse('2026-05-25T10:00:00Z'),
         ]);
-        $newSelected = $this->createNewsItem([
+        $newSelected = $this->createDigestItem([
             'selection_status' => 'selected',
             'selection_evaluated_at' => CarbonImmutable::parse('2026-05-25T11:00:00Z'),
         ]);
-        $skipped = $this->createNewsItem([
+        $skipped = $this->createDigestItem([
             'selection_status' => 'skipped',
             'selection_score' => -100,
             'selection_reason' => 'below_skip_threshold',
@@ -222,7 +222,7 @@ class SelectionReportCommandTest extends TestCase
 
     public function testJsonFormatReturnsValidJson(): void
     {
-        $this->createNewsItem();
+        $this->createDigestItem();
 
         $document = $this->reportJson();
 
@@ -237,12 +237,12 @@ class SelectionReportCommandTest extends TestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function createNewsItem(array $attributes = []): NewsItem
+    private function createDigestItem(array $attributes = []): DigestItem
     {
-        ++$this->newsItemSequence;
-        $sequence = $this->newsItemSequence;
+        ++$this->digestItemSequence;
+        $sequence = $this->digestItemSequence;
 
-        return NewsItem::query()->create(array_merge([
+        return DigestItem::query()->create(array_merge([
             'source_key' => 'hacker_news',
             'source_name' => 'Hacker News',
             'external_id' => 'selection-report-' . $sequence,

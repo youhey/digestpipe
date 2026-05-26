@@ -3,7 +3,7 @@
 namespace App\Analysis;
 
 /**
- * ニュース記事の分析結果 JSON Schema v1 を検証して正規化
+ * Digest Itemの分析結果 JSON Schema v1 を検証して正規化
  */
 class ArticleAnalysisValidator
 {

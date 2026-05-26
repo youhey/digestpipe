@@ -2,8 +2,8 @@
 
 namespace App\Analysis;
 
-use App\Items\NewsItemTextSelector;
-use App\Models\NewsItem;
+use App\Items\DigestItemTextSelector;
+use App\Models\DigestItem;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -11,38 +11,38 @@ use Illuminate\Support\Facades\Log;
 use JsonException;
 
 /**
- * OpenAI Responses API を使用してニュース記事の分析結果 JSON を生成
+ * OpenAI Responses API を使用してDigest Itemの分析結果 JSON を生成
  */
 class OpenAiArticleAnalyzer implements ArticleAnalyzer
 {
     private const ENDPOINT = 'https://api.openai.com/v1/responses';
 
-    private readonly NewsItemTextSelector $textSelector;
+    private readonly DigestItemTextSelector $textSelector;
 
     private readonly ArticleAnalysisValidator $validator;
 
     /**
      * Constructor
      *
-     * @param NewsItemTextSelector|null $textSelector
+     * @param DigestItemTextSelector|null $textSelector
      * @param ArticleAnalysisValidator|null $validator
      */
-    public function __construct(?NewsItemTextSelector $textSelector = null, ?ArticleAnalysisValidator $validator = null)
+    public function __construct(?DigestItemTextSelector $textSelector = null, ?ArticleAnalysisValidator $validator = null)
     {
-        $this->textSelector = $textSelector ?? new NewsItemTextSelector();
+        $this->textSelector = $textSelector ?? new DigestItemTextSelector();
         $this->validator = $validator ?? new ArticleAnalysisValidator();
     }
 
     /**
-     * ニュース記事アイテムを元の言語のまま分析して構造化した JSON を返す
+     * Digest Itemを元の言語のまま分析して構造化した JSON を返す
      *
-     * @param NewsItem $item
+     * @param DigestItem $item
      *
      * @return ArticleAnalysisResult
      *
      * @throws JsonException
      */
-    public function analyze(NewsItem $item): ArticleAnalysisResult
+    public function analyze(DigestItem $item): ArticleAnalysisResult
     {
         $inputText = $this->textSelector->bodyText($item);
 
@@ -82,13 +82,13 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
      *
      * @return array<string, mixed>
      */
-    private function requestStructuredJson(array $payload, NewsItem $item): array
+    private function requestStructuredJson(array $payload, DigestItem $item): array
     {
         $apiKey = $this->apiKey();
         $model = $this->model();
 
         Log::info('OpenAI article analysis request started.', [
-            'news_item_id' => $item->id,
+            'digest_item_id' => $item->id,
             'source_key' => $item->source_key,
             'model' => $model,
             'schema_version' => $this->schemaVersion(),
@@ -115,7 +115,7 @@ class OpenAiArticleAnalyzer implements ArticleAnalyzer
         $data = $this->decodeJsonObject($jsonText);
 
         Log::info('OpenAI article analysis request finished.', [
-            'news_item_id' => $item->id,
+            'digest_item_id' => $item->id,
             'source_key' => $item->source_key,
             'model' => $model,
             'http_status' => $response->status(),

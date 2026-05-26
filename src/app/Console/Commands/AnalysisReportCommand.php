@@ -3,13 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Feeds\FeedSourceRepository;
-use App\Models\NewsItem;
+use App\Models\DigestItem;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
 
 /**
- * 分析済みニュース記事アイテムの analysis JSON 分布を集計して出力
+ * 分析済みDigest Itemの analysis JSON 分布を集計して出力
  *
  * @phpstan-type ContentTypeRow array{content_type: string, count: int}
  * @phpstan-type SourceContentTypeRow array{source_key: string, content_type: string, count: int}
@@ -74,29 +74,29 @@ class AnalysisReportCommand extends Command
     }
 
     /**
-     * @return list<NewsItem>
+     * @return list<DigestItem>
      */
     private function items(?string $source): array
     {
-        /** @var list<NewsItem> $items */
-        $items = NewsItem::query()
+        /** @var list<DigestItem> $items */
+        $items = DigestItem::query()
             ->where('analysis_status', 'completed')
             ->get()
             ->all();
 
         $filtered = array_values(array_filter(
             $items,
-            fn (NewsItem $item): bool => ($source === null || $item->source_key === $source)
+            fn (DigestItem $item): bool => ($source === null || $item->source_key === $source)
                 && $this->contentType($item) !== null,
         ));
 
-        usort($filtered, static fn (NewsItem $left, NewsItem $right): int => $left->id <=> $right->id);
+        usort($filtered, static fn (DigestItem $left, DigestItem $right): int => $left->id <=> $right->id);
 
         return $filtered;
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return list<ContentTypeRow>
      */
@@ -135,7 +135,7 @@ class AnalysisReportCommand extends Command
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return list<SourceContentTypeRow>
      */
@@ -180,13 +180,13 @@ class AnalysisReportCommand extends Command
     }
 
     /**
-     * @param list<NewsItem> $items
+     * @param list<DigestItem> $items
      *
      * @return list<SampleRow>
      */
     private function recentSamples(array $items, int $limit): array
     {
-        usort($items, fn (NewsItem $left, NewsItem $right): int => [
+        usort($items, fn (DigestItem $left, DigestItem $right): int => [
             $this->sampleTimestamp($right),
             $right->id,
         ] <=> [
@@ -213,7 +213,7 @@ class AnalysisReportCommand extends Command
         return $rows;
     }
 
-    private function contentType(NewsItem $item): ?string
+    private function contentType(DigestItem $item): ?string
     {
         $analysisJson = $item->analysis_json;
 
@@ -236,7 +236,7 @@ class AnalysisReportCommand extends Command
         return trim($contentType);
     }
 
-    private function sampleTimestamp(NewsItem $item): int
+    private function sampleTimestamp(DigestItem $item): int
     {
         if ($item->analyzed_at instanceof CarbonInterface) {
             return $item->analyzed_at->getTimestamp();

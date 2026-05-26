@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Articles\ArticleTextExtractor;
-use App\Items\NewsItemTextSelector;
-use App\Jobs\FetchNewsItemArticleContentJob;
-use App\Models\NewsItem;
+use App\Items\DigestItemTextSelector;
+use App\Jobs\FetchDigestItemArticleContentJob;
+use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -18,7 +18,7 @@ class ArticleContentPipelineTest extends TestCase
 {
     use RefreshDatabase;
 
-    private int $newsItemSequence = 0;
+    private int $digestItemSequence = 0;
 
     public function testFetchJobStoresExtractedArticleTextFromHtml(): void
     {
@@ -26,7 +26,7 @@ class ArticleContentPipelineTest extends TestCase
             'digestpipe.content.min_chars' => 80,
         ]);
 
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'queued',
             'source_url' => 'https://article.example.test/story',
         ]);
@@ -38,7 +38,7 @@ class ArticleContentPipelineTest extends TestCase
         ]);
 
         $extractor = $this->articleTextExtractor();
-        (new FetchNewsItemArticleContentJob($item->id))->handle($extractor);
+        (new FetchDigestItemArticleContentJob($item->id))->handle($extractor);
 
         $item->refresh();
 
@@ -52,7 +52,7 @@ class ArticleContentPipelineTest extends TestCase
 
     public function testFetchJobSkipsNonHtmlResponses(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'queued',
         ]);
 
@@ -63,9 +63,9 @@ class ArticleContentPipelineTest extends TestCase
         ]);
 
         $extractor = $this->articleTextExtractor();
-        (new FetchNewsItemArticleContentJob($item->id))->handle($extractor);
+        (new FetchDigestItemArticleContentJob($item->id))->handle($extractor);
 
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'article_content_status' => 'skipped',
             'article_content_error' => 'Article response was not HTML.',
@@ -74,7 +74,7 @@ class ArticleContentPipelineTest extends TestCase
 
     public function testFetchJobHandlesHttpFailuresSafely(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'queued',
         ]);
 
@@ -85,9 +85,9 @@ class ArticleContentPipelineTest extends TestCase
         ]);
 
         $extractor = $this->articleTextExtractor();
-        (new FetchNewsItemArticleContentJob($item->id))->handle($extractor);
+        (new FetchDigestItemArticleContentJob($item->id))->handle($extractor);
 
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'article_content_status' => 'failed',
             'article_content_error' => 'Article fetch failed with HTTP status 500.',
@@ -96,7 +96,7 @@ class ArticleContentPipelineTest extends TestCase
 
     public function testFetchJobIsIdempotentWhenContentIsAlreadyCompleted(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'article_content_status' => 'completed',
             'article_content_text' => 'Existing article content.',
         ]);
@@ -104,10 +104,10 @@ class ArticleContentPipelineTest extends TestCase
         Http::fake();
 
         $extractor = $this->articleTextExtractor();
-        (new FetchNewsItemArticleContentJob($item->id))->handle($extractor);
+        (new FetchDigestItemArticleContentJob($item->id))->handle($extractor);
 
         Http::assertNothingSent();
-        $this->assertDatabaseHas('news_items', [
+        $this->assertDatabaseHas('digest_items', [
             'id' => $item->id,
             'article_content_status' => 'completed',
             'article_content_text' => 'Existing article content.',
@@ -116,26 +116,26 @@ class ArticleContentPipelineTest extends TestCase
 
     public function testTextSelectorPrefersArticleContentText(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'Original title',
             'excerpt' => 'RSS excerpt',
             'article_content_text' => 'Extracted article text',
         ]);
 
-        $text = (new NewsItemTextSelector())->bodyText($item);
+        $text = (new DigestItemTextSelector())->bodyText($item);
 
         self::assertSame('Extracted article text', $text);
     }
 
     public function testTextSelectorStripsRawHtml(): void
     {
-        $item = $this->createNewsItem([
+        $item = $this->createDigestItem([
             'title' => 'Original title',
             'excerpt' => '<p>RSS <strong>excerpt</strong></p>',
             'article_content_text' => '<article><p>Extracted <strong>article</strong> text</p></article>',
         ]);
 
-        $text = (new NewsItemTextSelector())->bodyText($item);
+        $text = (new DigestItemTextSelector())->bodyText($item);
 
         self::assertSame('Extracted article text', $text);
     }
@@ -143,12 +143,12 @@ class ArticleContentPipelineTest extends TestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function createNewsItem(array $attributes = []): NewsItem
+    private function createDigestItem(array $attributes = []): DigestItem
     {
-        ++$this->newsItemSequence;
-        $sequence = $this->newsItemSequence;
+        ++$this->digestItemSequence;
+        $sequence = $this->digestItemSequence;
 
-        return NewsItem::query()->create(array_merge([
+        return DigestItem::query()->create(array_merge([
             'source_key' => 'example',
             'source_name' => 'Example Source',
             'external_id' => 'article-external-' . $sequence,
