@@ -73,6 +73,16 @@ CI runs Composer validation, dependency installation, Composer audit, migrations
 
 Branch protection can later require the CI check before merge.
 
+## Dependency Maintenance
+
+Dependabot creates weekly update pull requests for Composer dependencies under `src/` and GitHub Actions workflows.
+
+Auto-merge is intentionally disabled. Review security update pull requests early. Normal dependency update pull requests can be reviewed roughly monthly. Major updates should be reviewed manually and carefully.
+
+The authoritative Composer project is under `src/`. The root-level `composer.lock` is only a Laravel Cloud framework detection workaround and is not the authoritative lock file.
+
+Enable GitHub Dependabot alerts and Dependabot security updates in the repository security settings if they are not already enabled.
+
 ## Batch Commands
 
 Run application batch commands through the `php-cli` service.

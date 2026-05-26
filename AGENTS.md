@@ -218,6 +218,12 @@ Use a feature branch and pull request workflow for changes intended for `main`: 
 
 Do not put real OpenAI API keys or other secrets in CI. Use the fake AI driver for automated checks.
 
+Dependabot creates dependency update pull requests for Composer dependencies under `src/` and GitHub Actions workflows. Do not add auto-merge workflows for Dependabot unless explicitly requested.
+
+Review security update pull requests early. Normal dependency update pull requests can be reviewed roughly monthly. Major updates should be reviewed manually and carefully.
+
+Composer updates are managed in `src/`. The root-level `composer.lock` is only a Laravel Cloud detection workaround and is not the authoritative dependency lock.
+
 ## Static Analysis
 
 Use PHPStan for static analysis.
