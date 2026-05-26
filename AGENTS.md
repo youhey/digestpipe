@@ -155,7 +155,9 @@ The root-level `composer.lock` is a Laravel Cloud detection workaround copied fr
 
 Do not treat the repository root as the Laravel application root. The Laravel app remains under `src/`.
 
-Do not edit the root-level `composer.lock` manually. Update dependencies in `src/`, then refresh the copied lock file.
+Do not edit the root-level `composer.lock` as the authoritative dependency lock. Update dependencies in `src/`.
+
+The root-level `composer.lock` is only a framework detection dummy for Laravel Cloud. It does not need to stay fully synchronized with `src/composer.lock` during normal dependency updates.
 
 ## Laravel Cloud MySQL
 
@@ -207,6 +209,14 @@ Use the Makefile for normal test execution:
 ```bash
 make test
 ```
+
+GitHub Actions CI runs on pull requests and pushes to `main`. It should validate Composer metadata, install dependencies under `src/`, run Composer audit, run MySQL migrations, run PHPUnit without parallel mode, run PHPStan, and run PHP-CS-Fixer dry-run.
+
+CI must not deploy. Laravel Cloud remains responsible for deployment from `main`.
+
+Use a feature branch and pull request workflow for changes intended for `main`: create a branch, push it, open a pull request, wait for CI to pass, merge into `main`, and let Laravel Cloud deploy from `main`.
+
+Do not put real OpenAI API keys or other secrets in CI. Use the fake AI driver for automated checks.
 
 ## Static Analysis
 

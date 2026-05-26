@@ -58,6 +58,21 @@ make test and make lint should pass before committing.
 
 make destroy removes containers, images, and volumes. Use it only when you want to reset the local environment completely.
 
+## GitHub Workflow
+
+Use a feature branch and pull request workflow for changes intended for `main`.
+
+1. Create a feature branch.
+2. Push the feature branch.
+3. Open a pull request.
+4. Wait for GitHub Actions CI to pass.
+5. Merge into `main`.
+6. Let Laravel Cloud deploy from `main`.
+
+CI runs Composer validation, dependency installation, Composer audit, migrations against MySQL, PHPUnit, PHPStan, and PHP-CS-Fixer dry-run.
+
+Branch protection can later require the CI check before merge.
+
 ## Batch Commands
 
 Run application batch commands through the `php-cli` service.
@@ -201,7 +216,7 @@ The Laravel application lives under `src/`.
 A copy of `src/composer.lock` is kept at the repository root as a temporary Laravel Cloud framework detection workaround.
 The authoritative Composer project remains `src/composer.json` / `src/composer.lock`.
 
-If this workaround proves stable, the root-level lock file may be generated automatically by CI in a future change.
+The root-level `composer.lock` is only a framework detection dummy for Laravel Cloud. It does not need to stay fully synchronized with `src/composer.lock` during normal dependency updates.
 
 ## Laravel Cloud Assumptions
 
