@@ -50,7 +50,7 @@ Current scheduled commands:
 
 ```txt
 digestpipe:feeds:fetch
-digestpipe:items:enqueue-processing --limit=100
+digestpipe:items:enqueue-processing --limit=100 --per-source-limit=10
 ```
 
 Current scheduler mutex expiration values:

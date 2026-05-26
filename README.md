@@ -96,7 +96,7 @@ docker compose exec -T php-cli php artisan digestpipe:digests:export --limit=20
 
 Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. The command is state-aware and dispatches only the next valid job for each item: article content fetch, then article analysis. The analysis output is structured digest JSON for downstream applications.
 
-`digestpipe:items:enqueue-processing` supports `--limit`, `--dry-run`, `--source`, and `--stage=content|analysis`. `--limit` limits the number of jobs dispatched in one command run.
+`digestpipe:items:enqueue-processing` supports `--limit`, `--per-source-limit`, `--dry-run`, `--source`, and `--stage=content|analysis`. `--limit` limits the total number of candidates in one command run. When `--source` is not specified, `--per-source-limit` limits candidates gathered from each enabled analysis source.
 
 A digest item is ready for downstream digest use when `analysis_status=completed` and `analysis_json` is present.
 

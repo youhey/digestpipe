@@ -652,6 +652,7 @@ State-Aware Orchestrator コマンドです。
 Option:
 
 - `--limit`
+- `--per-source-limit`
 - `--dry-run`
 - `--source`
 - `--stage=content|analysis`

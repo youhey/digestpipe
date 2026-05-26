@@ -402,6 +402,70 @@ class ProcessingPipelineTest extends TestCase
         $this->assertDatabaseCountByArticleContentStatus('queued', 1);
     }
 
+    public function testPerSourceLimitLimitsCandidatesPerSource(): void
+    {
+        Queue::fake();
+        $this->configureFeedSourcesForTests([
+            ['key' => 'hacker_news', 'enabled' => true, 'analysis_enabled' => true],
+            ['key' => 'php_weekly', 'enabled' => true, 'analysis_enabled' => true],
+        ]);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'php_weekly']);
+        $this->createDigestItem(['source_key' => 'php_weekly']);
+        $this->createDigestItem(['source_key' => 'php_weekly']);
+
+        $this->enqueueProcessing(['--limit' => 100, '--per-source-limit' => 2])
+            ->expectsOutputToContain('Source summary:')
+            ->expectsOutputToContain('source=hacker_news candidates=2 planned=2 skipped=0 content=2 analysis=0')
+            ->expectsOutputToContain('source=php_weekly candidates=2 planned=2 skipped=0 content=2 analysis=0')
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 4);
+        $this->assertQueuedCountForSource('hacker_news', 2);
+        $this->assertQueuedCountForSource('php_weekly', 2);
+    }
+
+    public function testGlobalLimitIsRespectedAfterPerSourceCandidateCollection(): void
+    {
+        Queue::fake();
+        $this->configureFeedSourcesForTests([
+            ['key' => 'hacker_news', 'enabled' => true, 'analysis_enabled' => true],
+            ['key' => 'php_weekly', 'enabled' => true, 'analysis_enabled' => true],
+        ]);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'php_weekly']);
+        $this->createDigestItem(['source_key' => 'php_weekly']);
+
+        $this->enqueueProcessing(['--limit' => 3, '--per-source-limit' => 2])
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 3);
+        $this->assertDatabaseCountByArticleContentStatus('queued', 3);
+    }
+
+    public function testMultipleSourcesAreProcessedFairlyWhenSourceIsNotSpecified(): void
+    {
+        Queue::fake();
+        $this->configureFeedSourcesForTests([
+            ['key' => 'hacker_news', 'enabled' => true, 'analysis_enabled' => true],
+            ['key' => 'php_weekly', 'enabled' => true, 'analysis_enabled' => true],
+        ]);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'php_weekly']);
+
+        $this->enqueueProcessing(['--limit' => 100, '--per-source-limit' => 1])
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 2);
+        $this->assertQueuedCountForSource('hacker_news', 1);
+        $this->assertQueuedCountForSource('php_weekly', 1);
+    }
+
     public function testSourceFilterWorks(): void
     {
         Queue::fake();
@@ -414,6 +478,61 @@ class ProcessingPipelineTest extends TestCase
         Queue::assertPushed(FetchDigestItemArticleContentJob::class, 1);
         Queue::assertPushed(FetchDigestItemArticleContentJob::class, static fn (FetchDigestItemArticleContentJob $job): bool => $job->digestItemId === $reutersItem->id);
         $this->assertDatabaseCountByArticleContentStatus('queued', 1);
+    }
+
+    public function testSourceFilterUsesLimitAndIgnoresPerSourceLimit(): void
+    {
+        Queue::fake();
+        $this->createDigestItem(['source_key' => 'reuters_top']);
+        $this->createDigestItem(['source_key' => 'reuters_top']);
+        $this->createDigestItem(['source_key' => 'reuters_top']);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+
+        $this->enqueueProcessing([
+            '--source' => 'reuters_top',
+            '--limit' => 2,
+            '--per-source-limit' => 1,
+        ])->assertSuccessful();
+
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 2);
+        $this->assertQueuedCountForSource('reuters_top', 2);
+        $this->assertQueuedCountForSource('hacker_news', 0);
+    }
+
+    public function testDisabledSourcesAreIgnoredInFairSourceMode(): void
+    {
+        Queue::fake();
+        $this->configureFeedSourcesForTests([
+            ['key' => 'hacker_news', 'enabled' => true, 'analysis_enabled' => true],
+            ['key' => 'disabled_source', 'enabled' => false, 'analysis_enabled' => true],
+        ]);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'disabled_source']);
+
+        $this->enqueueProcessing(['--limit' => 100, '--per-source-limit' => 10])
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 1);
+        $this->assertQueuedCountForSource('hacker_news', 1);
+        $this->assertQueuedCountForSource('disabled_source', 0);
+    }
+
+    public function testAnalysisDisabledSourcesAreIgnoredInFairSourceMode(): void
+    {
+        Queue::fake();
+        $this->configureFeedSourcesForTests([
+            ['key' => 'hacker_news', 'enabled' => true, 'analysis_enabled' => true],
+            ['key' => 'candidate_source', 'enabled' => true, 'analysis_enabled' => false],
+        ]);
+        $this->createDigestItem(['source_key' => 'hacker_news']);
+        $this->createDigestItem(['source_key' => 'candidate_source']);
+
+        $this->enqueueProcessing(['--limit' => 100, '--per-source-limit' => 10])
+            ->assertSuccessful();
+
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 1);
+        $this->assertQueuedCountForSource('hacker_news', 1);
+        $this->assertQueuedCountForSource('candidate_source', 0);
     }
 
     public function testStageFilterCanLimitToAnalysis(): void
@@ -472,7 +591,7 @@ class ProcessingPipelineTest extends TestCase
         ]);
 
         $this->enqueueProcessing(['--dry-run' => true])
-            ->expectsOutputToContain('DRY RUN: digest_item=' . $item->id . ' source=example stage=analysis job=AnalyzeDigestItemJob reason=article_content_completed_analysis_pending')
+            ->expectsOutputToContain('DRY RUN: digest_item=' . $item->id . ' source=hacker_news stage=analysis job=AnalyzeDigestItemJob reason=article_content_completed_analysis_pending')
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
@@ -485,14 +604,14 @@ class ProcessingPipelineTest extends TestCase
     public function testDryRunOutputsNoDefaultFollowUpForCompletedAnalysis(): void
     {
         Queue::fake();
-        $item = $this->createDigestItem([
+        $this->createDigestItem([
             'article_content_status' => 'completed',
             'analysis_status' => 'completed',
             'analysis_json' => $this->analysisJson('Completed analysis'),
         ]);
 
         $this->enqueueProcessing(['--dry-run' => true])
-            ->expectsOutputToContain('DRY RUN: digest_item=' . $item->id . ' source=example stage=none job=none reason=analysis_completed')
+            ->expectsOutputToContain('Processing enqueue finished. Candidates: 0, planned: 0, skipped: 0, content: 0, analysis: 0.')
             ->assertSuccessful();
 
         Queue::assertNothingPushed();
@@ -543,8 +662,8 @@ class ProcessingPipelineTest extends TestCase
         $sequence = $this->digestItemSequence;
 
         return DigestItem::query()->create(array_merge([
-            'source_key' => 'example',
-            'source_name' => 'Example Source',
+            'source_key' => 'hacker_news',
+            'source_name' => 'Hacker News',
             'external_id' => 'external-' . $sequence,
             'identity_hash' => hash('sha256', 'external-' . $sequence),
             'source_url' => 'https://news.example.test/' . $sequence,
@@ -598,6 +717,35 @@ class ProcessingPipelineTest extends TestCase
         $items = DigestItem::query()->where('article_content_status', $status)->get();
 
         self::assertCount($expectedCount, $items);
+    }
+
+    private function assertQueuedCountForSource(string $sourceKey, int $expectedCount): void
+    {
+        $items = DigestItem::query()
+            ->where('source_key', $sourceKey)
+            ->where('article_content_status', 'queued')
+            ->get();
+
+        self::assertCount($expectedCount, $items);
+    }
+
+    /**
+     * @param list<array{key: string, enabled: bool, analysis_enabled: bool}> $sources
+     */
+    private function configureFeedSourcesForTests(array $sources): void
+    {
+        config([
+            'digestpipe.feed_sources' => array_map(static fn (array $source): array => [
+                'key' => $source['key'],
+                'name' => $source['key'],
+                'url' => 'https://example.test/' . $source['key'] . '.xml',
+                'language' => 'en',
+                'enabled' => $source['enabled'],
+                'analysis_enabled' => $source['analysis_enabled'],
+                'tier' => $source['enabled'] && $source['analysis_enabled'] ? 'core' : 'candidate',
+                'category' => 'programming',
+            ], $sources),
+        ]);
     }
 
     private function enableSelectionForTests(): void

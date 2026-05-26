@@ -11,6 +11,8 @@ use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
@@ -20,7 +22,8 @@ use InvalidArgumentException;
 class EnqueueProcessingCommand extends Command
 {
     protected $signature = 'digestpipe:items:enqueue-processing
-        {--limit= : Maximum jobs to enqueue}
+        {--limit= : Maximum candidates to inspect}
+        {--per-source-limit= : Maximum candidates to inspect per source when --source is not specified}
         {--dry-run : Inspect candidate items without dispatching jobs or changing statuses}
         {--source= : Enqueue only one source key}
         {--stage= : Enqueue only one stage: content or analysis}';
@@ -54,6 +57,7 @@ class EnqueueProcessingCommand extends Command
 
         try {
             $limit = $this->limitOption();
+            $perSourceLimit = $this->perSourceLimitOption($sourceKey);
             $stage = $this->stageOption();
         } catch (InvalidArgumentException $exception) {
             $this->error($exception->getMessage());
@@ -66,9 +70,11 @@ class EnqueueProcessingCommand extends Command
             'source_filter' => $sourceKey,
             'stage_filter' => $stage,
             'limit' => $limit,
+            'per_source_limit' => $perSourceLimit,
         ]);
 
-        $items = $this->candidateItems($sourceKey);
+        $items = $this->candidateItems($sourceKey, $limit, $perSourceLimit);
+        $sourceSummary = $this->initialSourceSummary($items);
         $dispatchedCount = 0;
         $skippedCount = 0;
         $plannedCounts = [
@@ -98,6 +104,7 @@ class EnqueueProcessingCommand extends Command
             if ($this->selector->enabled() && $selectionResult !== null && $selectionResult->status === 'skipped') {
                 ++$skippedCount;
                 $plan = DigestItemProcessingPlan::none($selectionResult->reason);
+                $this->recordSourceDecision($sourceSummary, $item, $plan, false);
                 $this->logDecision($item, $plan, $dryRun, 'selection_skipped');
                 $this->writeDryRunLine($dryRun, $item, $plan);
 
@@ -107,6 +114,7 @@ class EnqueueProcessingCommand extends Command
             if ($this->selector->enabled() && ! $this->selectionAllowsPlanning($item, $selectionResult)) {
                 ++$skippedCount;
                 $plan = DigestItemProcessingPlan::none('selection_' . $this->effectiveSelectionStatus($item, $selectionResult));
+                $this->recordSourceDecision($sourceSummary, $item, $plan, false);
                 $this->logDecision($item, $plan, $dryRun, 'selection_blocked');
                 $this->writeDryRunLine($dryRun, $item, $plan);
 
@@ -117,6 +125,7 @@ class EnqueueProcessingCommand extends Command
 
             if ($stage !== null && $plan->stage !== $stage) {
                 ++$skippedCount;
+                $this->recordSourceDecision($sourceSummary, $item, $plan, false);
                 $this->logDecision($item, $plan, $dryRun, 'stage_filtered');
 
                 continue;
@@ -124,12 +133,14 @@ class EnqueueProcessingCommand extends Command
 
             if (! $plan->shouldDispatch()) {
                 ++$skippedCount;
+                $this->recordSourceDecision($sourceSummary, $item, $plan, false);
                 $this->logDecision($item, $plan, $dryRun, 'skipped');
                 $this->writeDryRunLine($dryRun, $item, $plan);
 
                 continue;
             }
 
+            $this->recordSourceDecision($sourceSummary, $item, $plan, true);
             $this->logDecision($item, $plan, $dryRun, 'selected');
 
             if ($dryRun) {
@@ -150,6 +161,7 @@ class EnqueueProcessingCommand extends Command
             'source_filter' => $sourceKey,
             'stage_filter' => $stage,
             'limit' => $limit,
+            'per_source_limit' => $perSourceLimit,
             'candidate_item_count' => count($items),
             'dispatched_job_count' => $dryRun ? 0 : $dispatchedCount,
             'planned_job_count' => $dryRun ? $dispatchedCount : 0,
@@ -160,6 +172,7 @@ class EnqueueProcessingCommand extends Command
             'selection_selected_count' => $selectionCounts['selected'],
             'selection_skipped_count' => $selectionCounts['skipped'],
             'selection_bypassed_count' => $selectionCounts['bypassed'],
+            'source_summary' => array_values($sourceSummary),
         ]);
 
         $this->info(sprintf(
@@ -171,6 +184,7 @@ class EnqueueProcessingCommand extends Command
             $plannedCounts['content'],
             $plannedCounts['analysis'],
         ));
+        $this->writeSourceSummary($sourceSummary);
 
         return self::SUCCESS;
     }
@@ -249,20 +263,117 @@ class EnqueueProcessingCommand extends Command
     /**
      * @return list<DigestItem>
      */
-    private function candidateItems(?string $sourceKey): array
+    private function candidateItems(?string $sourceKey, ?int $limit, ?int $perSourceLimit): array
     {
-        $query = DigestItem::query();
-
         if ($sourceKey !== null) {
-            $query->where('source_key', $sourceKey);
+            return $this->candidateItemsForSource($sourceKey, $limit);
         }
 
-        /** @var list<DigestItem> $items */
-        $items = $query->get()->all();
+        $items = [];
+
+        foreach ($this->eligibleSourceKeys() as $eligibleSourceKey) {
+            $items = array_merge($items, $this->candidateItemsForSource($eligibleSourceKey, $perSourceLimit));
+        }
 
         usort($items, static fn (DigestItem $left, DigestItem $right): int => $left->id <=> $right->id);
 
+        if ($limit !== null) {
+            return array_slice($items, 0, $limit);
+        }
+
         return $items;
+    }
+
+    /**
+     * @return list<DigestItem>
+     */
+    private function candidateItemsForSource(string $sourceKey, ?int $limit): array
+    {
+        $idQuery = DB::table('digest_items')
+            ->select('id')
+            ->where('source_key', $sourceKey)
+            ->where('selection_status', '!=', 'skipped')
+            ->where(static function (QueryBuilder $query): void {
+                $query
+                    ->where('article_content_status', 'pending')
+                    ->orWhere(static function (QueryBuilder $query): void {
+                        $query
+                            ->whereIn('article_content_status', ['completed', 'skipped'])
+                            ->where('analysis_status', 'pending');
+                    });
+            })
+            ->orderBy('id');
+
+        if ($limit !== null) {
+            $idQuery->limit($limit);
+        }
+
+        $ids = [];
+
+        foreach ($idQuery->pluck('id')->all() as $id) {
+            if (is_int($id)) {
+                $ids[] = $id;
+            }
+        }
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $itemsById = DigestItem::query()
+            ->whereKey($ids)
+            ->get()
+            ->keyBy('id');
+
+        $items = [];
+
+        foreach ($ids as $id) {
+            $item = $itemsById->get($id);
+
+            if ($item instanceof DigestItem) {
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function eligibleSourceKeys(): array
+    {
+        $configuredSources = config('digestpipe.feed_sources', []);
+
+        if (! is_array($configuredSources)) {
+            return [];
+        }
+
+        $sourceKeys = [];
+
+        foreach ($configuredSources as $configuredSource) {
+            if (! is_array($configuredSource)) {
+                continue;
+            }
+
+            $sourceKey = $configuredSource['key'] ?? null;
+
+            if (! is_string($sourceKey) || $sourceKey === '') {
+                continue;
+            }
+
+            if (($configuredSource['enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            if (($configuredSource['analysis_enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            $sourceKeys[] = $sourceKey;
+        }
+
+        return $sourceKeys;
     }
 
     private function markQueuedAndDispatch(DigestItem $item, DigestItemProcessingPlan $plan): void
@@ -335,6 +446,96 @@ class EnqueueProcessingCommand extends Command
         return end($parts);
     }
 
+    /**
+     * @param list<DigestItem> $items
+     *
+     * @return array<string, array{source_key: string, candidates: int, planned: int, skipped: int, content: int, analysis: int}>
+     */
+    private function initialSourceSummary(array $items): array
+    {
+        $summary = [];
+
+        foreach ($items as $item) {
+            $sourceKey = $item->source_key;
+
+            if (! isset($summary[$sourceKey])) {
+                $summary[$sourceKey] = [
+                    'source_key' => $sourceKey,
+                    'candidates' => 0,
+                    'planned' => 0,
+                    'skipped' => 0,
+                    'content' => 0,
+                    'analysis' => 0,
+                ];
+            }
+
+            ++$summary[$sourceKey]['candidates'];
+        }
+
+        ksort($summary);
+
+        return $summary;
+    }
+
+    /**
+     * @param array<string, array{source_key: string, candidates: int, planned: int, skipped: int, content: int, analysis: int}> $summary
+     */
+    private function recordSourceDecision(array &$summary, DigestItem $item, DigestItemProcessingPlan $plan, bool $planned): void
+    {
+        $sourceKey = $item->source_key;
+
+        if (! isset($summary[$sourceKey])) {
+            $summary[$sourceKey] = [
+                'source_key' => $sourceKey,
+                'candidates' => 0,
+                'planned' => 0,
+                'skipped' => 0,
+                'content' => 0,
+                'analysis' => 0,
+            ];
+        }
+
+        if (! $planned) {
+            ++$summary[$sourceKey]['skipped'];
+
+            return;
+        }
+
+        ++$summary[$sourceKey]['planned'];
+
+        if ($plan->stage === 'content') {
+            ++$summary[$sourceKey]['content'];
+        }
+
+        if ($plan->stage === 'analysis') {
+            ++$summary[$sourceKey]['analysis'];
+        }
+    }
+
+    /**
+     * @param array<string, array{source_key: string, candidates: int, planned: int, skipped: int, content: int, analysis: int}> $sourceSummary
+     */
+    private function writeSourceSummary(array $sourceSummary): void
+    {
+        if ($sourceSummary === []) {
+            return;
+        }
+
+        $this->line('Source summary:');
+
+        foreach ($sourceSummary as $summary) {
+            $this->line(sprintf(
+                'source=%s candidates=%d planned=%d skipped=%d content=%d analysis=%d',
+                $summary['source_key'],
+                $summary['candidates'],
+                $summary['planned'],
+                $summary['skipped'],
+                $summary['content'],
+                $summary['analysis'],
+            ));
+        }
+    }
+
     private function sourceOption(): ?string
     {
         $value = $this->option('source');
@@ -384,6 +585,27 @@ class EnqueueProcessingCommand extends Command
 
         if (! is_int($limit)) {
             throw new InvalidArgumentException('The --limit option must be a positive integer.');
+        }
+
+        return $limit;
+    }
+
+    private function perSourceLimitOption(?string $sourceKey): ?int
+    {
+        if ($sourceKey !== null) {
+            return null;
+        }
+
+        $value = $this->option('per-source-limit');
+
+        if ($value === null || $value === '') {
+            return 10;
+        }
+
+        $limit = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        if (! is_int($limit)) {
+            throw new InvalidArgumentException('The --per-source-limit option must be a positive integer.');
         }
 
         return $limit;
