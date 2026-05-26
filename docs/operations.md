@@ -41,6 +41,35 @@ API token, does not call private API routes, and does not enqueue jobs.
 This helper is optional. Do not treat it as production infrastructure, a daemon,
 or a replacement for Laravel Cloud Scheduled Tasks and background processes.
 
+## Scheduled Task Mutex
+
+Laravel Scheduler commands use `withoutOverlapping()` locks to prevent duplicate
+scheduled executions.
+
+Current scheduled commands:
+
+```txt
+digestpipe:feeds:fetch
+digestpipe:items:enqueue-processing --limit=100
+```
+
+Current scheduler mutex expiration values:
+
+```txt
+digestpipe:feeds:fetch: 15 minutes
+digestpipe:items:enqueue-processing: 10 minutes
+```
+
+If scheduled tasks appear to stop running, a stale scheduler mutex may be one
+possible cause. For recovery or debugging, clear Laravel's scheduler mutex cache:
+
+```bash
+php artisan schedule:clear-cache
+```
+
+This command is for recovery and investigation. Do not run it periodically as
+part of normal operation.
+
 ## Selection Report
 
 Use the selection report command to inspect keyword-based item selection from

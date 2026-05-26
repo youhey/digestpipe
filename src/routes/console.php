@@ -4,8 +4,8 @@ use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('digestpipe:feeds:fetch')
     ->everyTenMinutes()
-    ->withoutOverlapping();
+    ->withoutOverlapping(15);
 
 Schedule::command('digestpipe:items:enqueue-processing --limit=100')
     ->everyFiveMinutes()
-    ->withoutOverlapping();
+    ->withoutOverlapping(10);
