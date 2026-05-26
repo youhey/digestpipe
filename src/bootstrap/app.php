@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\AnalysisReportCommand;
 use App\Console\Commands\CreateApiUserCommand;
 use App\Console\Commands\EnqueueProcessingCommand;
 use App\Console\Commands\ExportDigestsCommand;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withCommands([
+        AnalysisReportCommand::class,
         CreateApiUserCommand::class,
         EnqueueProcessingCommand::class,
         ExportDigestsCommand::class,
