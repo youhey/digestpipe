@@ -9,7 +9,7 @@ Docker Compose should only define the local containers and middleware services.
 
 ## Services
 
-- `php-cli`: Runs Composer, Artisan, PHPUnit, Pest, PHPStan, and PHP-CS-Fixer.
+- `php-cli`: Runs Composer, Artisan, PHPUnit, Pest, PHPStan, PHP-CS-Fixer, and Composer audit.
 - `php-fpm`: Provides the PHP-FPM runtime for the Laravel web application.
 - `nginx`: Forwards HTTP requests to `php-fpm`.
 - `node`: Runs Node.js, npm, and Vite commands.
@@ -47,9 +47,19 @@ docker compose run --rm php-cli php artisan test
 docker compose run --rm php-cli ./vendor/bin/pest
 docker compose run --rm php-cli ./vendor/bin/phpstan analyse
 docker compose run --rm php-cli ./vendor/bin/php-cs-fixer fix --dry-run --diff
+docker compose run --rm php-cli composer audit --no-interaction
 docker compose run --rm node npm run build
 docker compose run --rm node npm run dev -- --host 0.0.0.0
 ```
+
+Prefer the Makefile for normal validation:
+
+```bash
+make test
+make lint
+```
+
+`make lint` runs static and mechanical checks, including PHPStan, PHP-CS-Fixer dry-run, and Composer audit.
 
 The web application is available at `http://localhost:8080`.
 

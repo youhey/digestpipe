@@ -43,7 +43,7 @@ Typical workflow:
 make build   # First-time setup and container build
 make up      # Start services and prepare the app
 make test    # Run PHPUnit
-make lint    # Run PHPStan and PHP-CS-Fixer dry-run
+make lint    # Run PHPStan, PHP-CS-Fixer dry-run, and Composer audit
 make fix     # Apply PHP-CS-Fixer
 make down    # Stop services
 ```
@@ -55,6 +55,8 @@ make front-build
 ```
 
 make test and make lint should pass before committing.
+
+`make lint` runs static and mechanical checks, including PHPStan, PHP-CS-Fixer dry-run, and Composer audit.
 
 make destroy removes containers, images, and volumes. Use it only when you want to reset the local environment completely.
 

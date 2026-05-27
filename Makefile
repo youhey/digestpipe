@@ -90,7 +90,7 @@ clean:
 test: phpunit
 
 .PHONY: lint
-lint: phpstan php-dry-run-cs
+lint: phpstan php-dry-run-cs php-packages-audit
 
 .PHONY: fix
 fix: php-fix-cs
