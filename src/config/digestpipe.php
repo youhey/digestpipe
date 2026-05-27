@@ -1,8 +1,21 @@
 <?php
 
+$adminAllowedEmails = env('DIGESTPIPE_ADMIN_ALLOWED_EMAILS', '');
+
+if (! is_string($adminAllowedEmails)) {
+    $adminAllowedEmails = '';
+}
+
 return [
     'ai' => [
         'driver' => env('DIGESTPIPE_AI_DRIVER', 'fake'),
+    ],
+
+    'admin' => [
+        'allowed_emails' => array_values(array_filter(array_map(
+            static fn (string $email): string => trim($email),
+            explode(',', $adminAllowedEmails),
+        ), static fn (string $email): bool => $email !== '')),
     ],
 
     'analysis' => [

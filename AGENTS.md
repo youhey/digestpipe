@@ -395,7 +395,7 @@ Use `digestpipe:digests:export` and the private Article JSON API as read-only ex
 
 ## API Authentication
 
-digestpipe uses Laravel Sanctum personal access tokens for private HTTP API access. Do not add OAuth, login APIs, registration APIs, password reset flows, public user management screens, or custom plaintext API token columns unless explicitly requested.
+For private HTTP API access, digestpipe uses Laravel Sanctum personal access tokens. Do not add OAuth, login APIs, registration APIs, password reset flows, public user management screens, or custom plaintext API token columns for API authentication unless explicitly requested.
 
 Manage API users and tokens from Artisan commands:
 
@@ -407,6 +407,18 @@ php artisan digestpipe:users:rotate-api-token user@example.test
 Tokens should use the `digests:read` ability for read-only digest access. Future digest API routes should be protected with `auth:sanctum` and the `digests:read` ability, for example `['auth:sanctum', 'abilities:digests:read']`.
 
 Never log raw personal access tokens. Print newly created or rotated tokens only once in the command output, and do not commit generated tokens.
+
+## Admin Panel
+
+digestpipe has a private Filament admin panel foundation at `/admin`.
+
+Admin login uses Google OAuth only. Do not add password login, registration, password reset, invitation flows, public account management, or role management unless explicitly requested.
+
+Admin access is controlled by `DIGESTPIPE_ADMIN_ALLOWED_EMAILS`. The Google OAuth callback and `User::canAccessPanel()` must both enforce the allow-list. If the allow-list is empty, no user should be allowed into the admin panel.
+
+Do not store or log Google OAuth access tokens, refresh tokens, authorization codes, client secrets, or raw provider payloads.
+
+Domain admin resources such as feed sources, selection keywords, thresholds, Digest Item views, and analysis reports are intentionally deferred. When admin behavior changes, update `docs/admin.md` in the same task.
 
 ## Article JSON API
 

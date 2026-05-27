@@ -127,6 +127,10 @@ The private read-only Article JSON API is documented in [docs/api.md](docs/api.m
 
 Optional PhpStorm HTTP Client smoke tests are documented in [docs/http-client-tests.md](docs/http-client-tests.md).
 
+## Admin Panel
+
+The private Filament admin panel foundation is documented in [docs/admin.md](docs/admin.md). It uses Google OAuth only and allows access only to emails configured in `DIGESTPIPE_ADMIN_ALLOWED_EMAILS`.
+
 ## Operations
 
 Operational notes, including the optional local Laravel Cloud wake polling helper
