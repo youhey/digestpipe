@@ -150,6 +150,112 @@ class AdminAuthenticationTest extends TestCase
             ->assertRedirect('https://accounts.google.example.test/oauth');
     }
 
+    public function testLocalAdminLoginRouteReturnsNotFoundInProductionEnvironment(): void
+    {
+        $this->app->detectEnvironment(static fn (): string => 'production');
+        $this->enableLocalAdminDevLogin('admin@example.test');
+
+        $this->get(route('local.admin.login'))
+            ->assertNotFound();
+
+        $this->assertGuest();
+    }
+
+    public function testLocalAdminLoginRouteReturnsNotFoundWhenDisabled(): void
+    {
+        config([
+            'digestpipe.admin.allowed_emails' => ['admin@example.test'],
+            'digestpipe.admin.dev_login.enabled' => false,
+            'digestpipe.admin.dev_login.email' => 'admin@example.test',
+        ]);
+
+        $this->get(route('local.admin.login'))
+            ->assertNotFound();
+
+        $this->assertGuest();
+    }
+
+    public function testLocalAdminLoginRouteReturnsNotFoundWhenEmailIsMissing(): void
+    {
+        config([
+            'digestpipe.admin.allowed_emails' => ['admin@example.test'],
+            'digestpipe.admin.dev_login.enabled' => true,
+            'digestpipe.admin.dev_login.email' => '',
+        ]);
+
+        $this->get(route('local.admin.login'))
+            ->assertNotFound();
+
+        $this->assertGuest();
+    }
+
+    public function testLocalAdminLoginRouteDeniesDevEmailOutsideAllowList(): void
+    {
+        config([
+            'digestpipe.admin.allowed_emails' => ['admin@example.test'],
+            'digestpipe.admin.dev_login.enabled' => true,
+            'digestpipe.admin.dev_login.email' => 'other@example.test',
+        ]);
+
+        $this->get(route('local.admin.login'))
+            ->assertForbidden();
+
+        $this->assertGuest();
+        self::assertNull(User::query()->where('email', 'other@example.test')->first());
+    }
+
+    public function testLocalAdminLoginRouteLogsInAllowedDevUser(): void
+    {
+        $this->enableLocalAdminDevLogin('admin@example.test');
+
+        $this->get(route('local.admin.login'))
+            ->assertRedirect('/admin');
+
+        $user = User::query()->where('email', 'admin@example.test')->firstOrFail();
+        self::assertSame('Local Admin', $user->name);
+        self::assertNotNull($user->email_verified_at);
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function testLocalAdminLoginUserCanAccessFilamentPanel(): void
+    {
+        $this->enableLocalAdminDevLogin('admin@example.test');
+
+        $this->get(route('local.admin.login'))
+            ->assertRedirect('/admin');
+
+        $this->get('/admin')
+            ->assertOk();
+    }
+
+    public function testLocalAdminLoginUserRemovedFromAllowListCannotAccessFilamentPanel(): void
+    {
+        $this->enableLocalAdminDevLogin('admin@example.test');
+
+        $this->get(route('local.admin.login'))
+            ->assertRedirect('/admin');
+
+        config(['digestpipe.admin.allowed_emails' => []]);
+
+        $this->get('/admin')
+            ->assertForbidden();
+    }
+
+    public function testLocalAdminLoginDoesNotStoreOAuthTokens(): void
+    {
+        $this->enableLocalAdminDevLogin('admin@example.test');
+
+        $this->get(route('local.admin.login'))
+            ->assertRedirect('/admin');
+
+        $user = User::query()->where('email', 'admin@example.test')->firstOrFail();
+        $attributes = $user->getAttributes();
+
+        self::assertArrayNotHasKey('google_token', $attributes);
+        self::assertArrayNotHasKey('access_token', $attributes);
+        self::assertArrayNotHasKey('refresh_token', $attributes);
+    }
+
     private function mockGoogleUser(string $name, string $email): void
     {
         $googleUser = new class($name, $email) implements SocialiteUser {
@@ -206,5 +312,14 @@ class AdminAuthenticationTest extends TestCase
             ->with('google')
             ->once()
             ->andReturn($provider);
+    }
+
+    private function enableLocalAdminDevLogin(string $email): void
+    {
+        config([
+            'digestpipe.admin.allowed_emails' => [$email],
+            'digestpipe.admin.dev_login.enabled' => true,
+            'digestpipe.admin.dev_login.email' => $email,
+        ]);
     }
 }

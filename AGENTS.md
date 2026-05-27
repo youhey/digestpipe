@@ -416,6 +416,8 @@ Admin login uses Google OAuth only. Do not add password login, registration, pas
 
 Admin access is controlled by `DIGESTPIPE_ADMIN_ALLOWED_EMAILS`. The Google OAuth callback and `User::canAccessPanel()` must both enforce the allow-list. If the allow-list is empty, no user should be allowed into the admin panel.
 
+`/_local/admin/login` is a local-only development helper for browser-based Filament UI debugging. It must remain disabled by default, must require `APP_ENV=local` or `APP_ENV=testing`, must require `DIGESTPIPE_ADMIN_DEV_LOGIN_ENABLED=true`, and must only log in `DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL` when that email also passes `DIGESTPIPE_ADMIN_ALLOWED_EMAILS` and `User::canAccessPanel()`.
+
 Do not store or log Google OAuth access tokens, refresh tokens, authorization codes, client secrets, or raw provider payloads.
 
 Domain admin resources such as feed sources, selection keywords, thresholds, Digest Item views, and analysis reports are intentionally deferred. When admin behavior changes, update `docs/admin.md` in the same task.

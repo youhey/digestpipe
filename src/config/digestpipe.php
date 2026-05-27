@@ -16,6 +16,10 @@ return [
             static fn (string $email): string => trim($email),
             explode(',', $adminAllowedEmails),
         ), static fn (string $email): bool => $email !== '')),
+        'dev_login' => [
+            'enabled' => (bool) env('DIGESTPIPE_ADMIN_DEV_LOGIN_ENABLED', false),
+            'email' => env('DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL'),
+        ],
     ],
 
     'analysis' => [
