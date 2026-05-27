@@ -10,6 +10,18 @@ use UnexpectedValueException;
  */
 class DigestItemSelector
 {
+    private readonly SelectionKeywordRepository $keywords;
+
+    /**
+     * Constructor
+     *
+     * @param SelectionKeywordRepository $keywords
+     */
+    public function __construct(SelectionKeywordRepository $keywords)
+    {
+        $this->keywords = $keywords;
+    }
+
     /**
      * Digest Itemを通常の最終 selection として評価する
      *
@@ -102,7 +114,7 @@ class DigestItemSelector
         $score = $this->integerConfig('default_score');
 
         $matchedGoodKeywords = [];
-        foreach ($this->keywordScores('positive_keywords') as $keyword => $keywordScore) {
+        foreach ($this->keywords->positiveKeywords() as $keyword => $keywordScore) {
             if ($this->matches($text, $keyword)) {
                 $matchedGoodKeywords[] = $keyword;
                 $score += $keywordScore;
@@ -110,7 +122,7 @@ class DigestItemSelector
         }
 
         $matchedBadKeywords = [];
-        foreach ($this->keywordScores('negative_keywords') as $keyword => $keywordScore) {
+        foreach ($this->keywords->negativeKeywords() as $keyword => $keywordScore) {
             if ($this->matches($text, $keyword)) {
                 $matchedBadKeywords[] = $keyword;
                 $score += $keywordScore;
@@ -134,28 +146,5 @@ class DigestItemSelector
         }
 
         return $value;
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    private function keywordScores(string $key): array
-    {
-        $configuredScores = config('digestpipe.selection.' . $key, []);
-
-        if (! is_array($configuredScores)) {
-            throw new UnexpectedValueException("digestpipe.selection.{$key} must be an array.");
-        }
-
-        $scores = [];
-        foreach ($configuredScores as $keyword => $score) {
-            if (! is_string($keyword) || ! is_int($score)) {
-                throw new UnexpectedValueException("digestpipe.selection.{$key} must be an array of keyword score pairs.");
-            }
-
-            $scores[$keyword] = $score;
-        }
-
-        return $scores;
     }
 }

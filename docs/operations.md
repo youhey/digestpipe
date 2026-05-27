@@ -85,6 +85,22 @@ The seeder uses `key` as the stable identifier and does not overwrite existing
 records. This allows later edits made through the Filament admin panel to remain
 in place during normal seed runs.
 
+## Selection Keyword Master Data
+
+Selection Keywords are DB-backed master data in the `selection_keywords` table.
+The authoritative runtime source is the database, not `selection.positive_keywords`
+or `selection.negative_keywords` in `config/digestpipe.php`.
+
+Initial Selection Keywords are inserted by `SelectionKeywordSeeder`:
+
+```bash
+php artisan db:seed --class=SelectionKeywordSeeder
+```
+
+The seeder stores positive and negative keywords in one table using the `type`
+column. It uses `type` + `keyword` as the stable identifier and does not
+overwrite existing records.
+
 ## Queued Job Compatibility
 
 Internal Digest Item jobs currently use these class names:

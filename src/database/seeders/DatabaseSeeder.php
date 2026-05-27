@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(FeedSourceSeeder::class);
+        $this->call(SelectionKeywordSeeder::class);
 
         // User::factory(10)->create();
 

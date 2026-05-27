@@ -6,6 +6,7 @@ use App\Jobs\AnalyzeDigestItemJob;
 use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
 use App\Models\FeedSource;
+use App\Models\SelectionKeyword;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
@@ -763,17 +764,28 @@ class ProcessingPipelineTest extends TestCase
                 'default_score' => 0,
                 'analysis_threshold' => 10,
                 'skip_threshold' => -50,
-                'positive_keywords' => [
-                    'Laravel' => 15,
-                    'AWS' => 12,
-                    'PHP' => 5,
-                ],
-                'negative_keywords' => [
-                    'crypto' => -100,
-                    'blockchain' => -100,
-                    'token' => -10,
-                ],
             ],
+        ]);
+
+        SelectionKeyword::query()->delete();
+        $this->createSelectionKeyword('Laravel', 'positive', 15, 10);
+        $this->createSelectionKeyword('AWS', 'positive', 12, 20);
+        $this->createSelectionKeyword('PHP', 'positive', 5, 30);
+        $this->createSelectionKeyword('crypto', 'negative', -100, 40);
+        $this->createSelectionKeyword('blockchain', 'negative', -100, 50);
+        $this->createSelectionKeyword('token', 'negative', -10, 60);
+    }
+
+    private function createSelectionKeyword(string $keyword, string $type, int $score, int $sortOrder): void
+    {
+        SelectionKeyword::query()->create([
+            'keyword' => $keyword,
+            'type' => $type,
+            'score' => $score,
+            'enabled' => true,
+            'locale' => 'any',
+            'category' => null,
+            'sort_order' => $sortOrder,
         ]);
     }
 }

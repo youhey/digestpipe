@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Items\DigestItemSelector;
 use App\Models\DigestItem;
+use App\Models\SelectionKeyword;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -11,6 +13,8 @@ use Tests\TestCase;
  */
 class DigestItemSelectorTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -21,20 +25,17 @@ class DigestItemSelectorTest extends TestCase
                 'default_score' => 0,
                 'analysis_threshold' => 10,
                 'skip_threshold' => -50,
-                'positive_keywords' => [
-                    'Laravel' => 15,
-                    'AWS' => 12,
-                    'PHP' => 8,
-                    '自宅サーバー' => 12,
-                ],
-                'negative_keywords' => [
-                    'crypto' => -100,
-                    'blockchain' => -100,
-                    'token' => -10,
-                    '資金調達' => -40,
-                ],
             ],
         ]);
+
+        $this->createSelectionKeyword('Laravel', 'positive', 15, 10);
+        $this->createSelectionKeyword('AWS', 'positive', 12, 20);
+        $this->createSelectionKeyword('PHP', 'positive', 8, 30);
+        $this->createSelectionKeyword('自宅サーバー', 'positive', 12, 40);
+        $this->createSelectionKeyword('crypto', 'negative', -100, 50);
+        $this->createSelectionKeyword('blockchain', 'negative', -100, 60);
+        $this->createSelectionKeyword('token', 'negative', -10, 70);
+        $this->createSelectionKeyword('資金調達', 'negative', -40, 80);
     }
 
     public function testPreContentPositiveKeywordDefersFinalSelection(): void
@@ -111,7 +112,7 @@ class DigestItemSelectorTest extends TestCase
 
     private function selector(): DigestItemSelector
     {
-        return new DigestItemSelector();
+        return app(DigestItemSelector::class);
     }
 
     private function digestItem(string $title, ?string $excerpt): DigestItem
@@ -119,6 +120,19 @@ class DigestItemSelectorTest extends TestCase
         return new DigestItem([
             'title' => $title,
             'excerpt' => $excerpt,
+        ]);
+    }
+
+    private function createSelectionKeyword(string $keyword, string $type, int $score, int $sortOrder): void
+    {
+        SelectionKeyword::query()->create([
+            'keyword' => $keyword,
+            'type' => $type,
+            'score' => $score,
+            'enabled' => true,
+            'locale' => 'any',
+            'category' => null,
+            'sort_order' => $sortOrder,
         ]);
     }
 }

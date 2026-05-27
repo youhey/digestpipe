@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Resources\FeedSources\FeedSourceResource;
+use App\Filament\Resources\SelectionKeywords\SelectionKeywordResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -39,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('digestpipe')
             ->resources([
                 FeedSourceResource::class,
+                SelectionKeywordResource::class,
             ])
             ->pages([
                 Dashboard::class,

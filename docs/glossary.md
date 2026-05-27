@@ -233,7 +233,7 @@ php artisan digestpipe:digests:export
 
 選考対象テキストから算出したルールベースの整数値のスコアです。
 
-`default_score` から開始して、設定された `positive_keywords` と `negative_keywords` の重みを title / excerpt / article content にマッチした分だけ加減算します。
+`default_score` から開始して、DB-backed master data の Selection Keyword の重みを title / excerpt / article content にマッチした分だけ加減算します。
 
 固定の最大値・最小値はありません。
 設定されたキーワードの重みとマッチ数に依存します。
@@ -241,16 +241,16 @@ php artisan digestpipe:digests:export
 `selection_score` は `analysis.classification.importance` とは別物です。
 `selection_score` は 分析前の処理ゲートで、`importance` は 分析後に AI が生成するメタデータです。
 
-### Positive Keyword / `positive_keywords`
+### Positive Keyword
 
-Selection Score を加点するキーワードと重みの設定です。
+`selection_keywords.type=positive` として保存される Selection Score 加点用のキーワードと重みです。
 
 「PHP」「Laravel」「AWS」「Linux」「Docker」など、処理したい Digest Item に関係する語が含まれます。
 英語と日本語のキーワードをどちらも扱うので両方の設定が必要です。
 
-### Negative Keyword / `negative_keywords`
+### Negative Keyword
 
-Selection Score を減点するキーワードと重みの設定です。
+`selection_keywords.type=negative` として保存される Selection Score 減点用のキーワードと重みです。
 
 「Crypto」「Web3」「startup funding」など、現時点で優先度を下げたい語が含まれます。
 強い Negative Keyword は本文取得前でも強制スキップされます。

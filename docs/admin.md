@@ -79,7 +79,7 @@ DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL=admin@example.test
 
 ## 現在の範囲
 
-この foundation では Feed Sources resource を実装しています。
+この foundation では Feed Sources resource と Selection Keywords resource を実装しています。
 
 ## Feed Sources
 
@@ -104,9 +104,32 @@ Filament では次の項目を作成・編集できます。
 
 `analysis_enabled=true` は `enabled=false` の Feed Source には設定できません。
 
+## Selection Keywords
+
+Selection Keywords は DB-backed master data です。`src/config/digestpipe.php` の `selection.positive_keywords` / `selection.negative_keywords` ではなく、`selection_keywords` table に保存されます。
+
+初期 Selection Keyword は database seeder で登録されます。Seeder は `type` + `keyword` が既に存在する record を上書きしないため、Filament で編集した値は通常の seed 実行では維持されます。
+
+DB 上では positive / negative keyword を 1 つの table に保存し、`type` で分類します。アプリケーション code は repository から positive / negative の keyword score map として個別に読み込みます。
+
+Filament では次の項目を作成・編集できます。
+
+- `keyword`
+- `type`
+- `score`
+- `enabled`
+- `locale`
+- `category`
+- `notes`
+
+`score` は `type=positive` では正の整数、`type=negative` では負の整数である必要があります。
+
+`sort_order` は通常の form field としては表示しません。Selection Keywords table の reordering で管理します。
+
+Selection threshold は引き続き config-backed です。
+
 今後の候補:
 
-- selection keywords
 - selection thresholds
 - source metadata
 - read-only Digest Item operational views

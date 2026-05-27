@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Admin\AdminEmailAllowList;
 use App\Models\FeedSource;
+use App\Models\SelectionKeyword;
 use App\Models\User;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -280,6 +281,27 @@ class AdminAuthenticationTest extends TestCase
             ->assertOk()
             ->assertSee('Feed Sources')
             ->assertSee('hacker_news');
+    }
+
+    public function testAllowedAdminCanRenderSelectionKeywordResource(): void
+    {
+        config(['digestpipe.admin.allowed_emails' => ['admin@example.test']]);
+        $user = User::factory()->create(['email' => 'admin@example.test']);
+        SelectionKeyword::query()->create([
+            'keyword' => 'Laravel',
+            'type' => 'positive',
+            'score' => 15,
+            'enabled' => true,
+            'locale' => 'any',
+            'category' => 'laravel',
+            'sort_order' => 10,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/admin/selection-keywords')
+            ->assertOk()
+            ->assertSee('Selection Keywords')
+            ->assertSee('Laravel');
     }
 
     private function mockGoogleUser(string $name, string $email): void

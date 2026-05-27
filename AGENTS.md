@@ -422,7 +422,9 @@ Do not store or log Google OAuth access tokens, refresh tokens, authorization co
 
 Feed Sources are DB-backed master data managed through the Filament admin panel. Do not reintroduce `feed_sources` under `config/digestpipe.php`; use the `feed_sources` table, `FeedSourceSeeder`, and `FeedSourceRepository`.
 
-Domain admin resources such as selection keywords, thresholds, Digest Item views, and analysis reports are intentionally deferred. When admin behavior changes, update `docs/admin.md` in the same task.
+Selection Keywords are DB-backed master data managed through the Filament admin panel. Do not reintroduce `selection.positive_keywords` or `selection.negative_keywords` under `config/digestpipe.php`; use the `selection_keywords` table, `SelectionKeywordSeeder`, and `SelectionKeywordRepository`.
+
+Domain admin resources such as thresholds, Digest Item views, and analysis reports are intentionally deferred. When admin behavior changes, update `docs/admin.md` in the same task.
 
 ## Article JSON API
 
