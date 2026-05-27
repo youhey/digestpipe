@@ -225,6 +225,8 @@ The `src/.env` file is used by the Laravel application.
 
 Laravel application settings should live in `src/.env.example` and `src/.env`, not in `docker-compose.yml`.
 
+Laravel 標準以外の digestpipe 固有・外部連携 env は [docs/env.md](docs/env.md) にまとめています。
+
 ## Laravel Cloud Detection Note
 
 The Laravel application lives under `src/`.
