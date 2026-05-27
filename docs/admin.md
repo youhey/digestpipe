@@ -79,7 +79,23 @@ DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL=admin@example.test
 
 ## 現在の範囲
 
-この foundation では Feed Sources resource と Selection Keywords resource を実装しています。
+この foundation では dashboard、Feed Sources resource、Selection Keywords resource を実装しています。
+
+## Dashboard
+
+Filament dashboard は `/admin` にあります。
+
+Phase 1 の dashboard MVP は selection behavior の operational visibility に絞っています。直近 7 日間の Digest Item を対象に、次の情報を表示します。
+
+- Selection KPI
+- Selection status distribution
+- Source breakdown
+- Top positive keywords
+- Top negative keywords
+- Recent selected items
+- Recent skipped items
+
+この dashboard は compact な運用確認用です。Pipeline health、analysis insights、source detail page はまだ実装していません。
 
 ## Feed Sources
 

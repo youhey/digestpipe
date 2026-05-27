@@ -4,6 +4,13 @@ namespace App\Providers\Filament;
 
 use App\Filament\Resources\FeedSources\FeedSourceResource;
 use App\Filament\Resources\SelectionKeywords\SelectionKeywordResource;
+use App\Filament\Widgets\RecentSelectedDigestItemsWidget;
+use App\Filament\Widgets\RecentSkippedDigestItemsWidget;
+use App\Filament\Widgets\SelectionStatsOverviewWidget;
+use App\Filament\Widgets\SelectionStatusChartWidget;
+use App\Filament\Widgets\SourceSelectionBreakdownWidget;
+use App\Filament\Widgets\TopNegativeKeywordsWidget;
+use App\Filament\Widgets\TopPositiveKeywordsWidget;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -44,6 +51,15 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->pages([
                 Dashboard::class,
+            ])
+            ->widgets([
+                SelectionStatsOverviewWidget::class,
+                SelectionStatusChartWidget::class,
+                SourceSelectionBreakdownWidget::class,
+                TopPositiveKeywordsWidget::class,
+                TopNegativeKeywordsWidget::class,
+                RecentSelectedDigestItemsWidget::class,
+                RecentSkippedDigestItemsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

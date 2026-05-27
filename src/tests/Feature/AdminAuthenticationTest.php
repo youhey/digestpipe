@@ -283,6 +283,17 @@ class AdminAuthenticationTest extends TestCase
             ->assertSee('hacker_news');
     }
 
+    public function testAllowedAdminCanRenderDashboardWidgets(): void
+    {
+        config(['digestpipe.admin.allowed_emails' => ['admin@example.test']]);
+        $user = User::factory()->create(['email' => 'admin@example.test']);
+
+        $this->actingAs($user)
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('Dashboard');
+    }
+
     public function testAllowedAdminCanRenderSelectionKeywordResource(): void
     {
         config(['digestpipe.admin.allowed_emails' => ['admin@example.test']]);
