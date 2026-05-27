@@ -70,6 +70,21 @@ php artisan schedule:clear-cache
 This command is for recovery and investigation. Do not run it periodically as
 part of normal operation.
 
+## Feed Source Master Data
+
+Feed Sources are DB-backed master data in the `feed_sources` table. The
+authoritative runtime source is the database, not `config/digestpipe.php`.
+
+Initial Feed Sources are inserted by `FeedSourceSeeder`:
+
+```bash
+php artisan db:seed --class=FeedSourceSeeder
+```
+
+The seeder uses `key` as the stable identifier and does not overwrite existing
+records. This allows later edits made through the Filament admin panel to remain
+in place during normal seed runs.
+
 ## Queued Job Compatibility
 
 Internal Digest Item jobs currently use these class names:

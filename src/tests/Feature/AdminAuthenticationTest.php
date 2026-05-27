@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Admin\AdminEmailAllowList;
+use App\Models\FeedSource;
 use App\Models\User;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -254,6 +255,31 @@ class AdminAuthenticationTest extends TestCase
         self::assertArrayNotHasKey('google_token', $attributes);
         self::assertArrayNotHasKey('access_token', $attributes);
         self::assertArrayNotHasKey('refresh_token', $attributes);
+    }
+
+    public function testAllowedAdminCanRenderFeedSourceResource(): void
+    {
+        config(['digestpipe.admin.allowed_emails' => ['admin@example.test']]);
+        $user = User::factory()->create([
+            'email' => 'admin@example.test',
+        ]);
+        FeedSource::query()->create([
+            'key' => 'hacker_news',
+            'name' => 'Hacker News',
+            'url' => 'https://news.ycombinator.com/rss',
+            'language' => 'en',
+            'enabled' => true,
+            'analysis_enabled' => true,
+            'tier' => 'core',
+            'category' => 'aggregator',
+            'sort_order' => 10,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/admin/feed-sources')
+            ->assertOk()
+            ->assertSee('Feed Sources')
+            ->assertSee('hacker_news');
     }
 
     private function mockGoogleUser(string $name, string $email): void

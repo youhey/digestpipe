@@ -79,11 +79,33 @@ DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL=admin@example.test
 
 ## 現在の範囲
 
-この foundation では domain resource は未実装です。
+この foundation では Feed Sources resource を実装しています。
+
+## Feed Sources
+
+Feed Sources は DB-backed master data です。`src/config/digestpipe.php` ではなく `feed_sources` table に保存されます。
+
+初期 Feed Source は database seeder で登録されます。Seeder は `key` が既に存在する record を上書きしないため、Filament で編集した値は通常の seed 実行では維持されます。
+
+Filament では次の項目を作成・編集できます。
+
+- `key`
+- `name`
+- `url`
+- `language`
+- `enabled`
+- `analysis_enabled`
+- `tier`
+- `category`
+
+`key` は Source Key として履歴を識別するため、既存 record の編集時は readonly です。
+
+`sort_order` は通常の form field としては表示しません。Feed Sources table の reordering で管理します。
+
+`analysis_enabled=true` は `enabled=false` の Feed Source には設定できません。
 
 今後の候補:
 
-- feed sources
 - selection keywords
 - selection thresholds
 - source metadata

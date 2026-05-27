@@ -420,7 +420,9 @@ Admin access is controlled by `DIGESTPIPE_ADMIN_ALLOWED_EMAILS`. The Google OAut
 
 Do not store or log Google OAuth access tokens, refresh tokens, authorization codes, client secrets, or raw provider payloads.
 
-Domain admin resources such as feed sources, selection keywords, thresholds, Digest Item views, and analysis reports are intentionally deferred. When admin behavior changes, update `docs/admin.md` in the same task.
+Feed Sources are DB-backed master data managed through the Filament admin panel. Do not reintroduce `feed_sources` under `config/digestpipe.php`; use the `feed_sources` table, `FeedSourceSeeder`, and `FeedSourceRepository`.
+
+Domain admin resources such as selection keywords, thresholds, Digest Item views, and analysis reports are intentionally deferred. When admin behavior changes, update `docs/admin.md` in the same task.
 
 ## Article JSON API
 

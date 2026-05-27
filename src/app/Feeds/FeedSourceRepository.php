@@ -2,11 +2,12 @@
 
 namespace App\Feeds;
 
+use App\Models\FeedSource as FeedSourceModel;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use UnexpectedValueException;
 
 /**
- * 設定から RSS フィードの定義リストを読み込む
+ * DBから RSS フィードの定義リストを読み込む
  */
 class FeedSourceRepository
 {
@@ -21,21 +22,13 @@ class FeedSourceRepository
      */
     public function enabledSources(?string $sourceKey = null): array
     {
-        $sources = array_values(array_filter(
+        $filtered = array_values(array_filter(
             $this->allSources(),
             static fn (FeedSource $source): bool => $source->enabled
+                && ($sourceKey === null || $source->key === $sourceKey)
         ));
 
-        if ($sourceKey === null) {
-            return $sources;
-        }
-
-        $filtered = array_values(array_filter(
-            $sources,
-            static fn (FeedSource $source): bool => $source->key === $sourceKey
-        ));
-
-        if ($filtered === []) {
+        if ($sourceKey !== null && $filtered === []) {
             throw new InvalidArgumentException("Feed source [{$sourceKey}] is not configured or is disabled.");
         }
 
@@ -43,27 +36,32 @@ class FeedSourceRepository
     }
 
     /**
-     * 設定に定義されたすべての RSS フィード情報源を返す
+     * 分析処理対象として有効な RSS フィード情報源 を返す
+     *
+     * @return list<FeedSource>
+     */
+    public function analysisEnabledSources(): array
+    {
+        return array_values(array_filter(
+            $this->allSources(),
+            static fn (FeedSource $source): bool => $source->enabled && $source->analysisEnabled
+        ));
+    }
+
+    /**
+     * DBに定義されたすべての RSS フィード情報源を返す
      *
      * @return list<FeedSource>
      */
     public function allSources(): array
     {
-        $configuredSources = config('digestpipe.feed_sources', []);
-
-        if (! is_array($configuredSources)) {
-            throw new UnexpectedValueException('digestpipe.feed_sources must be an array.');
-        }
-
         $sources = [];
 
-        foreach ($configuredSources as $configuredSource) {
-            if (! is_array($configuredSource)) {
-                throw new UnexpectedValueException('Each digestpipe feed source must be an array.');
-            }
-
-            /** @var array{key?: mixed, name?: mixed, url?: mixed, language?: mixed, enabled?: mixed} $configuredSource */
-            $sources[] = FeedSource::fromConfig($configuredSource);
+        foreach (DB::table('feed_sources')->orderBy('sort_order')->orderBy('id')->get() as $row) {
+            /** @var array<string, mixed> $attributes */
+            $attributes = get_object_vars($row);
+            $model = (new FeedSourceModel())->newFromBuilder($attributes);
+            $sources[] = FeedSource::fromModel($model);
         }
 
         return $sources;

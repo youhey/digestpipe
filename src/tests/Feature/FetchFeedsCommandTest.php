@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DigestItem;
+use App\Models\FeedSource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Log\Events\MessageLogged;
@@ -212,17 +213,24 @@ class FetchFeedsCommandTest extends TestCase
      */
     private function configureFeedSources(?array $sources = null): void
     {
-        config([
-            'digestpipe.feed_sources' => $sources ?? [
-                [
-                    'key' => 'hacker_news',
-                    'name' => 'Hacker News',
-                    'url' => 'https://feeds.example.test/hacker-news.xml',
-                    'language' => 'en',
-                    'enabled' => true,
-                ],
+        FeedSource::query()->delete();
+
+        foreach ($sources ?? [
+            [
+                'key' => 'hacker_news',
+                'name' => 'Hacker News',
+                'url' => 'https://feeds.example.test/hacker-news.xml',
+                'language' => 'en',
+                'enabled' => true,
             ],
-        ]);
+        ] as $index => $source) {
+            FeedSource::query()->create(array_merge([
+                'analysis_enabled' => true,
+                'tier' => 'core',
+                'category' => 'programming',
+                'sort_order' => ($index + 1) * 10,
+            ], $source));
+        }
     }
 
     private static function rssFeed(): string

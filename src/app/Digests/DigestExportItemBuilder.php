@@ -13,6 +13,9 @@ class DigestExportItemBuilder
 {
     private readonly FeedSourceRepository $sources;
 
+    /** @var array<string, string>|null */
+    private ?array $feedUrls = null;
+
     /**
      * Constructor
      *
@@ -65,13 +68,19 @@ class DigestExportItemBuilder
      */
     private function feedUrls(): array
     {
+        if ($this->feedUrls !== null) {
+            return $this->feedUrls;
+        }
+
         $urls = [];
 
         foreach ($this->sources->allSources() as $source) {
             $urls[$source->key] = $source->url;
         }
 
-        return $urls;
+        $this->feedUrls = $urls;
+
+        return $this->feedUrls;
     }
 
     private function timestamp(mixed $value): ?string

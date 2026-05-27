@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Jobs\AnalyzeDigestItemJob;
 use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
+use App\Models\FeedSource;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
@@ -27,6 +28,9 @@ class ProcessingPipelineTest extends TestCase
         parent::setUp();
 
         config(['digestpipe.selection.enabled' => false]);
+        $this->configureFeedSourcesForTests([
+            ['key' => 'hacker_news', 'enabled' => true, 'analysis_enabled' => true],
+        ]);
     }
 
     public function testEnqueueCommandCanRun(): void
@@ -504,7 +508,7 @@ class ProcessingPipelineTest extends TestCase
         Queue::fake();
         $this->configureFeedSourcesForTests([
             ['key' => 'hacker_news', 'enabled' => true, 'analysis_enabled' => true],
-            ['key' => 'disabled_source', 'enabled' => false, 'analysis_enabled' => true],
+            ['key' => 'disabled_source', 'enabled' => false, 'analysis_enabled' => false],
         ]);
         $this->createDigestItem(['source_key' => 'hacker_news']);
         $this->createDigestItem(['source_key' => 'disabled_source']);
@@ -734,8 +738,10 @@ class ProcessingPipelineTest extends TestCase
      */
     private function configureFeedSourcesForTests(array $sources): void
     {
-        config([
-            'digestpipe.feed_sources' => array_map(static fn (array $source): array => [
+        FeedSource::query()->delete();
+
+        foreach ($sources as $index => $source) {
+            FeedSource::query()->create([
                 'key' => $source['key'],
                 'name' => $source['key'],
                 'url' => 'https://example.test/' . $source['key'] . '.xml',
@@ -744,8 +750,9 @@ class ProcessingPipelineTest extends TestCase
                 'analysis_enabled' => $source['analysis_enabled'],
                 'tier' => $source['enabled'] && $source['analysis_enabled'] ? 'core' : 'candidate',
                 'category' => 'programming',
-            ], $sources),
-        ]);
+                'sort_order' => ($index + 1) * 10,
+            ]);
+        }
     }
 
     private function enableSelectionForTests(): void

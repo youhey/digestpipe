@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Feeds\FeedSource;
+use App\Feeds\FeedSourceRepository;
 use App\Items\DigestItemProcessingPlan;
 use App\Items\DigestItemProcessingPlanner;
 use App\Items\DigestItemSelectionResult;
@@ -34,13 +36,16 @@ class EnqueueProcessingCommand extends Command
 
     private readonly DigestItemSelector $selector;
 
+    private readonly FeedSourceRepository $sources;
+
     /**
      * Processing orchestration commandを作成します。
      */
-    public function __construct(DigestItemProcessingPlanner $planner, DigestItemSelector $selector)
+    public function __construct(DigestItemProcessingPlanner $planner, DigestItemSelector $selector, FeedSourceRepository $sources)
     {
         $this->planner = $planner;
         $this->selector = $selector;
+        $this->sources = $sources;
 
         parent::__construct();
     }
@@ -343,37 +348,10 @@ class EnqueueProcessingCommand extends Command
      */
     private function eligibleSourceKeys(): array
     {
-        $configuredSources = config('digestpipe.feed_sources', []);
-
-        if (! is_array($configuredSources)) {
-            return [];
-        }
-
-        $sourceKeys = [];
-
-        foreach ($configuredSources as $configuredSource) {
-            if (! is_array($configuredSource)) {
-                continue;
-            }
-
-            $sourceKey = $configuredSource['key'] ?? null;
-
-            if (! is_string($sourceKey) || $sourceKey === '') {
-                continue;
-            }
-
-            if (($configuredSource['enabled'] ?? false) !== true) {
-                continue;
-            }
-
-            if (($configuredSource['analysis_enabled'] ?? false) !== true) {
-                continue;
-            }
-
-            $sourceKeys[] = $sourceKey;
-        }
-
-        return $sourceKeys;
+        return array_map(
+            static fn (FeedSource $source): string => $source->key,
+            $this->sources->analysisEnabledSources(),
+        );
     }
 
     private function markQueuedAndDispatch(DigestItem $item, DigestItemProcessingPlan $plan): void

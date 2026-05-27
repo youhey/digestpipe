@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Resources\FeedSources\FeedSourceResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -36,6 +37,9 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login(fn () => redirect()->route('auth.google.redirect'))
             ->brandName('digestpipe')
+            ->resources([
+                FeedSourceResource::class,
+            ])
             ->pages([
                 Dashboard::class,
             ])

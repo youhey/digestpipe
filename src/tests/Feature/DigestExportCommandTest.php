@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
+use Database\Seeders\FeedSourceSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
@@ -16,6 +17,13 @@ class DigestExportCommandTest extends TestCase
     use RefreshDatabase;
 
     private int $digestItemSequence = 0;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(FeedSourceSeeder::class);
+    }
 
     public function testJsonExportIncludesOnlyCompletedAnalysisItems(): void
     {

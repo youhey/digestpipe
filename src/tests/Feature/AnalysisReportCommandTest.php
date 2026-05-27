@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DigestItem;
+use App\Models\FeedSource;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -16,6 +17,14 @@ class AnalysisReportCommandTest extends TestCase
     use RefreshDatabase;
 
     private int $digestItemSequence = 0;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->createFeedSource('hacker_news', 'Hacker News', 10);
+        $this->createFeedSource('aws_news', 'AWS News', 20);
+    }
 
     public function testReportsOverallContentTypeCounts(): void
     {
@@ -175,6 +184,21 @@ class AnalysisReportCommandTest extends TestCase
             'analysis_error' => null,
             'analyzed_at' => CarbonImmutable::parse('2026-05-25T10:20:00Z'),
         ], $attributes));
+    }
+
+    private function createFeedSource(string $key, string $name, int $sortOrder): void
+    {
+        FeedSource::query()->create([
+            'key' => $key,
+            'name' => $name,
+            'url' => 'https://feeds.example.test/' . $key . '.xml',
+            'language' => 'en',
+            'enabled' => true,
+            'analysis_enabled' => true,
+            'tier' => 'core',
+            'category' => 'programming',
+            'sort_order' => $sortOrder,
+        ]);
     }
 
     /**
