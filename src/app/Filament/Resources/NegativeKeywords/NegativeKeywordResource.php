@@ -9,13 +9,18 @@ use App\Filament\Resources\SelectionKeywords\SelectionKeywordResource;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Support\Icons\Heroicon;
+use UnitEnum;
 
 /**
  * Negative Selection Keyword を管理する Filament resource
  */
 class NegativeKeywordResource extends SelectionKeywordResource
 {
-    protected static BackedEnum|string|null $navigationIcon = Heroicon::MagnifyingGlassMinus;
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::FaceFrown;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Configuration';
+
+    protected static ?int $navigationSort = 40;
 
     protected static bool $shouldRegisterNavigation = true;
 

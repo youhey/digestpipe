@@ -24,6 +24,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
+use UnitEnum;
 
 /**
  * Feed Source master data を管理する Filament resource
@@ -33,6 +34,10 @@ class FeedSourceResource extends Resource
     protected static ?string $model = FeedSource::class;
 
     protected static BackedEnum|string|null $navigationIcon = Heroicon::Rss;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Configuration';
+
+    protected static ?int $navigationSort = 20;
 
     protected static ?string $modelLabel = 'Feed Source';
 

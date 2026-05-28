@@ -22,6 +22,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use UnitEnum;
 
 /**
  * Digest Item の human review を行う Filament resource
@@ -31,6 +32,10 @@ class DigestItemResource extends Resource
     protected static ?string $model = DigestItem::class;
 
     protected static BackedEnum|string|null $navigationIcon = Heroicon::DocumentText;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Content';
+
+    protected static ?int $navigationSort = 10;
 
     protected static ?string $modelLabel = 'Digest Item';
 

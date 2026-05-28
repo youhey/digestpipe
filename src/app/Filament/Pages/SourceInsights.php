@@ -23,13 +23,13 @@ use UnitEnum;
  */
 class SourceInsights extends Page
 {
-    protected static BackedEnum|string|null $navigationIcon = Heroicon::OutlinedChartBarSquare;
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::ChartBarSquare;
 
     protected static ?string $navigationLabel = 'Source Insights';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Reports';
+    protected static string|UnitEnum|null $navigationGroup = 'Insights';
 
-    protected static ?int $navigationSort = 40;
+    protected static ?int $navigationSort = 60;
 
     protected static ?string $slug = 'source-insights';
 

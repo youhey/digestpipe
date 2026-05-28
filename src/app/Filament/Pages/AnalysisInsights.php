@@ -27,13 +27,13 @@ use UnitEnum;
  */
 class AnalysisInsights extends Page
 {
-    protected static BackedEnum|string|null $navigationIcon = Heroicon::OutlinedDocumentChartBar;
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::ChartPie;
 
     protected static ?string $navigationLabel = 'Analysis Insights';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Reports';
+    protected static string|UnitEnum|null $navigationGroup = 'Insights';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 50;
 
     protected static ?string $slug = 'analysis-insights';
 

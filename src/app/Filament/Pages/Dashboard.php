@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Feeds\FeedSourceRepository;
 use App\Insights\InsightsExportOptions;
 use App\Insights\SelectionInsightsExporter;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -16,6 +17,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class Dashboard extends \Filament\Pages\Dashboard
 {
+    protected static BackedEnum|string|null $navigationIcon = Heroicon::Home;
+
+    protected static ?int $navigationSort = 0;
+
     /**
      * @return array<int, Action>
      */
