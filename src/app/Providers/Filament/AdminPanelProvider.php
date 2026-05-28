@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\AnalysisInsights;
 use App\Filament\Resources\FeedSources\FeedSourceResource;
 use App\Filament\Resources\SelectionKeywords\SelectionKeywordResource;
 use App\Filament\Widgets\AnalysisStatusChartWidget;
@@ -56,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->pages([
                 Dashboard::class,
+                AnalysisInsights::class,
             ])
             ->widgets([
                 SelectionStatsOverviewWidget::class,
