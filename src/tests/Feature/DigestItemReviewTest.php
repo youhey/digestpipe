@@ -8,10 +8,12 @@ use App\Filament\Resources\DigestItems\Pages\ViewDigestItem;
 use App\Models\DigestItem;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -230,6 +232,60 @@ class DigestItemReviewTest extends TestCase
         self::assertFalse($item->isManuallyRated());
         self::assertNull($item->manual_rating);
         self::assertNull($item->manual_rated_at);
+    }
+
+    public function testDigestItemReviewViewTranslatesSectionsTemporarily(): void
+    {
+        config([
+            'digestpipe.translation.driver' => 'fake',
+            'digestpipe.translation.max_chars' => 25,
+        ]);
+        $this->actingAsAdmin();
+        $item = $this->createDigestItem([
+            'title' => 'English title',
+            'selection_status' => 'selected',
+            'article_content_status' => 'completed',
+            'analysis_status' => 'completed',
+            'analysis_json' => $this->analysisJson(),
+            'article_content_text' => 'Article content that is longer than configured max chars.',
+        ]);
+
+        /** @var Testable<ViewDigestItem> $component */
+        $component = Livewire::test(ViewDigestItem::class, ['record' => $item->getKey()])
+            ->call('translateArticle')
+            ->call('translateArticleContent')
+            ->call('translateAnalysis')
+            ->assertHasNoErrors();
+
+        /** @var array<string, string> $translations */
+        $translations = $component->get('temporaryTranslations');
+        /** @var array<string, bool> $truncation */
+        $truncation = $component->get('translationTruncation');
+
+        self::assertSame('[JA] English title', $translations['article.title']);
+        self::assertSame('[JA] Article content that is l', $translations['article_content.text']);
+        self::assertTrue($truncation['article_content.text']);
+        self::assertSame('[JA] Short analysis brief.', $translations['analysis.brief']);
+        self::assertStringContainsString('[JA] Point 1', $translations['analysis.key_points']);
+
+        $item->refresh();
+
+        self::assertSame('English title', $item->title);
+        self::assertSame('Article content that is longer than configured max chars.', $item->article_content_text);
+        self::assertArrayNotHasKey('translated_title', $item->getAttributes());
+    }
+
+    public function testDigestItemReviewViewReportsTranslationMissingConfiguration(): void
+    {
+        config(['digestpipe.translation.driver' => 'none']);
+        $this->actingAsAdmin();
+        $item = $this->createDigestItem(['title' => 'English title']);
+
+        Livewire::test(ViewDigestItem::class, ['record' => $item->getKey()])
+            ->call('translateArticle')
+            ->assertHasNoErrors();
+
+        Notification::assertNotified('Translation is not configured.');
     }
 
     public function testAuthorizedAdminCanAccessDigestItemReviewPages(): void

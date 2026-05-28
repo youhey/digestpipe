@@ -5,6 +5,10 @@ namespace App\Providers;
 use App\Analysis\ArticleAnalyzer;
 use App\Analysis\FakeArticleAnalyzer;
 use App\Analysis\OpenAiArticleAnalyzer;
+use App\Translation\DeepLTranslationClient;
+use App\Translation\FakeTranslationClient;
+use App\Translation\NullTranslationClient;
+use App\Translation\TranslationClient;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 
@@ -26,6 +30,18 @@ class AppServiceProvider extends ServiceProvider
                 'fake' => new FakeArticleAnalyzer(),
                 'openai' => new OpenAiArticleAnalyzer(),
                 default => throw new InvalidArgumentException("Unsupported digestpipe AI driver [{$driver}]."),
+            };
+        });
+
+        $this->app->bind(TranslationClient::class, function (): TranslationClient {
+            $configuredDriver = config('digestpipe.translation.driver', 'none');
+            $driver = is_string($configuredDriver) ? $configuredDriver : 'none';
+
+            return match ($driver) {
+                'none' => new NullTranslationClient(),
+                'fake' => new FakeTranslationClient(),
+                'deepl' => new DeepLTranslationClient(),
+                default => throw new InvalidArgumentException("Unsupported digestpipe translation driver [{$driver}]."),
             };
         });
     }

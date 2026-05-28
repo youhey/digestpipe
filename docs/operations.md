@@ -231,6 +231,12 @@ Good and Bad are mutually exclusive because they are represented by one
 and bottom of the Digest Item preview. Selecting the same rating again clears
 both `manual_rating` and `manual_rated_at`.
 
+The view page also has temporary Translate actions for Article, Article content,
+and Analysis sections. These actions translate only review text, do not translate
+Selection metadata, and do not persist translated text. DeepL translation is
+enabled with `DIGESTPIPE_TRANSLATION_DRIVER=deepl` and `DEEPL_API_KEY`. Long
+article content is translated only up to `DIGESTPIPE_TRANSLATION_MAX_CHARS`.
+
 Manual ratings are intended to feed future source-level quality metrics such as
 `manual_good_rate`. Those source-level aggregations are not implemented yet.
 

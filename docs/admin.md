@@ -226,6 +226,10 @@ List page には Selected、Skipped、Unrated、Rated Good、Rated Bad、Content
 
 View page では title、source URL、discussion URL、selection reason、matched positive / negative keywords、article content text、analysis brief、detailed summary、key points、importance、confidence、limitations を確認できます。Article content と Analysis は横幅全体で表示します。Raw HTML は表示しません。
 
+View page では一時翻訳 action も使えます。Article section は title のみ、Article content section は `article_content_text` のみ、Analysis section は brief、detailed summary、key points、limitations を翻訳します。Selection section は運用 metadata のため翻訳しません。
+
+翻訳結果は画面上の一時 state として表示され、`digest_items` table には保存されません。Page refresh 後には消えます。Article content は `DIGESTPIPE_TRANSLATION_MAX_CHARS` を超える場合、先頭から設定文字数までを翻訳し、UI に切り詰め notice を表示します。DeepL を使う場合は `DIGESTPIPE_TRANSLATION_DRIVER="deepl"` と `DEEPL_API_KEY` を設定します。
+
 Manual rating は `digest_items.manual_rating` に保存されます。
 
 - `null`: Unrated

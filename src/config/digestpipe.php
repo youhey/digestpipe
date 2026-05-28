@@ -37,6 +37,16 @@ return [
         'max_retries' => (int) env('OPENAI_MAX_RETRIES', 2),
     ],
 
+    'translation' => [
+        'driver' => env('DIGESTPIPE_TRANSLATION_DRIVER', 'none'),
+        'target_language' => env('DIGESTPIPE_TRANSLATION_TARGET_LANGUAGE', 'JA'),
+        'max_chars' => (int) env('DIGESTPIPE_TRANSLATION_MAX_CHARS', 8000),
+    ],
+
+    'deepl' => [
+        'api_key' => env('DEEPL_API_KEY'),
+    ],
+
     'content' => [
         'fetch_timeout' => (int) env('DIGESTPIPE_CONTENT_FETCH_TIMEOUT', 15),
         'max_bytes' => (int) env('DIGESTPIPE_CONTENT_MAX_BYTES', 1048576),

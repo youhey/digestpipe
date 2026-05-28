@@ -49,6 +49,26 @@ OPENAI_MAX_RETRIES=2
 
 Automated tests と安全な local development では real OpenAI API を呼ばないようにします。
 
+## DeepL Translation
+
+Digest Item review view の一時翻訳 action で使います。
+
+```env
+DEEPL_API_KEY=
+DIGESTPIPE_TRANSLATION_DRIVER="none"
+DIGESTPIPE_TRANSLATION_TARGET_LANGUAGE="JA"
+DIGESTPIPE_TRANSLATION_MAX_CHARS=8000
+```
+
+| Name | Description |
+| --- | --- |
+| `DEEPL_API_KEY` | DeepL API Free の API key です。`DIGESTPIPE_TRANSLATION_DRIVER="deepl"` のときに必要です。real key は commit しないでください。 |
+| `DIGESTPIPE_TRANSLATION_DRIVER` | Digest Item review view の一時翻訳 provider です。`none`、`fake`、`deepl` を指定します。通常の local / production では `deepl`、tests では `fake` を使います。 |
+| `DIGESTPIPE_TRANSLATION_TARGET_LANGUAGE` | 翻訳先言語です。日本語へ翻訳する場合は `JA` を指定します。 |
+| `DIGESTPIPE_TRANSLATION_MAX_CHARS` | 1 回の翻訳入力に使う最大文字数です。Article content が長い場合、この文字数まで切り詰めて翻訳します。 |
+
+翻訳結果は review UI の一時 state にだけ保持され、DB、API、export には保存・出力されません。
+
 ## AI Driver
 
 分析処理で使う AI driver を選びます。

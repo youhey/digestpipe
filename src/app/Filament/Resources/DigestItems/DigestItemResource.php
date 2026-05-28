@@ -5,6 +5,7 @@ namespace App\Filament\Resources\DigestItems;
 use App\Filament\Resources\DigestItems\Pages\ListDigestItems;
 use App\Filament\Resources\DigestItems\Pages\ViewDigestItem;
 use App\Models\DigestItem;
+use App\Translation\DigestItemTranslationService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -125,8 +126,17 @@ class DigestItemResource extends Resource
         return $schema
             ->components([
                 Section::make('Article')
+                    ->headerActions([
+                        self::translateAction('translate_article', 'Article title', 'translateArticle')
+                            ->disabled(static fn (DigestItem $record): bool => trim($record->title) === ''),
+                    ])
                     ->schema([
                         TextEntry::make('title')
+                            ->columnSpanFull(),
+                        TextEntry::make('translated_title')
+                            ->label('Translated title')
+                            ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('article.title') ?? 'N/A')
+                            ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('article.title'))
                             ->columnSpanFull(),
                         TextEntry::make('source_key'),
                         TextEntry::make('source_url')
@@ -158,6 +168,10 @@ class DigestItemResource extends Resource
                             ->columnSpanFull(),
                     ]),
                 Section::make('Article content')
+                    ->headerActions([
+                        self::translateAction('translate_article_content', 'Article content', 'translateArticleContent')
+                            ->disabled(static fn (DigestItem $record): bool => ! is_string($record->article_content_text) || trim($record->article_content_text) === ''),
+                    ])
                     ->schema([
                         TextEntry::make('article_content_status')
                             ->badge(),
@@ -165,9 +179,24 @@ class DigestItemResource extends Resource
                             ->placeholder('N/A')
                             ->prose()
                             ->columnSpanFull(),
+                        TextEntry::make('translated_article_content')
+                            ->label('Translated article content')
+                            ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('article_content.text') ?? 'N/A')
+                            ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('article_content.text'))
+                            ->prose()
+                            ->columnSpanFull(),
+                        TextEntry::make('article_content_translation_notice')
+                            ->label('Translation note')
+                            ->state(static fn (): string => 'Translated from the first ' . app(DigestItemTranslationService::class)->maxChars() . ' characters.')
+                            ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->wasTranslationTruncated('article_content.text'))
+                            ->columnSpanFull(),
                     ])
                     ->columnSpanFull(),
                 Section::make('Analysis')
+                    ->headerActions([
+                        self::translateAction('translate_analysis', 'Analysis', 'translateAnalysis')
+                            ->disabled(static fn (DigestItem $record): bool => ! self::hasAnalysisTranslatableText($record)),
+                    ])
                     ->footerActions(self::manualRatingActions())
                     ->schema([
                         TextEntry::make('analysis_status')
@@ -181,14 +210,34 @@ class DigestItemResource extends Resource
                         TextEntry::make('brief')
                             ->state(static fn (DigestItem $record): string => self::analysisText($record, 'brief') ?? 'N/A')
                             ->columnSpanFull(),
+                        TextEntry::make('translated_brief')
+                            ->label('Translated brief')
+                            ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('analysis.brief') ?? 'N/A')
+                            ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('analysis.brief'))
+                            ->columnSpanFull(),
                         TextEntry::make('detailed_summary')
                             ->state(static fn (DigestItem $record): string => self::analysisText($record, 'detailed_summary') ?? 'N/A')
+                            ->columnSpanFull(),
+                        TextEntry::make('translated_detailed_summary')
+                            ->label('Translated detailed summary')
+                            ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('analysis.detailed_summary') ?? 'N/A')
+                            ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('analysis.detailed_summary'))
                             ->columnSpanFull(),
                         TextEntry::make('key_points')
                             ->state(static fn (DigestItem $record): string => self::analysisList($record, 'key_points'))
                             ->columnSpanFull(),
+                        TextEntry::make('translated_key_points')
+                            ->label('Translated key points')
+                            ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('analysis.key_points') ?? 'N/A')
+                            ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('analysis.key_points'))
+                            ->columnSpanFull(),
                         TextEntry::make('limitations')
                             ->state(static fn (DigestItem $record): string => self::analysisText($record, 'limitations') ?? 'N/A')
+                            ->columnSpanFull(),
+                        TextEntry::make('translated_limitations')
+                            ->label('Translated limitations')
+                            ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('analysis.limitations') ?? 'N/A')
+                            ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('analysis.limitations'))
                             ->columnSpanFull(),
                     ])
                     ->columnSpanFull(),
@@ -451,6 +500,39 @@ class DigestItemResource extends Resource
             ->success()
             ->title($title)
             ->send();
+    }
+
+    private static function translateAction(string $name, string $tooltip, string $method): Action
+    {
+        return Action::make($name)
+            ->label('Translate')
+            ->tooltip('Translate ' . $tooltip)
+            ->icon(Heroicon::Language)
+            ->action(static function (ViewDigestItem $livewire) use ($method): void {
+                if ($method === 'translateArticle') {
+                    $livewire->translateArticle();
+
+                    return;
+                }
+
+                if ($method === 'translateArticleContent') {
+                    $livewire->translateArticleContent();
+
+                    return;
+                }
+
+                if ($method === 'translateAnalysis') {
+                    $livewire->translateAnalysis();
+                }
+            });
+    }
+
+    private static function hasAnalysisTranslatableText(DigestItem $record): bool
+    {
+        return self::analysisText($record, 'brief') !== null
+            || self::analysisText($record, 'detailed_summary') !== null
+            || self::analysisText($record, 'limitations') !== null
+            || self::analysisList($record, 'key_points') !== 'N/A';
     }
 
     /**
