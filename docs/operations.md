@@ -227,8 +227,9 @@ null  Unrated
 ```
 
 Good and Bad are mutually exclusive because they are represented by one
-`manual_rating` value. Setting a rating updates `manual_rated_at`; clearing the
-rating clears both `manual_rating` and `manual_rated_at`.
+`manual_rating` value. The admin view page exposes a star rating UI at the top
+and bottom of the Digest Item preview. Selecting the same rating again clears
+both `manual_rating` and `manual_rated_at`.
 
 Manual ratings are intended to feed future source-level quality metrics such as
 `manual_good_rate`. Those source-level aggregations are not implemented yet.

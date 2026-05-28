@@ -79,12 +79,6 @@ class DigestItemResource extends Resource
                 TextColumn::make('manual_rating')
                     ->state(static fn (DigestItem $record): string => self::manualRatingLabel($record))
                     ->sortable(),
-                TextColumn::make('manual_rated_at')
-                    ->dateTime('Y-m-d H:i:s T')
-                    ->sortable(),
-                TextColumn::make('updated_at')
-                    ->dateTime('Y-m-d H:i:s T')
-                    ->sortable(),
             ])
             ->filters([
                 Filter::make('ready_for_review')
@@ -115,7 +109,6 @@ class DigestItemResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
-                ...self::manualRatingActions(),
             ])
             ->defaultSort('updated_at', 'desc');
     }
@@ -131,18 +124,6 @@ class DigestItemResource extends Resource
     {
         return $schema
             ->components([
-                Section::make('Manual rating')
-                    ->description('Good and Bad are mutually exclusive.')
-                    ->headerActions(self::manualRatingActions())
-                    ->footerActions(self::manualRatingActions())
-                    ->schema([
-                        TextEntry::make('manual_rating')
-                            ->label('Current rating')
-                            ->state(static fn (DigestItem $record): string => self::manualRatingLabel($record))
-                            ->badge(),
-                        TextEntry::make('manual_rated_at')
-                            ->dateTime('Y-m-d H:i:s T'),
-                    ]),
                 Section::make('Article')
                     ->schema([
                         TextEntry::make('title')
@@ -184,8 +165,10 @@ class DigestItemResource extends Resource
                             ->placeholder('N/A')
                             ->prose()
                             ->columnSpanFull(),
-                    ]),
+                    ])
+                    ->columnSpanFull(),
                 Section::make('Analysis')
+                    ->footerActions(self::manualRatingActions())
                     ->schema([
                         TextEntry::make('analysis_status')
                             ->badge(),
@@ -207,7 +190,8 @@ class DigestItemResource extends Resource
                         TextEntry::make('limitations')
                             ->state(static fn (DigestItem $record): string => self::analysisText($record, 'limitations') ?? 'N/A')
                             ->columnSpanFull(),
-                    ]),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -227,26 +211,15 @@ class DigestItemResource extends Resource
      */
     public static function manualRatingActions(): array
     {
-        return [
-            self::ratingAction('rate_bad', 'Bad', -1, 'danger'),
-            self::ratingAction('rate_good_1', 'Good ★', 1, 'success'),
-            self::ratingAction('rate_good_2', 'Good ★★', 2, 'success'),
-            self::ratingAction('rate_good_3', 'Good ★★★', 3, 'success'),
-            self::ratingAction('rate_good_4', 'Good ★★★★', 4, 'success'),
-            self::ratingAction('rate_good_5', 'Good ★★★★★', 5, 'success'),
-            Action::make('clear_manual_rating')
-                ->label('Clear')
-                ->color('gray')
-                ->action(static function (DigestItem $record): void {
-                    $record->clearManualRating();
-                    $record->save();
+        $actions = [];
 
-                    Notification::make()
-                        ->success()
-                        ->title('Manual rating をクリアしました。')
-                        ->send();
-                }),
-        ];
+        for ($rating = 1; $rating <= 5; ++$rating) {
+            $actions[] = self::starRatingAction($rating);
+        }
+
+        $actions[] = self::badRatingAction();
+
+        return $actions;
     }
 
     /**
@@ -434,20 +407,50 @@ class DigestItemResource extends Resource
         return $items === [] ? 'N/A' : implode(', ', $items);
     }
 
-    private static function ratingAction(string $name, string $label, int $rating, string $color): Action
+    private static function starRatingAction(int $rating): Action
     {
-        return Action::make($name)
-            ->label($label)
-            ->color($color)
+        return Action::make('rate_good_' . $rating)
+            ->label('Good ' . $rating . ' star')
+            ->hiddenLabel()
+            ->tooltip('Good ' . $rating . ' star')
+            ->icon(static fn (DigestItem $record): Heroicon => ($record->manual_rating ?? 0) >= $rating ? Heroicon::Star : Heroicon::OutlinedStar)
+            ->color(static fn (DigestItem $record): string => ($record->manual_rating ?? 0) >= $rating ? 'warning' : 'gray')
+            ->iconButton()
             ->action(static function (DigestItem $record) use ($rating): void {
-                $record->setManualRating($rating);
-                $record->save();
-
-                Notification::make()
-                    ->success()
-                    ->title('Manual rating を保存しました。')
-                    ->send();
+                self::toggleManualRating($record, $rating);
             });
+    }
+
+    private static function badRatingAction(): Action
+    {
+        return Action::make('rate_bad')
+            ->label('Bad')
+            ->hiddenLabel()
+            ->tooltip('Bad')
+            ->icon(static fn (DigestItem $record): Heroicon => $record->manual_rating === -1 ? Heroicon::HandThumbDown : Heroicon::OutlinedHandThumbDown)
+            ->color('gray')
+            ->iconButton()
+            ->action(static function (DigestItem $record): void {
+                self::toggleManualRating($record, -1);
+            });
+    }
+
+    private static function toggleManualRating(DigestItem $record, int $rating): void
+    {
+        if ($record->manual_rating === $rating) {
+            $record->clearManualRating();
+            $title = 'Manual rating をクリアしました。';
+        } else {
+            $record->setManualRating($rating);
+            $title = 'Manual rating を保存しました。';
+        }
+
+        $record->save();
+
+        Notification::make()
+            ->success()
+            ->title($title)
+            ->send();
     }
 
     /**

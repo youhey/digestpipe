@@ -165,14 +165,7 @@ class DigestItemReviewTest extends TestCase
             ->assertTableFilterExists('source_key')
             ->assertCanSeeTableRecords([$ready])
             ->assertCanNotSeeTableRecords([$notReady])
-            ->assertCanSeeTableRecords([$awsReady])
-            ->callTableAction('rate_bad', $ready)
-            ->assertHasNoErrors();
-
-        $ready->refresh();
-
-        self::assertSame(-1, $ready->manual_rating);
-        self::assertNotNull($ready->manual_rated_at);
+            ->assertCanSeeTableRecords([$awsReady]);
 
         /** @phpstan-ignore-next-line Filament table testing helpers are provided at runtime. */
         Livewire::test(ListDigestItems::class)
@@ -207,6 +200,17 @@ class DigestItemReviewTest extends TestCase
 
         /** @phpstan-ignore-next-line Filament action testing helper is provided at runtime. */
         Livewire::test(ViewDigestItem::class, ['record' => $item->getKey()])
+            ->callAction('rate_good_4')
+            ->assertHasNoErrors();
+
+        $item->refresh();
+
+        self::assertFalse($item->isManuallyRated());
+        self::assertNull($item->manual_rating);
+        self::assertNull($item->manual_rated_at);
+
+        /** @phpstan-ignore-next-line Filament action testing helper is provided at runtime. */
+        Livewire::test(ViewDigestItem::class, ['record' => $item->getKey()])
             ->callAction('rate_bad')
             ->assertHasNoErrors();
 
@@ -218,7 +222,7 @@ class DigestItemReviewTest extends TestCase
 
         /** @phpstan-ignore-next-line Filament action testing helper is provided at runtime. */
         Livewire::test(ViewDigestItem::class, ['record' => $item->getKey()])
-            ->callAction('clear_manual_rating')
+            ->callAction('rate_bad')
             ->assertHasNoErrors();
 
         $item->refresh();
@@ -245,7 +249,7 @@ class DigestItemReviewTest extends TestCase
         $this->get('/admin/digest-items/' . $item->id)
             ->assertOk()
             ->assertSee($item->title)
-            ->assertSee('Manual rating');
+            ->assertDontSee('Manual rating');
     }
 
     /**

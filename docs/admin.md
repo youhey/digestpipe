@@ -224,7 +224,7 @@ Digest Item review resource は `/admin/digest-items` にあります。
 
 List page には Selected、Skipped、Unrated、Rated Good、Rated Bad、Content fetched、Analysis completed、Source の filters があります。Index では raw article content は表示せず、title、source、selection / content / analysis status、content type、importance、confidence、manual rating を確認します。
 
-View page では title、source URL、discussion URL、selection reason、matched positive / negative keywords、article content text、analysis brief、detailed summary、key points、importance、confidence、limitations を確認できます。Raw HTML は表示しません。
+View page では title、source URL、discussion URL、selection reason、matched positive / negative keywords、article content text、analysis brief、detailed summary、key points、importance、confidence、limitations を確認できます。Article content と Analysis は横幅全体で表示します。Raw HTML は表示しません。
 
 Manual rating は `digest_items.manual_rating` に保存されます。
 
@@ -232,7 +232,7 @@ Manual rating は `digest_items.manual_rating` に保存されます。
 - `-1`: Bad
 - `1..5`: Good star rating
 
-Good と Bad は 1 つの `manual_rating` value で表現するため相互排他的です。Good / Bad を設定すると `manual_rated_at` に保存時刻を入れ、Clear すると `manual_rating` と `manual_rated_at` を `null` に戻します。
+Good と Bad は 1 つの `manual_rating` value で表現するため相互排他的です。View page の上部と末尾に star rating UI を表示します。星を選ぶと `1..5`、Bad icon を選ぶと `-1` を保存します。同じ rating をもう一度選ぶと `manual_rating` と `manual_rated_at` を `null` に戻します。
 
 Manual rating は将来 Source Insights の source-level quality metrics に使う予定です。この段階では `manual_good_rate`、multi-user review、public review UI、AI evaluation は実装していません。
 
