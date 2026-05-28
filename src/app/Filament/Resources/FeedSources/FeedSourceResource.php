@@ -5,9 +5,11 @@ namespace App\Filament\Resources\FeedSources;
 use App\Filament\Resources\FeedSources\Pages\CreateFeedSource;
 use App\Filament\Resources\FeedSources\Pages\EditFeedSource;
 use App\Filament\Resources\FeedSources\Pages\ListFeedSources;
+use App\Filament\Resources\FeedSources\Pages\ViewFeedSource;
 use App\Models\FeedSource;
 use BackedEnum;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -153,6 +155,7 @@ class FeedSourceResource extends Resource
                     ->options(fn (): array => self::categoryOptions()),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ])
             ->reorderable('sort_order')
@@ -167,6 +170,7 @@ class FeedSourceResource extends Resource
         return [
             'index' => ListFeedSources::route('/'),
             'create' => CreateFeedSource::route('/create'),
+            'view' => ViewFeedSource::route('/{record}'),
             'edit' => EditFeedSource::route('/{record}/edit'),
         ];
     }
