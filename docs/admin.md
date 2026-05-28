@@ -79,7 +79,7 @@ DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL=admin@example.test
 
 ## 現在の範囲
 
-この foundation では dashboard、Analysis Insights page、Source Insights page、Feed Sources resource、Feed Source detail page、Positive Keywords resource、Negative Keywords resource を実装しています。
+この foundation では dashboard、Analysis Insights page、Source Insights page、Feed Sources resource、Feed Source detail page、Digest Item review resource、Positive Keywords resource、Negative Keywords resource を実装しています。
 
 ## Dashboard
 
@@ -207,6 +207,30 @@ Main table では次の値を表示します。
 Source Detail overview でも Selected、Skipped、Pending、Content Failed、Analysis Failed、Analysis Completed は `104 (48.23%)` のように count と rate を併記します。Source の価値判断では raw count だけでなく rate を優先して確認してください。
 
 Manual selected sample quality、manual good/bad rating、engagement metrics はまだ実装していません。選択済み item の品質評価 UI は今後の別タスクです。
+
+## Digest Item Review
+
+Digest Item review resource は `/admin/digest-items` にあります。
+
+この resource は human review 用の private admin UI です。Default list view は Ready for Review を対象にします。Ready for Review は次の条件をすべて満たす Digest Item です。
+
+- `selection_status=selected`
+- `article_content_status=completed`
+- `analysis_status=completed`
+
+List page には Selected、Skipped、Unrated、Rated Good、Rated Bad、Content fetched、Analysis completed、Source の filters があります。Index では raw article content は表示せず、title、source、selection / content / analysis status、content type、importance、confidence、manual rating を確認します。
+
+View page では title、source URL、discussion URL、selection reason、matched positive / negative keywords、article content text、analysis brief、detailed summary、key points、importance、confidence、limitations を確認できます。Raw HTML は表示しません。
+
+Manual rating は `digest_items.manual_rating` に保存されます。
+
+- `null`: Unrated
+- `-1`: Bad
+- `1..5`: Good star rating
+
+Good と Bad は 1 つの `manual_rating` value で表現するため相互排他的です。Good / Bad を設定すると `manual_rated_at` に保存時刻を入れ、Clear すると `manual_rating` と `manual_rated_at` を `null` に戻します。
+
+Manual rating は将来 Source Insights の source-level quality metrics に使う予定です。この段階では `manual_good_rate`、multi-user review、public review UI、AI evaluation は実装していません。
 
 ## Selection Keywords
 

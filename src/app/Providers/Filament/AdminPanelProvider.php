@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\AnalysisInsights;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\SourceInsights;
+use App\Filament\Resources\DigestItems\DigestItemResource;
 use App\Filament\Resources\FeedSources\FeedSourceResource;
 use App\Filament\Resources\NegativeKeywords\NegativeKeywordResource;
 use App\Filament\Resources\PositiveKeywords\PositiveKeywordResource;
@@ -56,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('digestpipe')
             ->resources([
                 FeedSourceResource::class,
+                DigestItemResource::class,
                 PositiveKeywordResource::class,
                 NegativeKeywordResource::class,
             ])

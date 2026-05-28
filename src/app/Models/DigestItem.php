@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 /**
  * RSS フィードから取得したDigest Item
@@ -34,6 +35,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $analysis_model
  * @property string|null $analysis_error
  * @property CarbonImmutable|null $analyzed_at
+ * @property int|null $manual_rating
+ * @property CarbonImmutable|null $manual_rated_at
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
@@ -66,6 +69,8 @@ class DigestItem extends Model
         'analysis_model',
         'analysis_error',
         'analyzed_at',
+        'manual_rating',
+        'manual_rated_at',
     ];
 
     /**
@@ -87,6 +92,86 @@ class DigestItem extends Model
     }
 
     /**
+     * Manual rating が設定済みかを返します。
+     */
+    public function isManuallyRated(): bool
+    {
+        return $this->manual_rating !== null;
+    }
+
+    /**
+     * Manual rating が Bad かを返します。
+     */
+    public function isManuallyBad(): bool
+    {
+        return $this->manual_rating === -1;
+    }
+
+    /**
+     * Good rating の star 数を返します。
+     */
+    public function manualGoodStars(): ?int
+    {
+        if ($this->manual_rating === null || $this->manual_rating < 1) {
+            return null;
+        }
+
+        return $this->manual_rating;
+    }
+
+    /**
+     * Manual rating を設定します。
+     */
+    public function setManualRating(int $rating): void
+    {
+        self::validateManualRating($rating);
+
+        $this->manual_rating = $rating;
+        $this->manual_rated_at = CarbonImmutable::now();
+    }
+
+    /**
+     * Manual rating を未評価状態に戻します。
+     */
+    public function clearManualRating(): void
+    {
+        $this->manual_rating = null;
+        $this->manual_rated_at = null;
+    }
+
+    /**
+     * Manual rating attribute を検証して設定します。
+     */
+    public function setManualRatingAttribute(mixed $value): void
+    {
+        if ($value === null) {
+            $this->attributes['manual_rating'] = null;
+
+            return;
+        }
+
+        if (! is_int($value)) {
+            throw new InvalidArgumentException('Manual rating must be an integer or null.');
+        }
+
+        self::validateManualRating($value);
+
+        $this->attributes['manual_rating'] = $value;
+    }
+
+    /**
+     * Manual rating value が許可範囲内か検証します。
+     */
+    public static function validateManualRating(int $rating): void
+    {
+        if ($rating === -1 || ($rating >= 1 && $rating <= 5)) {
+            return;
+        }
+
+        throw new InvalidArgumentException('Manual rating must be -1, 1, 2, 3, 4, 5, or null.');
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -99,6 +184,8 @@ class DigestItem extends Model
             'analysis_json' => 'array',
             'analyzed_at' => 'immutable_datetime',
             'article_content_fetched_at' => 'immutable_datetime',
+            'manual_rating' => 'integer',
+            'manual_rated_at' => 'immutable_datetime',
         ];
     }
 }

@@ -203,6 +203,31 @@ Source value should be judged primarily by rates rather than raw counts. Manual
 selected item quality review and `manual_good_rate` are future work and are not
 part of this command.
 
+## Digest Item Review
+
+Digest Items can be reviewed from the Filament admin panel:
+
+```txt
+/admin/digest-items
+```
+
+The default list view is Ready for Review, which means selected Digest Items
+whose article content and analysis are both completed. The review UI stores a
+single manual rating on `digest_items`:
+
+```txt
+null  Unrated
+-1    Bad
+1..5  Good star rating
+```
+
+Good and Bad are mutually exclusive because they are represented by one
+`manual_rating` value. Setting a rating updates `manual_rated_at`; clearing the
+rating clears both `manual_rating` and `manual_rated_at`.
+
+Manual ratings are intended to feed future source-level quality metrics such as
+`manual_good_rate`. Those source-level aggregations are not implemented yet.
+
 ## Insights Export
 
 Use the insights export command to prepare a compact Markdown report for
