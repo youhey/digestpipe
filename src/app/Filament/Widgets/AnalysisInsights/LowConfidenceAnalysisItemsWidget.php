@@ -21,9 +21,9 @@ class LowConfidenceAnalysisItemsWidget extends Widget
     {
         return [
             'heading' => 'Low confidence items',
-            'description' => 'confidence < 0.6, latest 20 from the last 30 days',
+            'description' => 'confidence < 0.6, latest 100 from the last 30 days',
             'columns' => ['id', 'source_key', 'confidence', 'content_type', 'title', 'limitations'],
-            'rows' => app(AnalysisInsightsQuery::class)->report()['low_confidence_items'],
+            'rows' => app(AnalysisInsightsQuery::class)->report(lowConfidenceLimit: 100)['low_confidence_items'],
             'emptyMessage' => 'No low-confidence analyzed Digest Items.',
         ];
     }

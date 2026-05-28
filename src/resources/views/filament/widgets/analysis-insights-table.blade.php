@@ -114,6 +114,55 @@
             .dark .digestpipe-insights-table .empty-row {
                 color: rgb(161, 161, 170);
             }
+
+            .digestpipe-insights-table-pagination {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                padding: 0.75rem 1rem;
+                border-top: 1px solid rgba(229, 231, 235, 1);
+                color: rgb(107, 114, 128);
+                font-size: 0.875rem;
+            }
+
+            .dark .digestpipe-insights-table-pagination {
+                border-top-color: rgba(255, 255, 255, 0.1);
+                color: rgb(161, 161, 170);
+            }
+
+            .digestpipe-insights-table-pagination-actions {
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .digestpipe-insights-table-pagination-button {
+                padding: 0.375rem 0.75rem;
+                border: 1px solid rgba(209, 213, 219, 1);
+                border-radius: 0.5rem;
+                background: rgb(255, 255, 255);
+                color: rgb(55, 65, 81);
+                font-weight: 500;
+            }
+
+            .digestpipe-insights-table-pagination-button:disabled {
+                cursor: not-allowed;
+                opacity: 0.5;
+            }
+
+            .digestpipe-insights-table-pagination-button:not(:disabled):hover {
+                background: rgb(249, 250, 251);
+            }
+
+            .dark .digestpipe-insights-table-pagination-button {
+                border-color: rgba(255, 255, 255, 0.1);
+                background: rgb(24, 24, 27);
+                color: rgb(229, 231, 235);
+            }
+
+            .dark .digestpipe-insights-table-pagination-button:not(:disabled):hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
         </style>
     @endonce
 
@@ -129,13 +178,53 @@
         <div
             class="digestpipe-insights-table-wrapper"
             x-data="{
+                page: 1,
+                perPage: 10,
                 sortColumn: null,
                 sortDirection: 'asc',
+                totalRows: 0,
+                pageCount() {
+                    return Math.max(1, Math.ceil(this.totalRows / this.perPage))
+                },
+                firstItem() {
+                    if (this.totalRows === 0) {
+                        return 0
+                    }
+
+                    return ((this.page - 1) * this.perPage) + 1
+                },
+                lastItem() {
+                    return Math.min(this.page * this.perPage, this.totalRows)
+                },
+                rows() {
+                    return Array.from(this.$refs.body.querySelectorAll('tr[data-row]'))
+                },
+                updatePage() {
+                    const rows = this.rows()
+                    this.totalRows = rows.length
+                    this.page = Math.min(Math.max(this.page, 1), this.pageCount())
+
+                    rows.forEach((row, index) => {
+                        row.style.display = index >= ((this.page - 1) * this.perPage) && index < (this.page * this.perPage) ? '' : 'none'
+                    })
+                },
+                nextPage() {
+                    if (this.page < this.pageCount()) {
+                        this.page++
+                        this.updatePage()
+                    }
+                },
+                previousPage() {
+                    if (this.page > 1) {
+                        this.page--
+                        this.updatePage()
+                    }
+                },
                 sort(index, numeric) {
                     this.sortDirection = this.sortColumn === index && this.sortDirection === 'asc' ? 'desc' : 'asc'
                     this.sortColumn = index
 
-                    const rows = Array.from(this.$refs.body.querySelectorAll('tr[data-row]'))
+                    const rows = this.rows()
                     const direction = this.sortDirection === 'asc' ? 1 : -1
 
                     rows.sort((left, right) => {
@@ -155,8 +244,11 @@
                     })
 
                     rows.forEach((row) => this.$refs.body.appendChild(row))
+                    this.page = 1
+                    this.updatePage()
                 },
             }"
+            x-init="updatePage()"
         >
             <div class="digestpipe-insights-table-scroll">
                 <table class="digestpipe-insights-table">
@@ -221,6 +313,33 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <div
+                class="digestpipe-insights-table-pagination"
+                x-show="totalRows > perPage"
+            >
+                <div>
+                    <span x-text="`Showing ${firstItem()}-${lastItem()} of ${totalRows}`"></span>
+                </div>
+                <div class="digestpipe-insights-table-pagination-actions">
+                    <button
+                        class="digestpipe-insights-table-pagination-button"
+                        type="button"
+                        x-bind:disabled="page <= 1"
+                        x-on:click="previousPage()"
+                    >
+                        Previous
+                    </button>
+                    <button
+                        class="digestpipe-insights-table-pagination-button"
+                        type="button"
+                        x-bind:disabled="page >= pageCount()"
+                        x-on:click="nextPage()"
+                    >
+                        Next
+                    </button>
+                </div>
             </div>
         </div>
     </x-filament::section>

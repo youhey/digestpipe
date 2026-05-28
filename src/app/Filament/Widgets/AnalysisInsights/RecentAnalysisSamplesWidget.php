@@ -21,9 +21,9 @@ class RecentAnalysisSamplesWidget extends Widget
     {
         return [
             'heading' => 'Recent analysis samples',
-            'description' => 'Latest 20 analyzed Digest Items from the last 30 days',
+            'description' => 'Latest 100 analyzed Digest Items from the last 30 days',
             'columns' => ['id', 'source_key', 'content_type', 'confidence', 'importance', 'title'],
-            'rows' => app(AnalysisInsightsQuery::class)->report()['recent_samples'],
+            'rows' => app(AnalysisInsightsQuery::class)->report(sampleLimit: 100)['recent_samples'],
             'emptyMessage' => 'No recent analyzed Digest Items.',
         ];
     }
