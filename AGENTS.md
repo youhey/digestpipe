@@ -426,6 +426,8 @@ Selection Keywords are DB-backed master data managed through the Filament admin 
 
 Selection evaluation history is stored in the `selection_evaluations` table. Keep it append-only. Digest Item latest selection fields remain the runtime state, while `selection_evaluations` records historical pre-content and post-content decisions. Do not store raw article content in this history table.
 
+Key digestpipe Artisan command runs are stored in the `digestpipe_command_runs` table. `digestpipe:feeds:fetch` and `digestpipe:items:enqueue-processing` should record start, completion or failure, duration, arguments, and a compact JSON result summary. Keep this separate from selection evaluation history and do not store secrets or stack traces.
+
 The Filament dashboard currently provides Phase 1 selection visibility and Phase 2 pipeline health visibility. It covers selection status, source breakdowns, keyword matches, recent selected/skipped Digest Items, article content status, analysis status, latest pipeline activity, and recent failed processing items. Keep command run history, scheduler run history, analysis insights, and source detail pages out of the dashboard unless explicitly requested.
 
 The Filament admin panel also has a dedicated Analysis Insights page for Phase 3 analysis quality inspection. It is read-only and shows stored `analysis_json` classification signals such as `content_type`, `confidence`, `importance`, recent samples, and low-confidence items. Do not add content type enum enforcement, prompt changes, re-analysis actions, or Digest Item editing from this page unless explicitly requested.

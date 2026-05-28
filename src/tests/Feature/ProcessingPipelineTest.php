@@ -2,18 +2,23 @@
 
 namespace Tests\Feature;
 
+use App\Items\DigestItemProcessingPlan;
+use App\Items\DigestItemProcessingPlanner;
 use App\Jobs\AnalyzeDigestItemJob;
 use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
+use App\Models\DigestpipeCommandRun;
 use App\Models\FeedSource;
 use App\Models\SelectionEvaluation;
 use App\Models\SelectionKeyword;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\PendingCommand;
+use RuntimeException;
 use Tests\TestCase;
 
 /**
@@ -76,6 +81,15 @@ class ProcessingPipelineTest extends TestCase
             'id' => $item->id,
             'article_content_status' => 'queued',
         ]);
+        $run = DigestpipeCommandRun::query()->firstOrFail();
+
+        self::assertSame('digestpipe:items:enqueue-processing', $run->command_name);
+        self::assertSame('completed', $run->status);
+        self::assertSame(1, $run->result_summary['checked'] ?? null);
+        self::assertSame(1, $run->result_summary['queued'] ?? null);
+        self::assertSame(1, $run->result_summary['content_fetch_dispatched'] ?? null);
+        self::assertSame(0, $run->result_summary['analysis_dispatched'] ?? null);
+        self::assertIsInt($run->duration_ms);
     }
 
     public function testQueuedArticleContentDoesNotEnqueueDuplicateContentFetchJob(): void
@@ -677,6 +691,42 @@ class ProcessingPipelineTest extends TestCase
     {
         $this->enqueueProcessing(['--stage' => 'unknown'])
             ->assertExitCode(2);
+
+        $run = DigestpipeCommandRun::query()->firstOrFail();
+
+        self::assertSame('completed', $run->status);
+        self::assertSame(2, $run->result_summary['exit_code'] ?? null);
+    }
+
+    public function testFailedEnqueueCommandRecordsFailureAndRethrowsException(): void
+    {
+        config(['digestpipe.selection.enabled' => false]);
+        $this->createDigestItem();
+        $this->app->instance(DigestItemProcessingPlanner::class, new class() extends DigestItemProcessingPlanner {
+            /**
+             * @param DigestItem $item
+             * @param string|null $stage
+             *
+             * @return DigestItemProcessingPlan
+             */
+            public function plan(DigestItem $item, ?string $stage = null): DigestItemProcessingPlan
+            {
+                throw new RuntimeException('Planner failed.');
+            }
+        });
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Planner failed.');
+
+        try {
+            Artisan::call('digestpipe:items:enqueue-processing');
+        } finally {
+            $run = DigestpipeCommandRun::query()->firstOrFail();
+
+            self::assertSame('failed', $run->status);
+            self::assertSame('Planner failed.', $run->error_message);
+            self::assertIsInt($run->duration_ms);
+        }
     }
 
     public function testDryRunOutputsDecisionInformation(): void

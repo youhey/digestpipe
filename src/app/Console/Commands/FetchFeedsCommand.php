@@ -6,6 +6,8 @@ use App\Feeds\DigestItemIngestor;
 use App\Feeds\FeedFetcher;
 use App\Feeds\FeedSourceRepository;
 use App\Feeds\RssFeedParser;
+use App\Models\DigestpipeCommandRun;
+use App\Support\DigestpipeCommandRunRecorder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
@@ -31,15 +33,23 @@ class FetchFeedsCommand extends Command
 
     private readonly DigestItemIngestor $ingestor;
 
+    private readonly DigestpipeCommandRunRecorder $commandRuns;
+
     /**
      * Constructor
      */
-    public function __construct(FeedSourceRepository $sources, FeedFetcher $fetcher, RssFeedParser $parser, DigestItemIngestor $ingestor)
-    {
+    public function __construct(
+        FeedSourceRepository $sources,
+        FeedFetcher $fetcher,
+        RssFeedParser $parser,
+        DigestItemIngestor $ingestor,
+        DigestpipeCommandRunRecorder $commandRuns
+    ) {
         $this->sources = $sources;
         $this->fetcher = $fetcher;
         $this->parser = $parser;
         $this->ingestor = $ingestor;
+        $this->commandRuns = $commandRuns;
 
         parent::__construct();
     }
@@ -50,6 +60,19 @@ class FetchFeedsCommand extends Command
      * @return int success=0 or failure=1 or invalid=2
      */
     public function handle(): int
+    {
+        $run = $this->commandRuns->start('digestpipe:feeds:fetch', $this->commandArguments());
+
+        try {
+            return $this->handleWithRun($run);
+        } catch (Throwable $exception) {
+            $this->commandRuns->fail($run, $exception);
+
+            throw $exception;
+        }
+    }
+
+    private function handleWithRun(DigestpipeCommandRun $run): int
     {
         $sourceKey = $this->stringOption('source');
         $dryRun = $this->option('dry-run');
@@ -70,6 +93,13 @@ class FetchFeedsCommand extends Command
             ]);
 
             $this->error($exception->getMessage());
+            $this->commandRuns->complete($run, [
+                'exit_code' => self::INVALID,
+                'source' => $sourceKey,
+                'dry_run' => $dryRun,
+                'limit' => $limit,
+                'error' => $exception->getMessage(),
+            ]);
 
             return self::INVALID;
         }
@@ -154,8 +184,31 @@ class FetchFeedsCommand extends Command
             $failedItemCount,
             $failedFeedCount,
         ));
+        $this->commandRuns->complete($run, [
+            'exit_code' => self::SUCCESS,
+            'source' => $sourceKey,
+            'dry_run' => $dryRun,
+            'limit' => $limit,
+            'configured_feeds' => count($sources),
+            'created' => $createdCount,
+            'duplicates' => $skippedDuplicateCount,
+            'failed_items' => $failedItemCount,
+            'failed_feeds' => $failedFeedCount,
+        ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function commandArguments(): array
+    {
+        return [
+            'source' => $this->option('source'),
+            'dry_run' => $this->option('dry-run'),
+            'limit' => $this->option('limit'),
+        ];
     }
 
     private function stringOption(string $name): ?string

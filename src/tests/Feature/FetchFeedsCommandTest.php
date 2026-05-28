@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DigestItem;
+use App\Models\DigestpipeCommandRun;
 use App\Models\FeedSource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -32,6 +33,15 @@ class FetchFeedsCommandTest extends TestCase
             ->assertSuccessful();
 
         $this->assertDatabaseCount('digest_items', 2);
+        $run = DigestpipeCommandRun::query()->firstOrFail();
+
+        self::assertSame('digestpipe:feeds:fetch', $run->command_name);
+        self::assertSame('completed', $run->status);
+        self::assertSame(2, $run->result_summary['created'] ?? null);
+        self::assertSame(0, $run->result_summary['duplicates'] ?? null);
+        self::assertSame(0, $run->result_summary['failed_items'] ?? null);
+        self::assertSame(0, $run->result_summary['failed_feeds'] ?? null);
+        self::assertIsInt($run->duration_ms);
     }
 
     public function testSourceOptionFetchesOnlyTheSelectedSource(): void
@@ -174,6 +184,10 @@ class FetchFeedsCommandTest extends TestCase
 
         $this->assertDatabaseCount('digest_items', 0);
         self::assertSame(RuntimeException::class, $loggedErrors[0]['exception_class'] ?? null);
+        $run = DigestpipeCommandRun::query()->firstOrFail();
+
+        self::assertSame('completed', $run->status);
+        self::assertSame(1, $run->result_summary['failed_feeds'] ?? null);
     }
 
     public function testHackerNewsCommentsDescriptionIsNotStoredAsExcerptAndCommentsUrlIsPreserved(): void

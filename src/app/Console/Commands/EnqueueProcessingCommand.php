@@ -12,12 +12,15 @@ use App\Items\SelectionEvaluationRecorder;
 use App\Jobs\AnalyzeDigestItemJob;
 use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
+use App\Models\DigestpipeCommandRun;
+use App\Support\DigestpipeCommandRunRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Digest Item の状態から次に必要な処理を待ち行列に登録
@@ -39,6 +42,8 @@ class EnqueueProcessingCommand extends Command
 
     private readonly SelectionEvaluationRecorder $selectionEvaluations;
 
+    private readonly DigestpipeCommandRunRecorder $commandRuns;
+
     private readonly FeedSourceRepository $sources;
 
     /**
@@ -48,11 +53,13 @@ class EnqueueProcessingCommand extends Command
         DigestItemProcessingPlanner $planner,
         DigestItemSelector $selector,
         SelectionEvaluationRecorder $selectionEvaluations,
+        DigestpipeCommandRunRecorder $commandRuns,
         FeedSourceRepository $sources
     ) {
         $this->planner = $planner;
         $this->selector = $selector;
         $this->selectionEvaluations = $selectionEvaluations;
+        $this->commandRuns = $commandRuns;
         $this->sources = $sources;
 
         parent::__construct();
@@ -65,6 +72,19 @@ class EnqueueProcessingCommand extends Command
      */
     public function handle(): int
     {
+        $run = $this->commandRuns->start('digestpipe:items:enqueue-processing', $this->commandArguments());
+
+        try {
+            return $this->handleWithRun($run);
+        } catch (Throwable $exception) {
+            $this->commandRuns->fail($run, $exception);
+
+            throw $exception;
+        }
+    }
+
+    private function handleWithRun(DigestpipeCommandRun $run): int
+    {
         $dryRun = $this->option('dry-run');
         $sourceKey = $this->sourceOption();
 
@@ -74,6 +94,12 @@ class EnqueueProcessingCommand extends Command
             $stage = $this->stageOption();
         } catch (InvalidArgumentException $exception) {
             $this->error($exception->getMessage());
+            $this->commandRuns->complete($run, [
+                'exit_code' => self::INVALID,
+                'dry_run' => $dryRun,
+                'source' => $sourceKey,
+                'error' => $exception->getMessage(),
+            ]);
 
             return self::INVALID;
         }
@@ -198,8 +224,41 @@ class EnqueueProcessingCommand extends Command
             $plannedCounts['analysis'],
         ));
         $this->writeSourceSummary($sourceSummary);
+        $this->commandRuns->complete($run, [
+            'exit_code' => self::SUCCESS,
+            'dry_run' => $dryRun,
+            'limit' => $limit,
+            'per_source_limit' => $perSourceLimit,
+            'source' => $sourceKey,
+            'stage' => $stage,
+            'checked' => count($items),
+            'queued' => $dryRun ? 0 : $dispatchedCount,
+            'planned' => $dryRun ? $dispatchedCount : 0,
+            'skipped' => $skippedCount,
+            'content_fetch_dispatched' => $plannedCounts['content'],
+            'analysis_dispatched' => $plannedCounts['analysis'],
+            'selection_needs_content' => $selectionCounts['needs_content'],
+            'selection_selected' => $selectionCounts['selected'],
+            'selection_skipped' => $selectionCounts['skipped'],
+            'selection_bypassed' => $selectionCounts['bypassed'],
+            'sources' => array_values($sourceSummary),
+        ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function commandArguments(): array
+    {
+        return [
+            'limit' => $this->option('limit'),
+            'per_source_limit' => $this->option('per-source-limit'),
+            'dry_run' => $this->option('dry-run'),
+            'source' => $this->option('source'),
+            'stage' => $this->option('stage'),
+        ];
     }
 
     private function selectItem(DigestItem $item, bool $dryRun): ?DigestItemSelectionResult

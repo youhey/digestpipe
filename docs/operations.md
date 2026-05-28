@@ -170,6 +170,36 @@ threshold settings. Full article content is not duplicated into
 This is separate from command run logging. It records selection decisions, not
 Artisan command execution history.
 
+## Command Run Logging
+
+Key digestpipe Artisan command runs are stored in the
+`digestpipe_command_runs` table.
+
+Currently instrumented commands:
+
+- `digestpipe:feeds:fetch`
+- `digestpipe:items:enqueue-processing`
+
+Each command run records start, completion or failure, duration, command
+arguments, a JSON result summary, and a safe error message when an uncaught
+exception fails the command. Exceptions are not swallowed by the recorder.
+
+`digestpipe:feeds:fetch` stores counts such as created items, duplicates,
+failed feed items, and failed feeds. Feed-level failures that the command already
+handles remain part of a completed command run and are reflected in the summary.
+
+`digestpipe:items:enqueue-processing` stores candidate counts, queued/planned
+job counts, skipped counts, selection counts, and source summary data.
+
+This helps diagnose scheduler gaps, Laravel Cloud hibernation, stale scheduler
+mutex issues, and failed batch execution. If scheduled tasks stop running due to
+a stale scheduler mutex, `php artisan schedule:clear-cache` remains the recovery
+and debugging tool; command run logging only records observed executions.
+
+Command run logging is separate from selection evaluation history. Old command
+run rows may need pruning later, for example by retaining only the last 30 or 90
+days.
+
 ## Selection Rollback
 
 Use the selection rollback command when selection rules changed and skipped
