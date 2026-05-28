@@ -8,6 +8,7 @@ use App\Filament\Resources\FeedSources\Pages\ListFeedSources;
 use App\Filament\Resources\FeedSources\Pages\ViewFeedSource;
 use App\Models\FeedSource;
 use BackedEnum;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
@@ -156,7 +157,12 @@ class FeedSourceResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make(),
-                EditAction::make(),
+                EditAction::make()
+                    ->successNotificationTitle('Feed Source を更新しました。')
+                    ->failureNotificationTitle('Feed Source を更新できませんでした。'),
+                DeleteAction::make()
+                    ->successNotificationTitle('Feed Source を削除しました。')
+                    ->failureNotificationTitle('Feed Source を削除できませんでした。'),
             ])
             ->reorderable('sort_order')
             ->defaultSort('sort_order');

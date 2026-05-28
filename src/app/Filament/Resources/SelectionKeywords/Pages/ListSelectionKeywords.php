@@ -19,7 +19,9 @@ class ListSelectionKeywords extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+                ->successNotificationTitle('Selection Keyword を作成しました。')
+                ->failureNotificationTitle('Selection Keyword を作成できませんでした。'),
         ];
     }
 }

@@ -19,7 +19,9 @@ class ListFeedSources extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+                ->successNotificationTitle('Feed Source を作成しました。')
+                ->failureNotificationTitle('Feed Source を作成できませんでした。'),
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Filament\Resources\SelectionKeywords\Pages\EditSelectionKeyword;
 use App\Filament\Resources\SelectionKeywords\Pages\ListSelectionKeywords;
 use App\Models\SelectionKeyword;
 use BackedEnum;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -161,7 +162,12 @@ class SelectionKeywordResource extends Resource
                     ->options(fn (): array => self::categoryOptions()),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->successNotificationTitle('Selection Keyword を更新しました。')
+                    ->failureNotificationTitle('Selection Keyword を更新できませんでした。'),
+                DeleteAction::make()
+                    ->successNotificationTitle('Selection Keyword を削除しました。')
+                    ->failureNotificationTitle('Selection Keyword を削除できませんでした。'),
             ])
             ->reorderable('sort_order')
             ->defaultSort('sort_order');
