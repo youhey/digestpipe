@@ -4,6 +4,11 @@ namespace App\Providers\Filament;
 
 use App\Filament\Resources\FeedSources\FeedSourceResource;
 use App\Filament\Resources\SelectionKeywords\SelectionKeywordResource;
+use App\Filament\Widgets\AnalysisStatusChartWidget;
+use App\Filament\Widgets\ArticleContentStatusChartWidget;
+use App\Filament\Widgets\PipelineHealthStatsOverviewWidget;
+use App\Filament\Widgets\PipelineLatestActivityWidget;
+use App\Filament\Widgets\RecentFailedDigestItemsWidget;
 use App\Filament\Widgets\RecentSelectedDigestItemsWidget;
 use App\Filament\Widgets\RecentSkippedDigestItemsWidget;
 use App\Filament\Widgets\SelectionStatsOverviewWidget;
@@ -60,6 +65,11 @@ class AdminPanelProvider extends PanelProvider
                 TopNegativeKeywordsWidget::class,
                 RecentSelectedDigestItemsWidget::class,
                 RecentSkippedDigestItemsWidget::class,
+                PipelineHealthStatsOverviewWidget::class,
+                ArticleContentStatusChartWidget::class,
+                AnalysisStatusChartWidget::class,
+                PipelineLatestActivityWidget::class,
+                RecentFailedDigestItemsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
