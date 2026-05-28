@@ -33,6 +33,11 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'laravel_cloud' => [
+        'api_token' => env('LARAVEL_CLOUD_API_TOKEN'),
+        'environment_id' => env('LARAVEL_CLOUD_ENVIRONMENT_ID'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

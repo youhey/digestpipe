@@ -7,6 +7,7 @@ use App\Filament\Resources\FeedSources\FeedSourceResource;
 use App\Filament\Resources\SelectionKeywords\SelectionKeywordResource;
 use App\Filament\Widgets\AnalysisStatusChartWidget;
 use App\Filament\Widgets\ArticleContentStatusChartWidget;
+use App\Filament\Widgets\CloudStatusWidget;
 use App\Filament\Widgets\PipelineHealthStatsOverviewWidget;
 use App\Filament\Widgets\PipelineLatestActivityWidget;
 use App\Filament\Widgets\RecentFailedDigestItemsWidget;
@@ -72,6 +73,7 @@ class AdminPanelProvider extends PanelProvider
                 AnalysisStatusChartWidget::class,
                 PipelineLatestActivityWidget::class,
                 RecentFailedDigestItemsWidget::class,
+                CloudStatusWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -200,6 +200,27 @@ Command run logging is separate from selection evaluation history. Old command
 run rows may need pruning later, for example by retaining only the last 30 or 90
 days.
 
+## Laravel Cloud Deployment Status
+
+The Filament dashboard includes a Cloud Status widget for the latest Laravel
+Cloud deployment.
+
+Required environment variables:
+
+```env
+LARAVEL_CLOUD_API_TOKEN=
+LARAVEL_CLOUD_ENVIRONMENT_ID=
+```
+
+The widget calls the Laravel Cloud deployment list endpoint for the configured
+environment and displays the latest deployment status, branch, commit metadata,
+timestamps, and failure reason when available. The result is cached briefly to
+avoid calling the Laravel Cloud API on every dashboard render.
+
+This phase only observes deployment status. It does not read environment
+metrics, database metrics, logs, or execute Laravel Cloud commands. Do not commit
+the API token.
+
 ## Selection Rollback
 
 Use the selection rollback command when selection rules changed and skipped

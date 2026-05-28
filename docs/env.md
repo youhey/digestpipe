@@ -124,3 +124,19 @@ GET /_local/admin/login
 ```
 
 この helper は `APP_ENV=local` または `APP_ENV=testing` で、かつ `DIGESTPIPE_ADMIN_DEV_LOGIN_ENABLED=true` の場合だけ使えます。Google OAuth の production/admin authentication policy を置き換えるものではありません。
+
+## Laravel Cloud API
+
+Filament dashboard の Cloud Status widget が Laravel Cloud の deployment status を取得するために使います。
+
+```env
+LARAVEL_CLOUD_API_TOKEN=
+LARAVEL_CLOUD_ENVIRONMENT_ID=
+```
+
+| Name | Description |
+| --- | --- |
+| `LARAVEL_CLOUD_API_TOKEN` | Laravel Cloud API bearer token です。secret なので commit しないでください。未設定の場合、Cloud Status widget は未設定状態を表示します。 |
+| `LARAVEL_CLOUD_ENVIRONMENT_ID` | deployment status を取得する Laravel Cloud environment ID です。未設定の場合、Cloud Status widget は未設定状態を表示します。 |
+
+現在この integration が表示するのは最新 deployment status だけです。Environment metrics、database metrics、Laravel Cloud Commands API execution、logs viewer は実装していません。
