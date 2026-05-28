@@ -109,20 +109,22 @@ class LaravelCloudDeploymentStatus
     public static function fromDeployment(array $deployment): self
     {
         $status = new self();
-        $commit = self::arrayValue($deployment['commit'] ?? null);
+        $attributes = self::arrayValue($deployment['attributes'] ?? null);
+        $data = array_merge($deployment, $attributes);
+        $commit = self::arrayValue($data['commit'] ?? null);
 
-        $status->deploymentId = self::stringValue($deployment['id'] ?? null);
-        $status->branch = self::firstStringValue($deployment, ['branch', 'branch_name']);
-        $status->commitHash = self::firstStringValue($deployment, ['commit_hash', 'commit_sha', 'commit'])
+        $status->deploymentId = self::stringValue($data['id'] ?? null);
+        $status->branch = self::firstStringValue($data, ['branch', 'branch_name']);
+        $status->commitHash = self::firstStringValue($data, ['commit_hash', 'commit_sha', 'commit'])
             ?? self::firstStringValue($commit, ['hash', 'sha']);
-        $status->commitMessage = self::firstStringValue($deployment, ['commit_message'])
+        $status->commitMessage = self::firstStringValue($data, ['commit_message'])
             ?? self::firstStringValue($commit, ['message']);
-        $status->commitAuthor = self::firstStringValue($deployment, ['commit_author', 'author'])
+        $status->commitAuthor = self::firstStringValue($data, ['commit_author', 'author'])
             ?? self::firstStringValue($commit, ['author', 'author_name']);
-        $status->startedAt = self::firstStringValue($deployment, ['started_at']);
-        $status->finishedAt = self::firstStringValue($deployment, ['finished_at']);
-        $status->failureReason = self::firstStringValue($deployment, ['failure_reason']);
-        $status->status = self::resolveStatus($deployment, $status->startedAt, $status->finishedAt, $status->failureReason);
+        $status->startedAt = self::firstStringValue($data, ['started_at']);
+        $status->finishedAt = self::firstStringValue($data, ['finished_at']);
+        $status->failureReason = self::firstStringValue($data, ['failure_reason']);
+        $status->status = self::resolveStatus($data, $status->startedAt, $status->finishedAt, $status->failureReason);
 
         return $status;
     }

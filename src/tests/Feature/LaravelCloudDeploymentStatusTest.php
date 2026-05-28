@@ -97,6 +97,36 @@ class LaravelCloudDeploymentStatusTest extends TestCase
         self::assertSame('2026-05-28T01:01:00Z', $status->finishedAt);
     }
 
+    public function testDeploymentIsMappedFromJsonApiAttributesPayload(): void
+    {
+        $this->fakeDeployment([
+            'id' => 'depl-123',
+            'type' => 'deployments',
+            'attributes' => [
+                'status' => 'deployment.succeeded',
+                'branch_name' => 'main',
+                'commit_hash' => '1680e0ccfbce2edf75cb07ebf69e44dcca2e922c',
+                'commit_message' => 'feat: add temporary digest item translation actions',
+                'commit_author' => 'IKEDA Youhei',
+                'failure_reason' => null,
+                'started_at' => '2026-05-28T10:15:16.000000Z',
+                'finished_at' => '2026-05-28T10:16:36.000000Z',
+            ],
+        ]);
+
+        $status = app(LaravelCloudDeploymentStatusQuery::class)->status();
+
+        self::assertSame('deployment.succeeded', $status->status);
+        self::assertSame('depl-123', $status->deploymentId);
+        self::assertSame('main', $status->branch);
+        self::assertSame('1680e0ccfbce2edf75cb07ebf69e44dcca2e922c', $status->commitHash);
+        self::assertSame('feat: add temporary digest item translation actions', $status->commitMessage);
+        self::assertSame('IKEDA Youhei', $status->commitAuthor);
+        self::assertSame('2026-05-28T10:15:16.000000Z', $status->startedAt);
+        self::assertSame('2026-05-28T10:16:36.000000Z', $status->finishedAt);
+        self::assertNull($status->failureReason);
+    }
+
     public function testFailedDeploymentIsMappedFromFailureReason(): void
     {
         $this->fakeDeployment([

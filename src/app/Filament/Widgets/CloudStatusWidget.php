@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Cloud\LaravelCloudDeploymentStatus;
 use App\Cloud\LaravelCloudDeploymentStatusQuery;
 use Filament\Widgets\Widget;
+use Illuminate\Support\Carbon;
 
 /**
  * Laravel Cloud の deployment status を表示する dashboard widget
@@ -36,11 +37,11 @@ class CloudStatusWidget extends Widget
         return [
             ['label' => 'Status', 'value' => $status->status],
             ['label' => 'Branch', 'value' => $this->value($status->branch)],
-            ['label' => 'Commit', 'value' => $this->value($status->commitHash)],
+            ['label' => 'Commit', 'value' => $this->commitHash($status->commitHash)],
             ['label' => 'Commit message', 'value' => $this->value($status->commitMessage)],
             ['label' => 'Commit author', 'value' => $this->value($status->commitAuthor)],
-            ['label' => 'Started at', 'value' => $this->value($status->startedAt)],
-            ['label' => 'Finished at', 'value' => $this->value($status->finishedAt)],
+            ['label' => 'Started at', 'value' => $this->timestamp($status->startedAt)],
+            ['label' => 'Finished at', 'value' => $this->timestamp($status->finishedAt)],
             ['label' => 'Failure reason', 'value' => $this->value($status->failureReason)],
         ];
     }
@@ -48,5 +49,23 @@ class CloudStatusWidget extends Widget
     private function value(?string $value): string
     {
         return $value ?? 'N/A';
+    }
+
+    private function commitHash(?string $value): string
+    {
+        if ($value === null) {
+            return 'N/A';
+        }
+
+        return strlen($value) > 12 ? substr($value, 0, 12) : $value;
+    }
+
+    private function timestamp(?string $value): string
+    {
+        if ($value === null) {
+            return 'N/A';
+        }
+
+        return Carbon::parse($value)->format('Y-m-d H:i:s T');
     }
 }

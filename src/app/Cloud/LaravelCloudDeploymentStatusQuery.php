@@ -28,7 +28,7 @@ class LaravelCloudDeploymentStatusQuery
             return LaravelCloudDeploymentStatus::notConfigured();
         }
 
-        $cacheKey = 'digestpipe:laravel-cloud:deployment-status:' . sha1($environmentId);
+        $cacheKey = 'digestpipe:laravel-cloud:deployment-status:v2:' . sha1($environmentId);
 
         return Cache::remember(
             $cacheKey,
