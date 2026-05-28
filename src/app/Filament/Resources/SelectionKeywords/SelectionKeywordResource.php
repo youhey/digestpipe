@@ -158,7 +158,7 @@ abstract class SelectionKeywordResource extends Resource
                 TextColumn::make('match_mode')
                     ->sortable(),
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->dateTime('Y-m-d H:i:s T')
                     ->sortable(),
             ])
             ->filters([

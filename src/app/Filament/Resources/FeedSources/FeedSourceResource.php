@@ -128,7 +128,7 @@ class FeedSourceResource extends Resource
                 TextColumn::make('category')
                     ->sortable(),
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->dateTime('Y-m-d H:i:s T')
                     ->sortable(),
             ])
             ->filters([

@@ -48,7 +48,7 @@ class RecentFailedDigestItemsWidget extends TableWidget
                     ->limit(80)
                     ->state(fn (DigestItem $record): ?string => $this->errorSummary($record)),
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->dateTime('Y-m-d H:i:s T')
                     ->sortable(),
             ])
             ->defaultPaginationPageOption(5)
