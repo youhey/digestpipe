@@ -11,7 +11,7 @@ class SourcePositiveKeywordsWidget extends Widget
 {
     use SourceDetailWidget;
 
-    protected string $view = 'filament.widgets.source-detail-table';
+    protected string $view = 'filament.widgets.analysis-insights-table';
 
     /**
      * @return array<string, mixed>

@@ -171,7 +171,7 @@
         :heading="$heading"
     >
         @php
-            $numericColumns = ['id', 'count', 'score', 'confidence', 'importance'];
+            $numericColumns = ['id', 'count', 'score', 'selection_score', 'confidence', 'importance'];
             $wideColumns = ['title', 'limitations'];
         @endphp
 

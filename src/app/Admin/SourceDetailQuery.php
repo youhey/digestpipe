@@ -26,7 +26,7 @@ class SourceDetailQuery
      *
      * @return SourceDetailReport
      */
-    public function reportForSourceKey(string $sourceKey, int $days = 7, int $keywordLimit = 10, int $recentLimit = 5): array
+    public function reportForSourceKey(string $sourceKey, int $days = 7, int $keywordLimit = 100, int $recentLimit = 100): array
     {
         /** @var FeedSource $source */
         $source = FeedSource::query()
@@ -41,7 +41,7 @@ class SourceDetailQuery
      *
      * @return SourceDetailReport
      */
-    public function report(FeedSource $source, int $days = 7, int $keywordLimit = 10, int $recentLimit = 5): array
+    public function report(FeedSource $source, int $days = 7, int $keywordLimit = 100, int $recentLimit = 100): array
     {
         $to = CarbonImmutable::now();
         $from = $to->subDays($days);
