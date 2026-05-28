@@ -267,6 +267,7 @@ class DigestItemReviewTest extends TestCase
         self::assertTrue($truncation['article_content.text']);
         self::assertSame('[JA] Short analysis brief.', $translations['analysis.brief']);
         self::assertStringContainsString('[JA] Point 1', $translations['analysis.key_points']);
+        Notification::assertNotified('Analysis translated.');
 
         $item->refresh();
 

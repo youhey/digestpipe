@@ -32,7 +32,9 @@ class ViewDigestItem extends ViewRecord
     {
         $record = $this->digestItem();
 
-        $this->translateOne('article.title', $record->title);
+        if ($this->translateOne('article.title', $record->title)) {
+            $this->translationSucceeded('Article title translated.');
+        }
     }
 
     /**
@@ -42,7 +44,9 @@ class ViewDigestItem extends ViewRecord
     {
         $record = $this->digestItem();
 
-        $this->translateOne('article_content.text', $record->article_content_text);
+        if ($this->translateOne('article_content.text', $record->article_content_text)) {
+            $this->translationSucceeded('Article content translated.');
+        }
     }
 
     /**
@@ -52,10 +56,29 @@ class ViewDigestItem extends ViewRecord
     {
         $record = $this->digestItem();
 
-        $this->translateOne('analysis.brief', DigestItemResource::analysisText($record, 'brief'), false);
-        $this->translateOne('analysis.detailed_summary', DigestItemResource::analysisText($record, 'detailed_summary'), false);
-        $this->translateOne('analysis.limitations', DigestItemResource::analysisText($record, 'limitations'), false);
-        $this->translateMany('analysis.key_points', $this->analysisListItems($record));
+        $translated = false;
+
+        if ($this->translateOne('analysis.brief', DigestItemResource::analysisText($record, 'brief'), false)) {
+            $translated = true;
+        }
+
+        if ($this->translateOne('analysis.detailed_summary', DigestItemResource::analysisText($record, 'detailed_summary'), false)) {
+            $translated = true;
+        }
+
+        if ($this->translateOne('analysis.limitations', DigestItemResource::analysisText($record, 'limitations'), false)) {
+            $translated = true;
+        }
+
+        if ($this->translateMany('analysis.key_points', $this->analysisListItems($record))) {
+            $translated = true;
+        }
+
+        if ($translated) {
+            $this->translationSucceeded('Analysis translated.');
+
+            return;
+        }
 
         if (! $this->hasTranslation('analysis.brief')
             && ! $this->hasTranslation('analysis.detailed_summary')
@@ -88,14 +111,14 @@ class ViewDigestItem extends ViewRecord
         return DigestItemResource::manualRatingActions();
     }
 
-    private function translateOne(string $key, ?string $text, bool $notifyEmpty = true): void
+    private function translateOne(string $key, ?string $text, bool $notifyEmpty = true): bool
     {
         try {
             $result = app(DigestItemTranslationService::class)->translateText($text);
         } catch (TranslationException $exception) {
             $this->translationFailed($exception);
 
-            return;
+            return false;
         }
 
         if ($result === null) {
@@ -103,28 +126,30 @@ class ViewDigestItem extends ViewRecord
                 $this->nothingToTranslate();
             }
 
-            return;
+            return false;
         }
 
         $this->temporaryTranslations[$key] = $result->text;
         $this->translationTruncation[$key] = $result->truncated;
+
+        return true;
     }
 
     /**
      * @param list<string> $texts
      */
-    private function translateMany(string $key, array $texts): void
+    private function translateMany(string $key, array $texts): bool
     {
         try {
             $results = app(DigestItemTranslationService::class)->translateList($texts);
         } catch (TranslationException $exception) {
             $this->translationFailed($exception);
 
-            return;
+            return false;
         }
 
         if ($results === []) {
-            return;
+            return false;
         }
 
         $this->temporaryTranslations[$key] = implode("\n", array_map(
@@ -135,6 +160,16 @@ class ViewDigestItem extends ViewRecord
             static fn (TranslationResult $result): bool => $result->truncated,
             $results,
         ), true);
+
+        return true;
+    }
+
+    private function translationSucceeded(string $title): void
+    {
+        Notification::make()
+            ->success()
+            ->title($title)
+            ->send();
     }
 
     private function translationFailed(TranslationException $exception): void
