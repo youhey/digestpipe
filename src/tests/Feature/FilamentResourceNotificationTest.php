@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\FeedSources\Pages\CreateFeedSource;
 use App\Filament\Resources\FeedSources\Pages\EditFeedSource;
-use App\Filament\Resources\SelectionKeywords\Pages\CreateSelectionKeyword;
-use App\Filament\Resources\SelectionKeywords\Pages\EditSelectionKeyword;
+use App\Filament\Resources\PositiveKeywords\Pages\CreatePositiveKeyword;
+use App\Filament\Resources\PositiveKeywords\Pages\EditPositiveKeyword;
 use App\Models\FeedSource;
 use App\Models\SelectionKeyword;
 use App\Models\User;
@@ -84,9 +84,8 @@ class FilamentResourceNotificationTest extends TestCase
 
     public function testSelectionKeywordCreatePageSendsSuccessNotification(): void
     {
-        Livewire::test(CreateSelectionKeyword::class)
+        Livewire::test(CreatePositiveKeyword::class)
             ->set('data.keyword', 'Example Keyword')
-            ->set('data.type', 'positive')
             ->set('data.match_mode', 'exact_phrase')
             ->set('data.score', 5)
             ->set('data.enabled', true)
@@ -96,28 +95,28 @@ class FilamentResourceNotificationTest extends TestCase
             ->call('create')
             ->assertHasNoErrors();
 
-        Notification::assertNotified('Selection Keyword を作成しました。');
+        Notification::assertNotified('Positive Keyword を作成しました。');
     }
 
     public function testSelectionKeywordCreatePageSendsFailureNotificationForValidationErrors(): void
     {
-        Livewire::test(CreateSelectionKeyword::class)
+        Livewire::test(CreatePositiveKeyword::class)
             ->call('create')
             ->assertHasErrors();
 
-        Notification::assertNotified('Selection Keyword を作成できませんでした。');
+        Notification::assertNotified('Positive Keyword を作成できませんでした。');
     }
 
     public function testSelectionKeywordEditPageSendsSuccessNotification(): void
     {
         $keyword = $this->selectionKeyword();
 
-        Livewire::test(EditSelectionKeyword::class, ['record' => $keyword->getKey()])
+        Livewire::test(EditPositiveKeyword::class, ['record' => $keyword->getKey()])
             ->set('data.score', 7)
             ->call('save')
             ->assertHasNoErrors();
 
-        Notification::assertNotified('Selection Keyword を更新しました。');
+        Notification::assertNotified('Positive Keyword を更新しました。');
     }
 
     public function testSelectionKeywordEditPageDeleteActionSendsSuccessNotification(): void
@@ -125,10 +124,10 @@ class FilamentResourceNotificationTest extends TestCase
         $keyword = $this->selectionKeyword();
 
         /** @phpstan-ignore-next-line Filament action testing helper is provided at runtime. */
-        Livewire::test(EditSelectionKeyword::class, ['record' => $keyword->getKey()])
+        Livewire::test(EditPositiveKeyword::class, ['record' => $keyword->getKey()])
             ->callAction(DeleteAction::class);
 
-        Notification::assertNotified('Selection Keyword を削除しました。');
+        Notification::assertNotified('Positive Keyword を削除しました。');
 
         $this->assertDatabaseMissing('selection_keywords', ['id' => $keyword->getKey()]);
     }

@@ -422,7 +422,7 @@ Do not store or log Google OAuth access tokens, refresh tokens, authorization co
 
 Feed Sources are DB-backed master data managed through the Filament admin panel. Do not reintroduce `feed_sources` under `config/digestpipe.php`; use the `feed_sources` table, `FeedSourceSeeder`, and `FeedSourceRepository`.
 
-Selection Keywords are DB-backed master data managed through the Filament admin panel. Do not reintroduce `selection.positive_keywords` or `selection.negative_keywords` under `config/digestpipe.php`; use the `selection_keywords` table, `SelectionKeywordSeeder`, and `SelectionKeywordRepository`. Selection Keywords use `match_mode` values `contains`, `word_boundary`, or `exact_phrase`; do not add regex matching unless explicitly requested.
+Selection Keywords are DB-backed master data managed through the Filament admin panel. Do not reintroduce `selection.positive_keywords` or `selection.negative_keywords` under `config/digestpipe.php`; use the `selection_keywords` table, `SelectionKeywordSeeder`, and `SelectionKeywordRepository`. Admin UI exposes the single table as separate Positive Keywords and Negative Keywords resources; `type` is set automatically and the generic Selection Keywords resource should not be visible in navigation. Selection Keywords use `match_mode` values `contains`, `word_boundary`, or `exact_phrase`; do not add regex matching unless explicitly requested.
 
 Selection evaluation history is stored in the `selection_evaluations` table. Keep it append-only. Digest Item latest selection fields remain the runtime state, while `selection_evaluations` records historical pre-content and post-content decisions. Do not store raw article content in this history table.
 

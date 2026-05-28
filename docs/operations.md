@@ -101,6 +101,16 @@ The seeder stores positive and negative keywords in one table using the `type`
 column. It uses `type` + `keyword` as the stable identifier and does not
 overwrite existing records.
 
+The Filament admin UI exposes this single table as two resources:
+
+- Positive Keywords
+- Negative Keywords
+
+Both resources use the same `SelectionKeyword` model. The `type` field is set
+automatically by the resource and is not user-selectable. Positive scores must
+be `1..100`; negative scores must be `-100..-1`. `sort_order` remains internal
+and is managed through table reordering.
+
 Selection Keywords also store `match_mode`:
 
 - `contains`: case-insensitive UTF-8 literal substring matching for Japanese/CJK

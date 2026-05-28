@@ -79,7 +79,7 @@ DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL=admin@example.test
 
 ## 現在の範囲
 
-この foundation では dashboard、Analysis Insights page、Feed Sources resource、Feed Source detail page、Selection Keywords resource を実装しています。
+この foundation では dashboard、Analysis Insights page、Feed Sources resource、Feed Source detail page、Positive Keywords resource、Negative Keywords resource を実装しています。
 
 ## Dashboard
 
@@ -193,10 +193,16 @@ Selection Keywords は DB-backed master data です。`src/config/digestpipe.php
 
 DB 上では positive / negative keyword を 1 つの table に保存し、`type` で分類します。アプリケーション code は repository から positive / negative の keyword score map として個別に読み込みます。
 
+Filament admin UI では、日常的な編集を分かりやすくするために次の 2 つの resource として表示します。
+
+- Positive Keywords
+- Negative Keywords
+
+どちらも同じ `selection_keywords` table と `SelectionKeyword` model を使います。`type` は resource によって自動設定されるため、form では選択しません。generic な Selection Keywords resource は admin navigation には表示しません。
+
 Filament では次の項目を作成・編集できます。
 
 - `keyword`
-- `type`
 - `match_mode`
 - `score`
 - `enabled`
@@ -212,11 +218,11 @@ Filament では次の項目を作成・編集できます。
 
 `regex` mode は intentionally not supported です。keyword は正規表現としてではなく literal string として扱います。
 
-`score` は `type=positive` では正の整数、`type=negative` では負の整数である必要があります。
+`score` は Positive Keywords では `1..100`、Negative Keywords では `-100..-1` の整数です。`score=0` は許可しません。
 
 Default keyword set は false positive を避けるため、広すぎる `token` / `tokens` / `トークン` を negative default から外し、`crypto token` など crypto 文脈の phrase に寄せています。Positive default も broad な `AWS` ではなく、AWS service 名や development、security、agent、tooling、cloud/CDN 系の keyword を使います。
 
-`sort_order` は通常の form field としては表示しません。Selection Keywords table の reordering で管理します。
+`sort_order` は通常の form field としては表示しません。Positive / Negative それぞれの table reordering で管理します。
 
 Selection threshold は引き続き config-backed です。
 

@@ -5,7 +5,8 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\AnalysisInsights;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\FeedSources\FeedSourceResource;
-use App\Filament\Resources\SelectionKeywords\SelectionKeywordResource;
+use App\Filament\Resources\NegativeKeywords\NegativeKeywordResource;
+use App\Filament\Resources\PositiveKeywords\PositiveKeywordResource;
 use App\Filament\Widgets\AnalysisStatusChartWidget;
 use App\Filament\Widgets\ArticleContentStatusChartWidget;
 use App\Filament\Widgets\CloudStatusWidget;
@@ -54,7 +55,8 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('digestpipe')
             ->resources([
                 FeedSourceResource::class,
-                SelectionKeywordResource::class,
+                PositiveKeywordResource::class,
+                NegativeKeywordResource::class,
             ])
             ->pages([
                 Dashboard::class,

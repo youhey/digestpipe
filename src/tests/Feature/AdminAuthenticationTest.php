@@ -310,9 +310,9 @@ class AdminAuthenticationTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/admin/selection-keywords')
+            ->get('/admin/positive-keywords')
             ->assertOk()
-            ->assertSee('Selection Keywords')
+            ->assertSee('Positive Keywords')
             ->assertSee('Laravel');
     }
 
