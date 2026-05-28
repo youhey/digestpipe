@@ -3,10 +3,12 @@
 namespace App\Filament\Widgets;
 
 use App\Admin\PipelineHealthStatsQuery;
+use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\HtmlString;
+use Throwable;
 
 /**
  * Pipeline の最新 activity timestamp を表示する dashboard widget
@@ -38,6 +40,27 @@ class PipelineLatestActivityWidget extends StatsOverviewWidget
 
     private function timestamp(?string $value): HtmlString
     {
-        return new HtmlString('<span class="break-all" style="font-size: var(--text-lg); line-height: var(--text-lg--line-height);">' . e($value ?? 'N/A') . '</span>');
+        return new HtmlString('<span style="display: inline-block; white-space: nowrap; font-size: 1rem; line-height: 1.5rem;">' . e($this->formattedTimestamp($value)) . '</span>');
+    }
+
+    private function formattedTimestamp(?string $value): string
+    {
+        if ($value === null || trim($value) === '') {
+            return 'N/A';
+        }
+
+        try {
+            $timezone = config('app.timezone', 'UTC');
+
+            if (! is_string($timezone) || trim($timezone) === '') {
+                $timezone = 'UTC';
+            }
+
+            return CarbonImmutable::parse($value)
+                ->timezone($timezone)
+                ->format('Y-m-d H:i:s T');
+        } catch (Throwable) {
+            return $value;
+        }
     }
 }
