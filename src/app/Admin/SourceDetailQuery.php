@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
  * Feed Source detail page に表示する source-specific 集計を生成します。
  *
  * @phpstan-type SourceMetadata array{key: string, name: string, url: string, language: string, enabled: bool, analysis_enabled: bool, tier: string, category: string}
- * @phpstan-type SourceKpis array{total: int, selected: int, skipped: int, pending: int, other: int, content_failed: int, analysis_failed: int, average_score: float|null}
+ * @phpstan-type SourceKpis array{total: int, selected: int, selected_rate: float, skipped: int, skipped_rate: float, pending: int, pending_rate: float, other: int, content_failed: int, content_failed_rate: float, analysis_failed: int, analysis_failed_rate: float, analysis_completed: int, analysis_completed_rate: float, failure_count: int, failure_rate: float, average_score: float|null}
  * @phpstan-type StatusRow array{status: string, count: int}
  * @phpstan-type KeywordRow array{keyword: string, count: int}
  * @phpstan-type ContentTypeRow array{content_type: string, count: int}
@@ -21,6 +21,18 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class SourceDetailQuery
 {
+    private SourceMetricsCalculator $metrics;
+
+    /**
+     * Constructor
+     *
+     * @param SourceMetricsCalculator $metrics
+     */
+    public function __construct(SourceMetricsCalculator $metrics)
+    {
+        $this->metrics = $metrics;
+    }
+
     /**
      * Source key から Feed Source を解決して source detail data を返します。
      *
@@ -120,18 +132,7 @@ class SourceDetailQuery
      */
     private function kpis(array $items): array
     {
-        $scores = $this->scores($items);
-
-        return [
-            'total' => count($items),
-            'selected' => $this->selectionStatusCount($items, 'selected'),
-            'skipped' => $this->selectionStatusCount($items, 'skipped'),
-            'pending' => count(array_filter($items, fn (DigestItem $item): bool => $this->isPendingSelection($item))),
-            'other' => count(array_filter($items, fn (DigestItem $item): bool => $this->isOtherSelection($item))),
-            'content_failed' => count(array_filter($items, static fn (DigestItem $item): bool => $item->article_content_status === 'failed')),
-            'analysis_failed' => count(array_filter($items, static fn (DigestItem $item): bool => $item->analysis_status === 'failed')),
-            'average_score' => $scores === [] ? null : round(array_sum($scores) / count($scores), 2),
-        ];
+        return $this->metrics->summarize($items);
     }
 
     /**
@@ -342,36 +343,5 @@ class SourceDetailQuery
         }
 
         return trim($contentType);
-    }
-
-    /**
-     * @param list<DigestItem> $items
-     *
-     * @return list<int>
-     */
-    private function scores(array $items): array
-    {
-        return array_values(array_filter(
-            array_map(static fn (DigestItem $item): ?int => $item->selection_score, $items),
-            static fn (?int $score): bool => $score !== null
-        ));
-    }
-
-    /**
-     * @param list<DigestItem> $items
-     */
-    private function selectionStatusCount(array $items, string $status): int
-    {
-        return count(array_filter($items, static fn (DigestItem $item): bool => $item->selection_status === $status));
-    }
-
-    private function isPendingSelection(DigestItem $item): bool
-    {
-        return in_array($item->selection_status, ['pending', 'needs_content'], true);
-    }
-
-    private function isOtherSelection(DigestItem $item): bool
-    {
-        return ! in_array($item->selection_status, ['selected', 'skipped', 'pending', 'needs_content'], true);
     }
 }

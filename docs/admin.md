@@ -79,7 +79,7 @@ DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL=admin@example.test
 
 ## 現在の範囲
 
-この foundation では dashboard、Analysis Insights page、Feed Sources resource、Feed Source detail page、Positive Keywords resource、Negative Keywords resource を実装しています。
+この foundation では dashboard、Analysis Insights page、Source Insights page、Feed Sources resource、Feed Source detail page、Positive Keywords resource、Negative Keywords resource を実装しています。
 
 ## Dashboard
 
@@ -170,7 +170,7 @@ Feed Source 一覧の view action から、source-specific detail page を開け
 この page は直近 7 日間の Digest Item を `source_key` で絞り込み、1 つの Feed Source に関する運用シグナルを表示します。
 
 - Source metadata
-- Source-specific KPI
+- Source-specific KPI counts and rates
 - Selection status breakdown
 - Article content status breakdown
 - Analysis status breakdown
@@ -184,6 +184,29 @@ Feed Source 一覧の view action から、source-specific detail page を開け
 Source Detail page は read-only です。Feed Source 設定の編集は既存の edit action で行い、分析結果や Digest Item は編集しません。
 
 この page は source settings と selection behavior の調整を支援するための表示です。Engagement metrics、discussion summaries、command run logging、state transition history は実装していません。
+
+### Source Insights
+
+Source Insights page は `/admin/source-insights` にあります。
+
+この page は直近 7 日間の Digest Item を対象に、Feed Source を横断比較する read-only page です。Source Detail が 1 つの source の drill-down であるのに対して、Source Insights は source 同士の value と pipeline health を比較します。
+
+Main table では次の値を表示します。
+
+- `source_key`
+- total Digest Items
+- selected rate
+- skipped rate
+- pending rate
+- analysis completed rate
+- failure rate
+- average selection score
+
+率の分母はその source の total Digest Items です。Pending は `selection_status=pending` と `selection_status=needs_content` を含めます。Failure rate は `article_content_status=failed` または `analysis_status=failed` の Digest Item 数を total で割った値です。
+
+Source Detail overview でも Selected、Skipped、Pending、Content Failed、Analysis Failed、Analysis Completed は `104 (48.23%)` のように count と rate を併記します。Source の価値判断では raw count だけでなく rate を優先して確認してください。
+
+Manual selected sample quality、manual good/bad rating、engagement metrics はまだ実装していません。選択済み item の品質評価 UI は今後の別タスクです。
 
 ## Selection Keywords
 

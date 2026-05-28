@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\SourceDetail;
 
+use App\Admin\SourceMetricsCalculator;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -23,25 +24,30 @@ class SourceStatsOverviewWidget extends StatsOverviewWidget
     protected function getStats(): array
     {
         $kpis = $this->sourceReport()['kpis'];
+        $metrics = app(SourceMetricsCalculator::class);
+        $total = $kpis['total'];
 
         return [
             Stat::make('Total Digest Items', $kpis['total'])
                 ->icon(Heroicon::RectangleStack),
-            Stat::make('Selected', $kpis['selected'])
+            Stat::make('Selected', $metrics->countRate($kpis['selected'], $total))
                 ->color('success')
                 ->icon(Heroicon::CheckCircle),
-            Stat::make('Skipped', $kpis['skipped'])
+            Stat::make('Skipped', $metrics->countRate($kpis['skipped'], $total))
                 ->color('danger')
                 ->icon(Heroicon::NoSymbol),
-            Stat::make('Pending', $kpis['pending'])
+            Stat::make('Pending', $metrics->countRate($kpis['pending'], $total))
                 ->color('warning')
                 ->icon(Heroicon::Clock),
-            Stat::make('Content Failed', $kpis['content_failed'])
+            Stat::make('Content Failed', $metrics->countRate($kpis['content_failed'], $total))
                 ->color('danger')
                 ->icon(Heroicon::ExclamationTriangle),
-            Stat::make('Analysis Failed', $kpis['analysis_failed'])
+            Stat::make('Analysis Failed', $metrics->countRate($kpis['analysis_failed'], $total))
                 ->color('danger')
                 ->icon(Heroicon::ExclamationTriangle),
+            Stat::make('Analysis Completed', $metrics->countRate($kpis['analysis_completed'], $total))
+                ->color('success')
+                ->icon(Heroicon::Sparkles),
             Stat::make('Avg Selection Score', $kpis['average_score'] ?? 'n/a')
                 ->icon(Heroicon::ChartBar),
         ];

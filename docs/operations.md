@@ -173,6 +173,36 @@ and recent selected/skipped item examples. The time window uses
 `selection_evaluated_at` when available, then falls back to the required
 `fetched_at` timestamp.
 
+## Source Insights
+
+Use the source insights command to compare Feed Sources by value and pipeline
+health:
+
+```bash
+php artisan digestpipe:sources:insights
+```
+
+Options:
+
+```txt
+--days=7
+--format=table
+--sort=total|selected-rate|skipped-rate|pending-rate|analysis-completed-rate|failure-rate|average-score
+```
+
+The command is read-only. It reports total Digest Items, selected/skipped/pending
+rates, analysis completed rate, combined failure rate, and average selection
+score for each source. The same source-level calculations are used by the
+Filament Source Insights page.
+
+Rates use the source total as the denominator. Pending includes
+`selection_status=pending` and `selection_status=needs_content`. Failure rate
+counts Digest Items where article content fetch or analysis is failed.
+
+Source value should be judged primarily by rates rather than raw counts. Manual
+selected item quality review and `manual_good_rate` are future work and are not
+part of this command.
+
 ## Insights Export
 
 Use the insights export command to prepare a compact Markdown report for

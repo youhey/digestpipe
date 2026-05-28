@@ -42,6 +42,10 @@ class SourceDetailQueryTest extends TestCase
 
         self::assertSame('hacker_news', $report['source']['key']);
         self::assertSame(0, $report['kpis']['total']);
+        self::assertSame(0, $report['kpis']['selected']);
+        self::assertSame(0.0, $report['kpis']['selected_rate']);
+        self::assertSame(0, $report['kpis']['analysis_completed']);
+        self::assertSame(0.0, $report['kpis']['analysis_completed_rate']);
         self::assertSame([
             ['status' => 'selected', 'count' => 0],
             ['status' => 'skipped', 'count' => 0],
@@ -125,9 +129,17 @@ class SourceDetailQueryTest extends TestCase
 
         self::assertSame(4, $report['kpis']['total']);
         self::assertSame(2, $report['kpis']['selected']);
+        self::assertSame(50.0, $report['kpis']['selected_rate']);
         self::assertSame(1, $report['kpis']['skipped']);
+        self::assertSame(25.0, $report['kpis']['skipped_rate']);
         self::assertSame(1, $report['kpis']['pending']);
+        self::assertSame(25.0, $report['kpis']['pending_rate']);
+        self::assertSame(0, $report['kpis']['content_failed']);
+        self::assertSame(0.0, $report['kpis']['content_failed_rate']);
         self::assertSame(1, $report['kpis']['analysis_failed']);
+        self::assertSame(25.0, $report['kpis']['analysis_failed_rate']);
+        self::assertSame(1, $report['kpis']['analysis_completed']);
+        self::assertSame(25.0, $report['kpis']['analysis_completed_rate']);
         self::assertSame(-16.75, $report['kpis']['average_score']);
         self::assertSame([
             ['status' => 'selected', 'count' => 2],

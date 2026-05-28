@@ -9,6 +9,7 @@ use App\Console\Commands\InsightsExportCommand;
 use App\Console\Commands\RotateApiTokenCommand;
 use App\Console\Commands\SelectionReportCommand;
 use App\Console\Commands\SelectionRollbackCommand;
+use App\Console\Commands\SourceInsightsCommand;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         RotateApiTokenCommand::class,
         SelectionReportCommand::class,
         SelectionRollbackCommand::class,
+        SourceInsightsCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
