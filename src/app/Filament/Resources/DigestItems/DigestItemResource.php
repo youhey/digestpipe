@@ -65,27 +65,27 @@ class DigestItemResource extends Resource
                 TextColumn::make('title')
                     ->searchable()
                     ->limit(80),
+                TextColumn::make('manual_rating')
+                    ->state(static fn (DigestItem $record): string => self::manualRatingLabel($record))
+                    ->sortable(),
                 TextColumn::make('selection_score')
                     ->sortable(),
-                TextColumn::make('selection_status')
-                    ->sortable(),
-                TextColumn::make('article_content_status')
-                    ->label('content_status')
-                    ->sortable(),
-                TextColumn::make('analysis_status')
-                    ->sortable(),
-                TextColumn::make('content_type')
-                    ->state(static fn (DigestItem $record): string => self::contentType($record) ?? 'N/A')
-                    ->sortable(false),
                 TextColumn::make('importance')
                     ->state(static fn (DigestItem $record): string => self::analysisValue($record, 'importance') ?? 'N/A')
                     ->sortable(false),
                 TextColumn::make('confidence')
                     ->state(static fn (DigestItem $record): string => self::analysisValue($record, 'confidence') ?? 'N/A')
                     ->sortable(false),
-                TextColumn::make('manual_rating')
-                    ->state(static fn (DigestItem $record): string => self::manualRatingLabel($record))
+                TextColumn::make('selection_status')
                     ->sortable(),
+                TextColumn::make('article_content_status')
+                    ->label('Content Status')
+                    ->sortable(),
+                TextColumn::make('analysis_status')
+                    ->sortable(),
+                TextColumn::make('content_type')
+                    ->state(static fn (DigestItem $record): string => self::contentType($record) ?? 'N/A')
+                    ->sortable(false),
             ])
             ->filters([
                 Filter::make('ready_for_review')
@@ -178,6 +178,7 @@ class DigestItemResource extends Resource
                         self::translateAction('translate_article_content', 'Article content', 'translateArticleContent')
                             ->disabled(static fn (DigestItem $record): bool => ! is_string($record->article_content_text) || trim($record->article_content_text) === ''),
                     ])
+                    ->footerActions(self::manualRatingActions())
                     ->schema([
                         TextEntry::make('article_content_status')
                             ->badge(),

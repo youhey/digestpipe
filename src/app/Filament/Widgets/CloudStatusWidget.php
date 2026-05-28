@@ -38,7 +38,6 @@ class CloudStatusWidget extends Widget
             ['label' => 'Status', 'value' => $status->status],
             ['label' => 'Branch', 'value' => $this->value($status->branch)],
             ['label' => 'Commit', 'value' => $this->commitHash($status->commitHash)],
-            ['label' => 'Commit message', 'value' => $this->value($status->commitMessage)],
             ['label' => 'Commit author', 'value' => $this->value($status->commitAuthor)],
             ['label' => 'Started at', 'value' => $this->timestamp($status->startedAt)],
             ['label' => 'Finished at', 'value' => $this->timestamp($status->finishedAt)],
