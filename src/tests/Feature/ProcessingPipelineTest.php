@@ -6,6 +6,7 @@ use App\Jobs\AnalyzeDigestItemJob;
 use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
 use App\Models\FeedSource;
+use App\Models\SelectionEvaluation;
 use App\Models\SelectionKeyword;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -205,6 +206,39 @@ class ProcessingPipelineTest extends TestCase
         ]);
     }
 
+    public function testPreContentSelectionWritesEvaluationHistory(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createDigestItem([
+            'title' => 'Laravel queues in production',
+            'excerpt' => 'Token noise should also be visible.',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        $evaluation = SelectionEvaluation::query()->firstOrFail();
+
+        self::assertSame($item->id, $evaluation->digest_item_id);
+        self::assertSame('hacker_news', $evaluation->source_key);
+        self::assertSame('pre_content', $evaluation->phase);
+        self::assertSame('needs_content', $evaluation->status);
+        self::assertSame(5, $evaluation->score);
+        self::assertSame('pre_content_selection_deferred', $evaluation->reason);
+        self::assertSame(['Laravel'], $evaluation->matched_positive_keywords);
+        self::assertSame(['token'], $evaluation->matched_negative_keywords);
+        self::assertSame(false, $evaluation->input_summary['article_content_present']);
+        self::assertSame(0, $evaluation->input_summary['article_content_length']);
+        self::assertSame(10, $evaluation->selection_config_summary['analysis_threshold'] ?? null);
+        $this->assertDatabaseHas('digest_items', [
+            'id' => $item->id,
+            'selection_status' => 'needs_content',
+            'selection_score' => 5,
+            'selection_reason' => 'pre_content_selection_deferred',
+        ]);
+    }
+
     public function testPreContentLowScoreItemCanEnqueueContentFetch(): void
     {
         $this->enableSelectionForTests();
@@ -367,6 +401,86 @@ class ProcessingPipelineTest extends TestCase
             'selection_reason' => 'above_analysis_threshold',
             'analysis_status' => 'queued',
         ]);
+    }
+
+    public function testPostContentSelectionWritesEvaluationHistoryWithoutRawArticleContent(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $articleContent = 'The article explains AWS deployment with Laravel in detail.';
+        $item = $this->createDigestItem([
+            'title' => 'Plain article title',
+            'excerpt' => 'Short feed excerpt',
+            'selection_status' => 'needs_content',
+            'selection_score' => 0,
+            'selection_reason' => 'pre_content_selection_deferred',
+            'article_content_status' => 'completed',
+            'article_content_text' => $articleContent,
+            'analysis_status' => 'pending',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        $evaluation = SelectionEvaluation::query()->firstOrFail();
+
+        self::assertSame($item->id, $evaluation->digest_item_id);
+        self::assertSame('post_content', $evaluation->phase);
+        self::assertSame('selected', $evaluation->status);
+        self::assertSame(27, $evaluation->score);
+        self::assertSame('above_analysis_threshold', $evaluation->reason);
+        self::assertSame(['Laravel', 'AWS'], $evaluation->matched_positive_keywords);
+        self::assertSame([], $evaluation->matched_negative_keywords);
+        self::assertSame(true, $evaluation->input_summary['article_content_present']);
+        self::assertSame(mb_strlen($articleContent), $evaluation->input_summary['article_content_length']);
+        self::assertArrayNotHasKey('article_content_text', $evaluation->input_summary);
+        self::assertArrayNotHasKey('article_content', $evaluation->input_summary);
+        $this->assertDatabaseHas('digest_items', [
+            'id' => $item->id,
+            'selection_status' => 'selected',
+            'selection_score' => 27,
+            'selection_reason' => 'above_analysis_threshold',
+        ]);
+    }
+
+    public function testMultipleSelectionEvaluationsAppendHistoryRows(): void
+    {
+        $this->enableSelectionForTests();
+        Queue::fake();
+        $item = $this->createDigestItem([
+            'title' => 'Plain article title',
+            'excerpt' => 'Short feed excerpt',
+        ]);
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        $item->refresh();
+        $item->forceFill([
+            'article_content_status' => 'completed',
+            'article_content_text' => 'The article explains AWS deployment.',
+            'analysis_status' => 'pending',
+        ])->save();
+
+        $this->enqueueProcessing()
+            ->assertSuccessful();
+
+        $evaluations = SelectionEvaluation::query()
+            ->where('digest_item_id', $item->id)
+            ->get()
+            ->sortBy('id')
+            ->values();
+
+        self::assertCount(2, $evaluations);
+        $preContentEvaluation = $evaluations->get(0);
+        $postContentEvaluation = $evaluations->get(1);
+
+        self::assertInstanceOf(SelectionEvaluation::class, $preContentEvaluation);
+        self::assertInstanceOf(SelectionEvaluation::class, $postContentEvaluation);
+        self::assertSame('pre_content', $preContentEvaluation->phase);
+        self::assertSame('needs_content', $preContentEvaluation->status);
+        self::assertSame('post_content', $postContentEvaluation->phase);
+        self::assertSame('selected', $postContentEvaluation->status);
     }
 
     public function testHackerNewsLikeCommentsExcerptCanProceedToContentFetch(): void

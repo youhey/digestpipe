@@ -8,6 +8,7 @@ use App\Items\DigestItemProcessingPlan;
 use App\Items\DigestItemProcessingPlanner;
 use App\Items\DigestItemSelectionResult;
 use App\Items\DigestItemSelector;
+use App\Items\SelectionEvaluationRecorder;
 use App\Jobs\AnalyzeDigestItemJob;
 use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
@@ -36,15 +37,22 @@ class EnqueueProcessingCommand extends Command
 
     private readonly DigestItemSelector $selector;
 
+    private readonly SelectionEvaluationRecorder $selectionEvaluations;
+
     private readonly FeedSourceRepository $sources;
 
     /**
      * Processing orchestration commandを作成します。
      */
-    public function __construct(DigestItemProcessingPlanner $planner, DigestItemSelector $selector, FeedSourceRepository $sources)
-    {
+    public function __construct(
+        DigestItemProcessingPlanner $planner,
+        DigestItemSelector $selector,
+        SelectionEvaluationRecorder $selectionEvaluations,
+        FeedSourceRepository $sources
+    ) {
         $this->planner = $planner;
         $this->selector = $selector;
+        $this->selectionEvaluations = $selectionEvaluations;
         $this->sources = $sources;
 
         parent::__construct();
@@ -208,13 +216,16 @@ class EnqueueProcessingCommand extends Command
             return null;
         }
 
-        $result = $this->hasFinalSelectionInput($item)
+        $phase = $this->hasFinalSelectionInput($item) ? 'post_content' : 'pre_content';
+        $result = $phase === 'post_content'
             ? $this->selector->evaluatePostContent($item)
             : $this->selector->evaluatePreContent($item);
+        $evaluatedAt = CarbonImmutable::now();
 
         Log::debug('Digest item selection evaluated.', [
             'digest_item_id' => $item->id,
             'source_key' => $item->source_key,
+            'selection_phase' => $phase,
             'dry_run' => $dryRun,
             'selection_status' => $result->status,
             'selection_score' => $result->score,
@@ -229,8 +240,10 @@ class EnqueueProcessingCommand extends Command
                 'selection_score' => $result->score,
                 'selection_reason' => $result->reason,
                 'selection_result' => $result->toArray(),
-                'selection_evaluated_at' => CarbonImmutable::now(),
+                'selection_evaluated_at' => $evaluatedAt,
             ])->save();
+
+            $this->selectionEvaluations->record($item, $result, $phase, $evaluatedAt);
         }
 
         return $result;

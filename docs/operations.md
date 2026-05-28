@@ -144,6 +144,32 @@ and recent selected/skipped item examples. The time window uses
 `selection_evaluated_at` when available, then falls back to the required
 `fetched_at` timestamp.
 
+## Selection Evaluation History
+
+Selection evaluation history is stored in the `selection_evaluations` table.
+Each row records one selection evaluation for a Digest Item.
+
+Digest Item records still keep the latest selection state in fields such as
+`selection_status`, `selection_score`, `selection_reason`, `selection_result`,
+and `selection_evaluated_at`. The history table is append-only and is used to
+inspect how decisions were made over time.
+
+History rows are written when the processing orchestrator evaluates selection:
+
+- `pre_content`: before article content is fetched
+- `post_content`: after article content is available
+
+`manual_reevaluation` is reserved as a future phase value for explicit manual
+re-evaluation workflows.
+
+Each history row stores the phase, status, score, reason, matched positive and
+negative keywords, lightweight input metadata, and a summary of selection
+threshold settings. Full article content is not duplicated into
+`selection_evaluations`; only presence flags and character lengths are stored.
+
+This is separate from command run logging. It records selection decisions, not
+Artisan command execution history.
+
 ## Selection Rollback
 
 Use the selection rollback command when selection rules changed and skipped
