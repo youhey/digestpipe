@@ -266,6 +266,7 @@ class DigestItemReviewTest extends TestCase
         self::assertSame('[JA] Article content that is l', $translations['article_content.text']);
         self::assertTrue($truncation['article_content.text']);
         self::assertSame('[JA] Short analysis brief.', $translations['analysis.brief']);
+        self::assertSame('[JA] Detailed analysis summary', $translations['analysis.detailed_summary']);
         self::assertStringContainsString('[JA] Point 1', $translations['analysis.key_points']);
         Notification::assertNotified('Analysis translated.');
 
@@ -296,7 +297,11 @@ class DigestItemReviewTest extends TestCase
             'selection_status' => 'selected',
             'article_content_status' => 'completed',
             'analysis_status' => 'completed',
-            'article_content_text' => 'Reviewable content.',
+            'article_content_text' => "Reviewable content line 1\nReviewable content line 2",
+            'analysis_json' => array_merge($this->analysisJson(), [
+                'brief' => "Brief line 1\nBrief line 2",
+                'detailed_summary' => "Summary line 1\nSummary line 2",
+            ]),
         ]);
 
         $this->get('/admin/digest-items')
@@ -305,7 +310,11 @@ class DigestItemReviewTest extends TestCase
 
         $this->get('/admin/digest-items/' . $item->id)
             ->assertOk()
+            ->assertSee('Digest Item: ' . $item->title)
             ->assertSee($item->title)
+            ->assertSeeHtml('Reviewable content line 1<br />')
+            ->assertSeeHtml('Brief line 1<br />')
+            ->assertSeeHtml('Summary line 1<br />')
             ->assertDontSee('Manual rating');
     }
 

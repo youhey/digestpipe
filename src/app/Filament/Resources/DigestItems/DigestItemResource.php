@@ -22,6 +22,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 /**
@@ -182,12 +183,14 @@ class DigestItemResource extends Resource
                             ->badge(),
                         TextEntry::make('article_content_text')
                             ->placeholder('N/A')
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->prose()
                             ->columnSpanFull(),
                         TextEntry::make('translated_article_content')
                             ->label('Translated article content')
                             ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('article_content.text') ?? 'N/A')
                             ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('article_content.text'))
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->prose()
                             ->columnSpanFull(),
                         TextEntry::make('article_content_translation_notice')
@@ -214,35 +217,43 @@ class DigestItemResource extends Resource
                             ->state(static fn (DigestItem $record): string => self::analysisValue($record, 'confidence') ?? 'N/A'),
                         TextEntry::make('brief')
                             ->state(static fn (DigestItem $record): string => self::analysisText($record, 'brief') ?? 'N/A')
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->columnSpanFull(),
                         TextEntry::make('translated_brief')
                             ->label('Translated brief')
                             ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('analysis.brief') ?? 'N/A')
                             ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('analysis.brief'))
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->columnSpanFull(),
                         TextEntry::make('detailed_summary')
                             ->state(static fn (DigestItem $record): string => self::analysisText($record, 'detailed_summary') ?? 'N/A')
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->columnSpanFull(),
                         TextEntry::make('translated_detailed_summary')
                             ->label('Translated detailed summary')
                             ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('analysis.detailed_summary') ?? 'N/A')
                             ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('analysis.detailed_summary'))
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->columnSpanFull(),
                         TextEntry::make('key_points')
                             ->state(static fn (DigestItem $record): string => self::analysisList($record, 'key_points'))
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->columnSpanFull(),
                         TextEntry::make('translated_key_points')
                             ->label('Translated key points')
                             ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('analysis.key_points') ?? 'N/A')
                             ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('analysis.key_points'))
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->columnSpanFull(),
                         TextEntry::make('limitations')
                             ->state(static fn (DigestItem $record): string => self::analysisText($record, 'limitations') ?? 'N/A')
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->columnSpanFull(),
                         TextEntry::make('translated_limitations')
                             ->label('Translated limitations')
                             ->state(static fn (ViewDigestItem $livewire): string => $livewire->translatedText('analysis.limitations') ?? 'N/A')
                             ->visible(static fn (ViewDigestItem $livewire): bool => $livewire->hasTranslation('analysis.limitations'))
+                            ->formatStateUsing(static fn (?string $state): HtmlString => self::lineBreaks($state))
                             ->columnSpanFull(),
                     ])
                     ->columnSpanFull(),
@@ -530,6 +541,11 @@ class DigestItemResource extends Resource
                     $livewire->translateAnalysis();
                 }
             });
+    }
+
+    private static function lineBreaks(?string $state): HtmlString
+    {
+        return new HtmlString(nl2br(e($state ?? '')));
     }
 
     private static function hasAnalysisTranslatableText(DigestItem $record): bool

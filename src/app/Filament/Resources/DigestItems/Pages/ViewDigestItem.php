@@ -10,6 +10,7 @@ use App\Translation\TranslationResult;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Contracts\View\View;
 use LogicException;
 
 /**
@@ -24,6 +25,11 @@ class ViewDigestItem extends ViewRecord
     public array $translationTruncation = [];
 
     protected static string $resource = DigestItemResource::class;
+
+    public function getTitle(): string
+    {
+        return 'Digest Item: ' . $this->digestItem()->title;
+    }
 
     /**
      * Article section の title を一時翻訳します。
@@ -101,6 +107,15 @@ class ViewDigestItem extends ViewRecord
     public function wasTranslationTruncated(string $key): bool
     {
         return $this->translationTruncation[$key] ?? false;
+    }
+
+    public function getHeader(): ?View
+    {
+        return view('filament.resources.digest-items.view-header', [
+            'actions' => $this->getCachedHeaderActions(),
+            'breadcrumbs' => filament()->hasBreadcrumbs() ? $this->getBreadcrumbs() : [],
+            'heading' => $this->getHeading(),
+        ]);
     }
 
     /**
