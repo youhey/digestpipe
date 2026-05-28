@@ -16,6 +16,8 @@ class RecentFailedDigestItemsWidget extends TableWidget
 {
     protected static ?string $heading = 'Recent failed processing items';
 
+    protected array|int|string $columnSpan = 'full';
+
     /**
      * @param Table $table
      *

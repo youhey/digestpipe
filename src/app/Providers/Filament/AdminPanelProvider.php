@@ -61,6 +61,7 @@ class AdminPanelProvider extends PanelProvider
                 AnalysisInsights::class,
             ])
             ->widgets([
+                CloudStatusWidget::class,
                 SelectionStatsOverviewWidget::class,
                 SelectionStatusChartWidget::class,
                 SourceSelectionBreakdownWidget::class,
@@ -73,7 +74,6 @@ class AdminPanelProvider extends PanelProvider
                 AnalysisStatusChartWidget::class,
                 PipelineLatestActivityWidget::class,
                 RecentFailedDigestItemsWidget::class,
-                CloudStatusWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

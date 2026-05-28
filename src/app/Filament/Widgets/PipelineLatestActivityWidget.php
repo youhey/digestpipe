@@ -6,6 +6,7 @@ use App\Admin\PipelineHealthStatsQuery;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\HtmlString;
 
 /**
  * Pipeline の最新 activity timestamp を表示する dashboard widget
@@ -35,8 +36,8 @@ class PipelineLatestActivityWidget extends StatsOverviewWidget
         ];
     }
 
-    private function timestamp(?string $value): string
+    private function timestamp(?string $value): HtmlString
     {
-        return $value ?? 'N/A';
+        return new HtmlString('<span class="break-all" style="font-size: var(--text-lg); line-height: var(--text-lg--line-height);">' . e($value ?? 'N/A') . '</span>');
     }
 }
