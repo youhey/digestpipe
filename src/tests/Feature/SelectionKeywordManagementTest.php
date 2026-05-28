@@ -21,7 +21,7 @@ class SelectionKeywordManagementTest extends TestCase
     {
         self::assertTrue(Schema::hasTable('selection_keywords'));
 
-        foreach (['id', 'keyword', 'type', 'score', 'enabled', 'locale', 'category', 'notes', 'sort_order', 'created_at', 'updated_at'] as $column) {
+        foreach (['id', 'keyword', 'type', 'score', 'enabled', 'locale', 'category', 'notes', 'sort_order', 'match_mode', 'created_at', 'updated_at'] as $column) {
             self::assertTrue(Schema::hasColumn('selection_keywords', $column), "Missing column: {$column}");
         }
     }
@@ -36,6 +36,7 @@ class SelectionKeywordManagementTest extends TestCase
             'score' => 15,
             'enabled' => true,
             'category' => 'laravel',
+            'match_mode' => 'word_boundary',
         ]);
         $this->assertDatabaseHas('selection_keywords', [
             'keyword' => 'crypto',
@@ -43,7 +44,56 @@ class SelectionKeywordManagementTest extends TestCase
             'score' => -100,
             'enabled' => true,
             'category' => 'crypto',
+            'match_mode' => 'word_boundary',
         ]);
+    }
+
+    public function testSeederUsesTunedDefaultKeywordSet(): void
+    {
+        $this->seed(SelectionKeywordSeeder::class);
+
+        foreach (['token', 'tokens', 'トークン'] as $keyword) {
+            $this->assertDatabaseMissing('selection_keywords', [
+                'keyword' => $keyword,
+                'type' => 'negative',
+            ]);
+        }
+
+        $this->assertDatabaseMissing('selection_keywords', [
+            'keyword' => 'AWS',
+            'type' => 'positive',
+        ]);
+
+        foreach ([
+            ['crypto token', 'negative', -60, 'crypto', 'exact_phrase'],
+            ['governance token', 'negative', -60, 'crypto', 'exact_phrase'],
+            ['NFT token', 'negative', -80, 'crypto', 'exact_phrase'],
+            ['Amazon Linux', 'positive', 8, 'aws', 'exact_phrase'],
+            ['CloudWatch', 'positive', 8, 'aws', 'word_boundary'],
+            ['VPC', 'positive', 8, 'aws', 'word_boundary'],
+            ['ALB', 'positive', 8, 'aws', 'word_boundary'],
+            ['AWS EBS', 'positive', 8, 'aws', 'exact_phrase'],
+            ['AWS EFS', 'positive', 8, 'aws', 'exact_phrase'],
+            ['AWS SQS', 'positive', 8, 'aws', 'exact_phrase'],
+            ['AWS SNS', 'positive', 8, 'aws', 'exact_phrase'],
+            ['Step Functions', 'positive', 8, 'aws', 'exact_phrase'],
+            ['GitHub Actions', 'positive', 12, 'devops', 'exact_phrase'],
+            ['CVE', 'positive', 10, 'security', 'word_boundary'],
+            ['Golang', 'positive', 8, 'programming', 'word_boundary'],
+            ['FFmpeg', 'positive', 6, 'tooling', 'word_boundary'],
+            ['AGENTS.md', 'positive', 10, 'agent', 'exact_phrase'],
+            ['Cloudflare', 'positive', 8, 'cloud', 'word_boundary'],
+            ['Laravel Cloud', 'positive', 12, 'laravel', 'exact_phrase'],
+            ['さくらインターネット', 'positive', 8, 'cloud', 'contains'],
+        ] as [$keyword, $type, $score, $category, $matchMode]) {
+            $this->assertDatabaseHas('selection_keywords', [
+                'keyword' => $keyword,
+                'type' => $type,
+                'score' => $score,
+                'category' => $category,
+                'match_mode' => $matchMode,
+            ]);
+        }
     }
 
     public function testSeederDoesNotOverwriteExistingEditedKeyword(): void
@@ -56,6 +106,7 @@ class SelectionKeywordManagementTest extends TestCase
             'locale' => 'ja',
             'category' => 'php',
             'sort_order' => 999,
+            'match_mode' => 'contains',
         ]);
 
         $this->seed(SelectionKeywordSeeder::class);
@@ -67,6 +118,7 @@ class SelectionKeywordManagementTest extends TestCase
             'enabled' => false,
             'locale' => 'ja',
             'sort_order' => 999,
+            'match_mode' => 'contains',
         ]);
     }
 
@@ -141,6 +193,13 @@ class SelectionKeywordManagementTest extends TestCase
         $this->createKeyword('Laravel', 'positive', 1, locale: 'fr');
     }
 
+    public function testValidationRejectsUnsupportedMatchMode(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        $this->createKeyword('Laravel', 'positive', 1, matchMode: 'regex');
+    }
+
     private function createKeyword(
         string $keyword,
         string $type,
@@ -149,6 +208,7 @@ class SelectionKeywordManagementTest extends TestCase
         string $locale = 'any',
         ?string $category = null,
         int $sortOrder = 100,
+        string $matchMode = 'contains',
     ): SelectionKeyword {
         return SelectionKeyword::query()->create([
             'keyword' => $keyword,
@@ -158,6 +218,7 @@ class SelectionKeywordManagementTest extends TestCase
             'locale' => $locale,
             'category' => $category,
             'sort_order' => $sortOrder,
+            'match_mode' => $matchMode,
         ]);
     }
 }

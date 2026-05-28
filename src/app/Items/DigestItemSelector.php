@@ -114,27 +114,41 @@ class DigestItemSelector
         $score = $this->integerConfig('default_score');
 
         $matchedGoodKeywords = [];
-        foreach ($this->keywords->positiveKeywords() as $keyword => $keywordScore) {
-            if ($this->matches($text, $keyword)) {
-                $matchedGoodKeywords[] = $keyword;
-                $score += $keywordScore;
+        foreach ($this->keywords->positiveKeywordRules() as $rule) {
+            if ($this->matches($text, $rule)) {
+                $matchedGoodKeywords[] = $rule->keyword;
+                $score += $rule->score;
             }
         }
 
         $matchedBadKeywords = [];
-        foreach ($this->keywords->negativeKeywords() as $keyword => $keywordScore) {
-            if ($this->matches($text, $keyword)) {
-                $matchedBadKeywords[] = $keyword;
-                $score += $keywordScore;
+        foreach ($this->keywords->negativeKeywordRules() as $rule) {
+            if ($this->matches($text, $rule)) {
+                $matchedBadKeywords[] = $rule->keyword;
+                $score += $rule->score;
             }
         }
 
         return new DigestItemSelectionResult($score, 'evaluated', $matchedGoodKeywords, $matchedBadKeywords, 'score_evaluated');
     }
 
-    private function matches(string $text, string $keyword): bool
+    private function matches(string $text, SelectionKeywordRule $rule): bool
+    {
+        return match ($rule->matchMode) {
+            'contains', 'exact_phrase' => $this->containsMatch($text, $rule->keyword),
+            'word_boundary' => $this->wordBoundaryMatch($text, $rule->keyword),
+            default => throw new UnexpectedValueException("Unsupported selection keyword match mode: {$rule->matchMode}"),
+        };
+    }
+
+    private function containsMatch(string $text, string $keyword): bool
     {
         return preg_match('/' . preg_quote($keyword, '/') . '/iu', $text) === 1;
+    }
+
+    private function wordBoundaryMatch(string $text, string $keyword): bool
+    {
+        return preg_match('/(?<![A-Za-z0-9])' . preg_quote($keyword, '/') . '(?![A-Za-z0-9])/iu', $text) === 1;
     }
 
     private function integerConfig(string $key): int

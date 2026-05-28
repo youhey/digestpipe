@@ -248,6 +248,18 @@ php artisan digestpipe:digests:export
 「PHP」「Laravel」「AWS」「Linux」「Docker」など、処理したい Digest Item に関係する語が含まれます。
 英語と日本語のキーワードをどちらも扱うので両方の設定が必要です。
 
+### Match Mode / `match_mode`
+
+Selection Keyword の一致方式です。
+
+`contains` は literal substring match です。日本語・CJK keyword や、部分一致を意図する keyword に使います。
+
+`word_boundary` は英数字列の前後境界を見た standalone token match です。`CLI`、`DeFi`、`API`、`S3`、`IAM` などの短い英単語・略語が、`client` や `defined` のような長い英数字列の一部に一致することを避けるために使います。
+
+`exact_phrase` は literal phrase match です。`GitHub Actions`、`Docker Compose`、`PHP-CS-Fixer`、`AGENTS.md` など、語句や記号を含む keyword に使います。
+
+いずれの mode でも keyword は正規表現として扱わず、case-insensitive / UTF-8 で照合します。`regex` mode はサポートしていません。
+
 ### Negative Keyword
 
 `selection_keywords.type=negative` として保存される Selection Score 減点用のキーワードと重みです。

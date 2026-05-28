@@ -197,13 +197,24 @@ Filament では次の項目を作成・編集できます。
 
 - `keyword`
 - `type`
+- `match_mode`
 - `score`
 - `enabled`
 - `locale`
 - `category`
 - `notes`
 
+`match_mode` は keyword の一致方式です。
+
+- `contains`: 大文字小文字を区別しない UTF-8 部分一致です。日本語や CJK keyword、広い substring match に使います。
+- `word_boundary`: 大文字小文字を区別しない standalone token match です。`CLI`、`DeFi`、`API`、`S3`、`IAM` など短い英単語・略語が長い英数字列の一部に一致する false positive を避けるために使います。
+- `exact_phrase`: 大文字小文字を区別しない literal phrase match です。`GitHub Actions`、`PHP-CS-Fixer`、`AGENTS.md` など語句や記号を含む keyword に使います。
+
+`regex` mode は intentionally not supported です。keyword は正規表現としてではなく literal string として扱います。
+
 `score` は `type=positive` では正の整数、`type=negative` では負の整数である必要があります。
+
+Default keyword set は false positive を避けるため、広すぎる `token` / `tokens` / `トークン` を negative default から外し、`crypto token` など crypto 文脈の phrase に寄せています。Positive default も broad な `AWS` ではなく、AWS service 名や development、security、agent、tooling、cloud/CDN 系の keyword を使います。
 
 `sort_order` は通常の form field としては表示しません。Selection Keywords table の reordering で管理します。
 

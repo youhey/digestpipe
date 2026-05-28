@@ -110,6 +110,100 @@ class DigestItemSelectorTest extends TestCase
         self::assertSame(['自宅サーバー'], $result->matchedGoodKeywords);
     }
 
+    public function testContainsMatchModeMatchesSubstrings(): void
+    {
+        $this->createSelectionKeyword('art', 'positive', 5, 90, 'contains');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('Article extraction notes', null));
+
+        self::assertSame(5, $result->score);
+        self::assertSame(['art'], $result->matchedGoodKeywords);
+    }
+
+    public function testContainsMatchModeMatchesJapaneseText(): void
+    {
+        $this->createSelectionKeyword('コンテナ', 'positive', 8, 90, 'contains');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('軽量コンテナ運用', null));
+
+        self::assertSame(8, $result->score);
+        self::assertSame(['コンテナ'], $result->matchedGoodKeywords);
+    }
+
+    public function testWordBoundaryMatchModeMatchesStandaloneCli(): void
+    {
+        $this->createSelectionKeyword('CLI', 'positive', 8, 90, 'word_boundary');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('CLI tooling guide', null));
+
+        self::assertSame(8, $result->score);
+        self::assertSame(['CLI'], $result->matchedGoodKeywords);
+    }
+
+    public function testWordBoundaryMatchModeDoesNotMatchCliInsideClient(): void
+    {
+        $this->createSelectionKeyword('CLI', 'positive', 8, 90, 'word_boundary');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('client tooling guide', null));
+
+        self::assertSame(0, $result->score);
+        self::assertSame([], $result->matchedGoodKeywords);
+    }
+
+    public function testWordBoundaryMatchModeMatchesStandaloneDefi(): void
+    {
+        $this->createSelectionKeyword('DeFi', 'negative', -80, 90, 'word_boundary');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('DeFi market update', null));
+
+        self::assertSame(-80, $result->score);
+        self::assertSame(['DeFi'], $result->matchedBadKeywords);
+    }
+
+    public function testWordBoundaryMatchModeDoesNotMatchDefiInsideDefined(): void
+    {
+        $this->createSelectionKeyword('DeFi', 'negative', -80, 90, 'word_boundary');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('well-defined interface', null));
+
+        self::assertSame(0, $result->score);
+        self::assertSame([], $result->matchedBadKeywords);
+    }
+
+    public function testWordBoundaryMatchModeMatchesS3Token(): void
+    {
+        $this->createSelectionKeyword('S3', 'positive', 8, 90, 'word_boundary');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('S3 bucket lifecycle rules', null));
+
+        self::assertSame(8, $result->score);
+        self::assertSame(['S3'], $result->matchedGoodKeywords);
+    }
+
+    public function testExactPhraseMatchModeMatchesPhrasesAndSymbols(): void
+    {
+        SelectionKeyword::query()->delete();
+
+        $this->createSelectionKeyword('GitHub Actions', 'positive', 10, 90, 'exact_phrase');
+        $this->createSelectionKeyword('PHP-CS-Fixer', 'positive', 8, 100, 'exact_phrase');
+        $this->createSelectionKeyword('AGENTS.md', 'positive', 6, 110, 'exact_phrase');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('github actions and php-cs-fixer rules in AGENTS.md', null));
+
+        self::assertSame(24, $result->score);
+        self::assertSame(['GitHub Actions', 'PHP-CS-Fixer', 'AGENTS.md'], $result->matchedGoodKeywords);
+    }
+
+    public function testKeywordsAreEscapedAndNotTreatedAsRegex(): void
+    {
+        $this->createSelectionKeyword('C++', 'positive', 7, 90, 'exact_phrase');
+
+        $result = $this->selector()->evaluatePostContent($this->digestItem('C++ build notes', null));
+
+        self::assertSame(7, $result->score);
+        self::assertSame(['C++'], $result->matchedGoodKeywords);
+    }
+
     private function selector(): DigestItemSelector
     {
         return app(DigestItemSelector::class);
@@ -123,7 +217,7 @@ class DigestItemSelectorTest extends TestCase
         ]);
     }
 
-    private function createSelectionKeyword(string $keyword, string $type, int $score, int $sortOrder): void
+    private function createSelectionKeyword(string $keyword, string $type, int $score, int $sortOrder, string $matchMode = 'contains'): void
     {
         SelectionKeyword::query()->create([
             'keyword' => $keyword,
@@ -133,6 +227,7 @@ class DigestItemSelectorTest extends TestCase
             'locale' => 'any',
             'category' => null,
             'sort_order' => $sortOrder,
+            'match_mode' => $matchMode,
         ]);
     }
 }

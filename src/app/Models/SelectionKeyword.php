@@ -21,6 +21,7 @@ use Illuminate\Validation\Validator as ValidationValidator;
  * @property string|null $category
  * @property string|null $notes
  * @property int $sort_order
+ * @property string $match_mode
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
@@ -31,6 +32,7 @@ class SelectionKeyword extends Model
         'enabled' => true,
         'locale' => 'any',
         'sort_order' => 100,
+        'match_mode' => 'contains',
     ];
 
     /** @var list<string> */
@@ -43,6 +45,7 @@ class SelectionKeyword extends Model
         'category',
         'notes',
         'sort_order',
+        'match_mode',
     ];
 
     /**
@@ -68,6 +71,7 @@ class SelectionKeyword extends Model
             'category' => ['nullable', 'string', 'max:64', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'sort_order' => ['required', 'integer', 'min:0', 'max:999999'],
+            'match_mode' => ['required', Rule::in(['contains', 'word_boundary', 'exact_phrase'])],
         ])->after(function (ValidationValidator $validator): void {
             if ($this->type === 'positive' && $this->score <= 0) {
                 $validator->errors()->add('score', 'positive selection keyword scores must be greater than zero.');
@@ -88,6 +92,7 @@ class SelectionKeyword extends Model
             $keyword->keyword = trim($keyword->keyword);
             $keyword->category = $keyword->category === null ? null : trim($keyword->category);
             $keyword->notes = $keyword->notes === null ? null : trim($keyword->notes);
+            $keyword->match_mode = trim($keyword->match_mode);
 
             if ($keyword->category === '') {
                 $keyword->category = null;

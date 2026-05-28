@@ -101,6 +101,25 @@ The seeder stores positive and negative keywords in one table using the `type`
 column. It uses `type` + `keyword` as the stable identifier and does not
 overwrite existing records.
 
+Selection Keywords also store `match_mode`:
+
+- `contains`: case-insensitive UTF-8 literal substring matching for Japanese/CJK
+  or intentionally broad keywords.
+- `word_boundary`: case-insensitive literal standalone token matching for short
+  English terms and acronyms such as `CLI`, `DeFi`, `API`, `S3`, and `IAM`.
+- `exact_phrase`: case-insensitive literal phrase matching for multi-word or
+  symbol-containing keywords such as `GitHub Actions`, `PHP-CS-Fixer`, and
+  `AGENTS.md`.
+
+`regex` matching is not supported. Keywords are escaped and treated as literal
+strings.
+
+The default keyword set intentionally avoids broad noisy terms. `token`,
+`tokens`, and `トークン` are not seeded by default; narrower crypto phrases such
+as `crypto token`, `governance token`, and `NFT token` are used instead. The
+broad `AWS` positive keyword is also not seeded by default; specific AWS service
+keywords are used for better signal.
+
 ## Queued Job Compatibility
 
 Internal Digest Item jobs currently use these class names:

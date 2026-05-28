@@ -72,6 +72,15 @@ class SelectionKeywordResource extends Resource
                         'positive' => 'positive',
                         'negative' => 'negative',
                     ]),
+                Select::make('match_mode')
+                    ->required()
+                    ->default('contains')
+                    ->helperText('contains は CJK や広い部分一致、word_boundary は短い英単語や略語、exact_phrase は語句や記号入り keyword に使います。')
+                    ->options([
+                        'contains' => 'contains',
+                        'word_boundary' => 'word_boundary',
+                        'exact_phrase' => 'exact_phrase',
+                    ]),
                 TextInput::make('score')
                     ->required()
                     ->integer()
@@ -110,6 +119,8 @@ class SelectionKeywordResource extends Resource
                     ->sortable(),
                 TextColumn::make('type')
                     ->sortable(),
+                TextColumn::make('match_mode')
+                    ->sortable(),
                 TextColumn::make('score')
                     ->sortable(),
                 IconColumn::make('enabled')
@@ -128,6 +139,12 @@ class SelectionKeywordResource extends Resource
                     ->options([
                         'positive' => 'positive',
                         'negative' => 'negative',
+                    ]),
+                SelectFilter::make('match_mode')
+                    ->options([
+                        'contains' => 'contains',
+                        'word_boundary' => 'word_boundary',
+                        'exact_phrase' => 'exact_phrase',
                     ]),
                 SelectFilter::make('enabled')
                     ->options([
