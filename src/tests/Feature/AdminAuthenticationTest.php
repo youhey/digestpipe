@@ -291,7 +291,8 @@ class AdminAuthenticationTest extends TestCase
         $this->actingAs($user)
             ->get('/admin')
             ->assertOk()
-            ->assertSee('Dashboard');
+            ->assertSee('Dashboard')
+            ->assertSee('Export Insights');
     }
 
     public function testAllowedAdminCanRenderSelectionKeywordResource(): void

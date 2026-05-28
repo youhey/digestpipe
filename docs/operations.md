@@ -144,6 +144,47 @@ and recent selected/skipped item examples. The time window uses
 `selection_evaluated_at` when available, then falls back to the required
 `fetched_at` timestamp.
 
+## Insights Export
+
+Use the insights export command to prepare a compact Markdown report for
+ChatGPT-assisted selection analysis:
+
+```bash
+php artisan digestpipe:insights:export
+```
+
+Options:
+
+```txt
+--days=7
+--source=
+--sample-limit=20
+--keyword-limit=20
+--format=markdown
+--output=
+```
+
+Examples:
+
+```bash
+php artisan digestpipe:insights:export --days=7
+php artisan digestpipe:insights:export --source=hacker_news --sample-limit=30
+php artisan digestpipe:insights:export --days=7 --output=/tmp/digestpipe-insights.md
+```
+
+The export includes metadata, a suggested ChatGPT analysis prompt, summary
+counts, source breakdown, top positive and negative keyword counts, and recent
+selected/skipped examples. Markdown is the only format in the first version.
+
+The export uses `selection_evaluated_at` as the timestamp basis, then falls back
+to `updated_at`, then `created_at`. It intentionally excludes raw article
+content, raw HTML, full `analysis_json`, full per-item `selection_result` JSON,
+and secrets.
+
+The same export is available from the Filament dashboard header as `Export
+Insights`. Future presets may add analysis or operations exports, but this
+version is selection-focused.
+
 ## Selection Evaluation History
 
 Selection evaluation history is stored in the `selection_evaluations` table.

@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\AnalysisInsights;
+use App\Filament\Pages\Dashboard;
 use App\Filament\Resources\FeedSources\FeedSourceResource;
 use App\Filament\Resources\SelectionKeywords\SelectionKeywordResource;
 use App\Filament\Widgets\AnalysisStatusChartWidget;
@@ -21,7 +22,6 @@ use App\Filament\Widgets\TopPositiveKeywordsWidget;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
