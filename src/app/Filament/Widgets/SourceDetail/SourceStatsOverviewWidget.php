@@ -29,12 +29,13 @@ class SourceStatsOverviewWidget extends StatsOverviewWidget
 
         return [
             Stat::make('Total Digest Items', $kpis['total'])
+                ->color('gray')
                 ->icon(Heroicon::RectangleStack),
             Stat::make('Selected', $metrics->countRate($kpis['selected'], $total))
                 ->color('success')
                 ->icon(Heroicon::CheckCircle),
             Stat::make('Skipped', $metrics->countRate($kpis['skipped'], $total))
-                ->color('danger')
+                ->color('orange')
                 ->icon(Heroicon::NoSymbol),
             Stat::make('Pending', $metrics->countRate($kpis['pending'], $total))
                 ->color('warning')
@@ -49,6 +50,7 @@ class SourceStatsOverviewWidget extends StatsOverviewWidget
                 ->color('success')
                 ->icon(Heroicon::Sparkles),
             Stat::make('Avg Selection Score', $kpis['average_score'] ?? 'n/a')
+                ->color('info')
                 ->icon(Heroicon::ChartBar),
         ];
     }

@@ -140,6 +140,8 @@ Analysis Insights page は `/admin/analysis-insights` にあります。
 
 この page は read-only です。分析結果の編集、再分析 action、prompt/schema の変更は行いません。
 
+Header の `Export Insights` action から、この page の analysis quality signals を Markdown として download できます。Export には content type breakdown、source 別 content type、confidence / importance distribution、recent samples、low-confidence items が含まれます。Raw article content や token は含めません。
+
 ## Feed Sources
 
 Feed Sources は DB-backed master data です。`src/config/digestpipe.php` ではなく `feed_sources` table に保存されます。
@@ -193,16 +195,18 @@ Source Insights page は `/admin/source-insights` にあります。
 
 Main table では次の値を表示します。
 
-- `source_key`
-- total Digest Items
-- selected rate
-- skipped rate
-- pending rate
-- analysis completed rate
-- failure rate
-- average selection score
+- Source
+- Total
+- Selected Rate
+- Skipped Rate
+- Pending Rate
+- Analysis Completed Rate
+- Failure Rate
+- Average Selection Score
 
 率の分母はその source の total Digest Items です。Pending は `selection_status=pending` と `selection_status=needs_content` を含めます。Failure rate は `article_content_status=failed` または `analysis_status=failed` の Digest Item 数を total で割った値です。
+
+Main table は 50 件表示を default とし、表示件数を切り替えられます。Header の `Export Insights` action から、同じ source comparison data を Markdown として download できます。
 
 Source Detail overview でも Selected、Skipped、Pending、Content Failed、Analysis Failed、Analysis Completed は `104 (48.23%)` のように count と rate を併記します。Source の価値判断では raw count だけでなく rate を優先して確認してください。
 

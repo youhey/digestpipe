@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Admin\SourceInsightsQuery;
+use App\Filament\Widgets\SourceInsightsTableWidget;
+use App\Insights\SourceInsightsExporter;
 use App\Models\DigestItem;
 use App\Models\FeedSource;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use ReflectionMethod;
 use Tests\TestCase;
 
 /**
@@ -153,7 +156,47 @@ class SourceInsightsQueryTest extends TestCase
         $this->actingAs($user)
             ->get('/admin/source-insights')
             ->assertOk()
-            ->assertSee('Source Insights');
+            ->assertSee('Source Insights')
+            ->assertSee('Export Insights');
+    }
+
+    public function testSourceInsightsTableUsesReadableLabelsAndDefaultPageSize(): void
+    {
+        $method = new ReflectionMethod(SourceInsightsTableWidget::class, 'getViewData');
+        $method->setAccessible(true);
+
+        /** @var array<string, mixed> $data */
+        $data = $method->invoke(new SourceInsightsTableWidget());
+
+        self::assertSame(50, $data['defaultPerPage']);
+        self::assertSame([10, 25, 50, 100], $data['perPageOptions']);
+        self::assertIsArray($data['columnLabels']);
+
+        /** @var array<string, string> $columnLabels */
+        $columnLabels = $data['columnLabels'];
+
+        self::assertSame('Source', $columnLabels['source_key']);
+        self::assertSame('Selected Rate', $columnLabels['selected_rate']);
+        self::assertSame('Average Selection Score', $columnLabels['average_selection_score']);
+    }
+
+    public function testSourceInsightsExporterBuildsMarkdownDownload(): void
+    {
+        $this->createFeedSource('hacker_news');
+        $this->createDigestItem([
+            'source_key' => 'hacker_news',
+            'selection_status' => 'selected',
+            'selection_score' => 10,
+            'analysis_status' => 'completed',
+        ]);
+
+        $result = app(SourceInsightsExporter::class)->export(days: 7, sort: 'total');
+
+        self::assertSame('text/markdown; charset=UTF-8', $result->mimeType);
+        self::assertStringStartsWith('digestpipe-source-insights-20260528-120000', $result->filename);
+        self::assertStringContainsString('# digestpipe Source Insights Export', $result->content);
+        self::assertStringContainsString('## Source Comparison', $result->content);
+        self::assertStringContainsString('hacker_news', $result->content);
     }
 
     /**

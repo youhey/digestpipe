@@ -32,8 +32,20 @@ class SourceInsightsTableWidget extends Widget
                 'failure_rate',
                 'average_selection_score',
             ],
+            'columnLabels' => [
+                'source_key' => 'Source',
+                'total' => 'Total',
+                'selected_rate' => 'Selected Rate',
+                'skipped_rate' => 'Skipped Rate',
+                'pending_rate' => 'Pending Rate',
+                'analysis_completed_rate' => 'Analysis Completed Rate',
+                'failure_rate' => 'Failure Rate',
+                'average_selection_score' => 'Average Selection Score',
+            ],
             'rows' => app(SourceInsightsQuery::class)->tableRows(),
             'emptyMessage' => 'No source insight rows.',
+            'defaultPerPage' => 50,
+            'perPageOptions' => [10, 25, 50, 100],
         ];
     }
 }

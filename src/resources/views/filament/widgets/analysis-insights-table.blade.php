@@ -133,7 +133,17 @@
 
             .digestpipe-insights-table-pagination-actions {
                 display: flex;
+                align-items: center;
                 gap: 0.5rem;
+            }
+
+            .digestpipe-insights-table-pagination-select {
+                padding: 0.375rem 2rem 0.375rem 0.75rem;
+                border: 1px solid rgba(209, 213, 219, 1);
+                border-radius: 0.5rem;
+                background: rgb(255, 255, 255);
+                color: rgb(55, 65, 81);
+                font-weight: 500;
             }
 
             .digestpipe-insights-table-pagination-button {
@@ -160,6 +170,12 @@
                 color: rgb(229, 231, 235);
             }
 
+            .dark .digestpipe-insights-table-pagination-select {
+                border-color: rgba(255, 255, 255, 0.1);
+                background: rgb(24, 24, 27);
+                color: rgb(229, 231, 235);
+            }
+
             .dark .digestpipe-insights-table-pagination-button:not(:disabled):hover {
                 background: rgba(255, 255, 255, 0.05);
             }
@@ -173,13 +189,16 @@
         @php
             $numericColumns = ['id', 'count', 'score', 'selection_score', 'confidence', 'importance', 'total', 'selected_rate', 'skipped_rate', 'pending_rate', 'analysis_completed_rate', 'failure_rate', 'average_selection_score'];
             $wideColumns = ['title', 'limitations'];
+            $columnLabels = $columnLabels ?? [];
+            $defaultPerPage = $defaultPerPage ?? 10;
+            $perPageOptions = $perPageOptions ?? [10];
         @endphp
 
         <div
             class="digestpipe-insights-table-wrapper"
             x-data="{
                 page: 1,
-                perPage: 10,
+                perPage: {{ $defaultPerPage }},
                 sortColumn: null,
                 sortDirection: 'asc',
                 totalRows: 0,
@@ -234,9 +253,19 @@
                         if (numeric) {
                             const leftNumber = Number.parseFloat(leftValue)
                             const rightNumber = Number.parseFloat(rightValue)
+                            const leftFinite = Number.isFinite(leftNumber)
+                            const rightFinite = Number.isFinite(rightNumber)
 
-                            if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+                            if (leftFinite && rightFinite) {
                                 return (leftNumber - rightNumber) * direction
+                            }
+
+                            if (leftFinite && ! rightFinite) {
+                                return -1
+                            }
+
+                            if (! leftFinite && rightFinite) {
+                                return 1
                             }
                         }
 
@@ -266,7 +295,7 @@
                                         type="button"
                                         x-on:click="sort({{ $loop->index }}, {{ in_array($column, $numericColumns, true) ? 'true' : 'false' }})"
                                     >
-                                        <span>{{ $column }}</span>
+                                        <span>{{ $columnLabels[$column] ?? $column }}</span>
                                         <span
                                             class="sort-direction"
                                             x-show="sortColumn === {{ $loop->index }}"
@@ -323,6 +352,17 @@
                     <span x-text="`Showing ${firstItem()}-${lastItem()} of ${totalRows}`"></span>
                 </div>
                 <div class="digestpipe-insights-table-pagination-actions">
+                    @if (count($perPageOptions) > 1)
+                        <select
+                            class="digestpipe-insights-table-pagination-select"
+                            x-model.number="perPage"
+                            x-on:change="page = 1; updatePage()"
+                        >
+                            @foreach ($perPageOptions as $option)
+                                <option value="{{ $option }}">{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                     <button
                         class="digestpipe-insights-table-pagination-button"
                         type="button"

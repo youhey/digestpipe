@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Admin\AnalysisInsightsQuery;
+use App\Insights\AnalysisInsightsExporter;
 use App\Models\DigestItem;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -155,7 +156,26 @@ class AnalysisInsightsQueryTest extends TestCase
         $this->actingAs($user)
             ->get('/admin/analysis-insights')
             ->assertOk()
-            ->assertSee('Analysis Insights');
+            ->assertSee('Analysis Insights')
+            ->assertSee('Export Insights');
+    }
+
+    public function testAnalysisInsightsExporterBuildsMarkdownDownload(): void
+    {
+        $this->createAnalyzedDigestItem([
+            'source_key' => 'hacker_news',
+            'title' => 'Laravel release',
+            'analysis_json' => $this->analysisJson('news_article', 0.95, 5),
+        ]);
+
+        $result = app(AnalysisInsightsExporter::class)->export(days: 30);
+
+        self::assertSame('text/markdown; charset=UTF-8', $result->mimeType);
+        self::assertStringStartsWith('digestpipe-analysis-insights-20260528-120000', $result->filename);
+        self::assertStringContainsString('# digestpipe Analysis Insights Export', $result->content);
+        self::assertStringContainsString('## Content Type Breakdown', $result->content);
+        self::assertStringContainsString('news_article', $result->content);
+        self::assertStringContainsString('Laravel release', $result->content);
     }
 
     /**

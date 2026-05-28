@@ -195,6 +195,11 @@ rates, analysis completed rate, combined failure rate, and average selection
 score for each source. The same source-level calculations are used by the
 Filament Source Insights page.
 
+The Filament Analysis Insights and Source Insights pages also provide `Export
+Insights` download actions for compact Markdown reports that can be reviewed
+outside the admin UI. These exports do not include raw article content or
+secrets.
+
 Rates use the source total as the denominator. Pending includes
 `selection_status=pending` and `selection_status=needs_content`. Failure rate
 counts Digest Items where article content fetch or analysis is failed.
