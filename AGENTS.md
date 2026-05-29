@@ -420,6 +420,36 @@ Admin access is controlled by `DIGESTPIPE_ADMIN_ALLOWED_EMAILS`. The Google OAut
 
 Do not store or log Google OAuth access tokens, refresh tokens, authorization codes, client secrets, or raw provider payloads.
 
+### Filament UI conventions
+
+Filament admin UI changes should prefer Filament-native components such as Tables, Infolists, StatsOverview widgets, Actions, and modal components before introducing custom Blade markup. If custom Blade is necessary, do not assume Tailwind utility classes will always be available in that view context; verify the rendered UI in a browser and add scoped styling where needed.
+
+Date and time values shown in Filament should use the standard format:
+
+```txt
+Y-m-d H:i:s T
+```
+
+Apply this consistently across list pages, detail pages, widgets, dashboard cards, modals, and Infolists. Do not use locale-formatted dates such as `May 28, 2026 06:45:56`, raw ISO8601 strings, or timezone-less timestamps in admin UI unless a specific task asks for a different format.
+
+Tables in Filament admin pages should be readable by default. Use Filament Tables where practical. For custom table-like views, provide distinct header styling, row separators, cell padding, horizontal overflow handling, and pagination when row counts can exceed a small fixed set. Sorting must stay compatible with pagination.
+
+Long or structured values must not be dumped as unstyled text. JSON values should be shown as pretty-printed, read-only JSON with preserved whitespace and horizontal scrolling. Long article content, summaries, limitations, and translated text should preserve line breaks with `nl2br` or an equivalent display treatment.
+
+Detail and preview pages should separate labels from values. Avoid plain bullet lists or stacked unlabelled text for source summaries, cloud status, token details, or analysis metadata. Prefer Infolists or definition-list style layouts so the meaning of each value is visible.
+
+High-information sections such as article content, analysis summaries, translation output, and raw/pretty JSON should generally use full-width sections instead of cramped multi-column cards.
+
+Dashboard and detail cards should contain compact human-readable values. Avoid raw ISO timestamps, large JSON blobs, long errors, or long article text inside card values. Use counts, rates, short status labels, and formatted timestamps.
+
+API token plain text must be shown only immediately after creation or rotation. Do not persist it, log it, show it in lists, or expose token hashes. In Filament, display the new plain text token in a styled modal with a clear one-time-display warning, read-only textarea, copy button, and close action. A notification alone is not sufficient for token copy workflows.
+
+External service widgets such as Laravel Cloud status must handle missing configuration, API failures, and unexpected response shapes with safe empty/error states. Never expose provider tokens, raw secrets, raw OAuth payloads, or unsanitized provider responses.
+
+Filament navigation grouping, order, and icons are part of the admin UX contract. Preserve the current Dashboard, Content, Operations, Configuration, and Insights grouping unless explicitly requested to change it.
+
+When changing Filament UI behavior or custom Blade views, run the relevant tests and linting, then verify the rendered admin UI in a browser when feasible. Visual verification is especially important for modals, custom tables, dashboard widgets, and detail views because server-side tests may not catch CSS or layout regressions.
+
 Feed Sources are DB-backed master data managed through the Filament admin panel. Do not reintroduce `feed_sources` under `config/digestpipe.php`; use the `feed_sources` table, `FeedSourceSeeder`, and `FeedSourceRepository`.
 
 Selection Keywords are DB-backed master data managed through the Filament admin panel. Do not reintroduce `selection.positive_keywords` or `selection.negative_keywords` under `config/digestpipe.php`; use the `selection_keywords` table, `SelectionKeywordSeeder`, and `SelectionKeywordRepository`. Admin UI exposes the single table as separate Positive Keywords and Negative Keywords resources; `type` is set automatically and the generic Selection Keywords resource should not be visible in navigation. Selection Keywords use `match_mode` values `contains`, `word_boundary`, or `exact_phrase`; do not add regex matching unless explicitly requested.
