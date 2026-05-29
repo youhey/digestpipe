@@ -477,6 +477,8 @@ These routes must stay protected by `auth:sanctum` and `abilities:digests:read`.
 
 The API response shape should stay aligned with `DigestExportItemBuilder` and `digestpipe:digests:export`. Do not expose raw `article_content_text`, prompts, provider raw responses, API keys, or secrets.
 
+The Article JSON API response contract is defined in `docs/openapi.yaml`. Do not change Article API response schema definitions unless explicitly requested. When Article API behavior or response shape is intentionally changed, update `docs/openapi.yaml`, `docs/api.md` if applicable, and schema validation tests in the same task. Downstream clients such as radiopipe and Rust applications may rely on this OpenAPI schema.
+
 `GET /api/articles` supports `from`, `to`, `source`, and `limit`. The default window is the last 24 hours, using `published_at` with `fetched_at` fallback. The default limit is `100`, and the maximum limit is `500`.
 
 `fields` filtering, pagination, topic filtering, source-specific metadata fetching, write APIs, daily digest generation, and Hacker News discussion/comment analysis are intentionally deferred.

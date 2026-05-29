@@ -50,6 +50,10 @@ Token behavior:
 
 ## Endpoints
 
+The machine-readable OpenAPI contract is available at
+[`docs/openapi.yaml`](openapi.yaml). Keep this document and the OpenAPI schema in
+sync when the Article JSON API response shape changes.
+
 ```txt
 GET /api/articles
 GET /api/articles/{id}

@@ -1,0 +1,545 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "digestpipe API",
+    "version": "1.0.0",
+    "description": "Private read-only API for completed digest Article JSON records."
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/articles": {
+      "get": {
+        "summary": "List completed digest article records",
+        "description": "Returns structured digest records for analyzed Digest Items. Requires a Sanctum bearer token with the digests:read ability. Raw article content, raw HTML, prompts, provider payloads, secrets, and internal selection details are not returned.",
+        "operationId": "listArticles",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive start timestamp. Defaults to 24 hours before the request time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive end timestamp. Defaults to the request time.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "description": "Filter by Digest Item source key.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of records to return. Defaults to 100 and must be between 1 and 500.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Completed digest article records.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleIndexResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/api/articles/{id}": {
+      "get": {
+        "summary": "Get one completed digest article record",
+        "description": "Returns one structured digest record by Digest Item id. Requires a Sanctum bearer token with the digests:read ability. Returns 404 when the item is missing or not visible to the Article JSON API.",
+        "operationId": "showArticle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Digest Item id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A completed digest article record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "The request is missing a valid bearer token.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The bearer token does not have the required digests:read ability.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The requested record does not exist or is not visible to the Article JSON API.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "The query parameters were invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ArticleIndexResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DigestRecord"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ArticleIndexMeta"
+          }
+        }
+      },
+      "ArticleDetailResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DigestRecord"
+          }
+        }
+      },
+      "ArticleIndexMeta": {
+        "type": "object",
+        "required": [
+          "count",
+          "limit",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DigestRecord": {
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "article",
+          "selection",
+          "analysis",
+          "processing"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceMetadata"
+          },
+          "article": {
+            "$ref": "#/components/schemas/ArticleMetadata"
+          },
+          "selection": {
+            "$ref": "#/components/schemas/SelectionMetadata"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/AnalysisJson"
+          },
+          "processing": {
+            "$ref": "#/components/schemas/ProcessingMetadata"
+          }
+        }
+      },
+      "SourceMetadata": {
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "feed_url"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "feed_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          }
+        }
+      },
+      "ArticleMetadata": {
+        "type": "object",
+        "required": [
+          "title",
+          "url",
+          "discussion_url",
+          "published_at",
+          "fetched_at"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "discussion_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "fetched_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "SelectionMetadata": {
+        "type": "object",
+        "required": [
+          "status",
+          "score"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "score": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "AnalysisJson": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "source_language",
+          "title",
+          "content",
+          "classification"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "type": "string"
+          },
+          "source_language": {
+            "type": "string"
+          },
+          "title": {
+            "$ref": "#/components/schemas/AnalysisTitle"
+          },
+          "content": {
+            "$ref": "#/components/schemas/AnalysisContent"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/AnalysisClassification"
+          }
+        }
+      },
+      "AnalysisTitle": {
+        "type": "object",
+        "required": [
+          "original",
+          "normalized"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "original": {
+            "type": "string"
+          },
+          "normalized": {
+            "type": "string"
+          }
+        }
+      },
+      "AnalysisContent": {
+        "type": "object",
+        "required": [
+          "brief",
+          "detailed_summary",
+          "key_points",
+          "background",
+          "why_it_matters",
+          "limitations"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "brief": {
+            "type": "string"
+          },
+          "detailed_summary": {
+            "type": "string"
+          },
+          "key_points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "background": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "why_it_matters": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limitations": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AnalysisClassification": {
+        "type": "object",
+        "required": [
+          "content_type",
+          "topics",
+          "entities",
+          "importance",
+          "confidence"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "content_type": {
+            "type": "string",
+            "description": "Free-form content type label. This is intentionally not enum-constrained yet."
+          },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "importance": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "ProcessingMetadata": {
+        "type": "object",
+        "required": [
+          "analysis_model",
+          "analyzed_at"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "analysis_model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "analyzed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

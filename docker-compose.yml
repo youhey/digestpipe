@@ -6,6 +6,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./src:/var/www/html
+      - ./docs:/var/www/docs:ro
     depends_on:
       mysql:
         condition: service_healthy

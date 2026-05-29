@@ -124,6 +124,7 @@ Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`,
 ## API
 
 The private read-only Article JSON API is documented in [docs/api.md](docs/api.md).
+The explicit OpenAPI contract is available at [docs/openapi.yaml](docs/openapi.yaml).
 
 Optional PhpStorm HTTP Client smoke tests are documented in [docs/http-client-tests.md](docs/http-client-tests.md).
 
