@@ -27,7 +27,7 @@ class ApiTokenResource extends Resource
 
     protected static BackedEnum|string|null $navigationIcon = Heroicon::Key;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Operations';
+    protected static string|UnitEnum|null $navigationGroup = 'Settings';
 
     protected static ?int $navigationSort = 10;
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\ApiTokens\ApiTokenService;
+use App\Filament\Resources\ApiTokens\ApiTokenResource;
 use App\Filament\Resources\ApiTokens\Pages\ListApiTokens;
 use App\Models\User;
 use Filament\Notifications\Notification;
@@ -40,6 +41,11 @@ class ApiTokenAdminResourceTest extends TestCase
         $this->actingAs(User::factory()->create(['email' => 'other@example.test']))
             ->get('/admin/api-tokens')
             ->assertForbidden();
+    }
+
+    public function testApiTokenResourceUsesSettingsNavigationGroup(): void
+    {
+        self::assertSame('Settings', ApiTokenResource::getNavigationGroup());
     }
 
     public function testCreateApiTokenActionCreatesTokenAndShowsPlainTextOnce(): void

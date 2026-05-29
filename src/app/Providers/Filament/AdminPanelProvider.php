@@ -57,9 +57,15 @@ class AdminPanelProvider extends PanelProvider
             ->login(fn () => redirect()->route('auth.google.redirect'))
             ->brandName('digestpipe')
             ->favicon(asset('favicon.ico'))
+            ->navigationGroups([
+                'Content',
+                'Configuration',
+                'Insights',
+                'Settings',
+            ])
             ->resources([
-                FeedSourceResource::class,
                 DigestItemResource::class,
+                FeedSourceResource::class,
                 PositiveKeywordResource::class,
                 NegativeKeywordResource::class,
                 ApiTokenResource::class,

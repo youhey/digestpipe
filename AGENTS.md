@@ -446,7 +446,7 @@ API token plain text must be shown only immediately after creation or rotation. 
 
 External service widgets such as Laravel Cloud status must handle missing configuration, API failures, and unexpected response shapes with safe empty/error states. Never expose provider tokens, raw secrets, raw OAuth payloads, or unsanitized provider responses.
 
-Filament navigation grouping, order, and icons are part of the admin UX contract. Preserve the current Dashboard, Content, Operations, Configuration, and Insights grouping unless explicitly requested to change it.
+Filament navigation grouping, order, and icons are part of the admin UX contract. Preserve the current Dashboard, Content, Configuration, Insights, and Settings grouping unless explicitly requested to change it.
 
 When changing Filament UI behavior or custom Blade views, run the relevant tests and linting, then verify the rendered admin UI in a browser when feasible. Visual verification is especially important for modals, custom tables, dashboard widgets, and detail views because server-side tests may not catch CSS or layout regressions.
 
