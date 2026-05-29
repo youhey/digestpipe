@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="digestpipe icon">
+  <defs>
+    <linearGradient id="bg" x1="72" y1="56" x2="440" y2="456" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10B981"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#bg)"/>
+
+  <g filter="url(#softShadow)">
+    <!-- Main pipe body: a P-like pipe silhouette -->
+    <path d="M158 356 V174 Q158 126 206 126 H328 Q384 126 384 198 Q384 270 328 270 H252"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-width="64"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+    <!-- Inner short pipe stem to make the mark read as P rather than just a bend -->
+    <path d="M238 356 V278"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-width="48"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+    <!-- Bottom flange -->
+    <rect x="104" y="354" width="108" height="34" rx="10" fill="#FFFFFF"/>
+    <rect x="116" y="392" width="84" height="24" rx="8" fill="#FFFFFF"/>
+
+    <!-- Right connector flange -->
+    <rect x="350" y="226" width="86" height="28" rx="10" fill="#FFFFFF"/>
+    <rect x="362" y="258" width="62" height="22" rx="8" fill="#FFFFFF"/>
+  </g>
+
+  <!-- tiny highlight so the pipe feels like a physical tube, but still simple -->
+  <path d="M188 168 Q188 156 202 156 H328 Q348 156 356 171"
+        fill="none"
+        stroke="#FFFFFF"
+        stroke-width="10"
+        stroke-linecap="round"
+        opacity="0.35"/>
+</svg>
