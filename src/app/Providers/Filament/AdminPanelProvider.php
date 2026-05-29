@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\AnalysisInsights;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\SourceInsights;
+use App\Filament\Resources\ApiTokens\ApiTokenResource;
 use App\Filament\Resources\DigestItems\DigestItemResource;
 use App\Filament\Resources\FeedSources\FeedSourceResource;
 use App\Filament\Resources\NegativeKeywords\NegativeKeywordResource;
@@ -60,6 +61,7 @@ class AdminPanelProvider extends PanelProvider
                 DigestItemResource::class,
                 PositiveKeywordResource::class,
                 NegativeKeywordResource::class,
+                ApiTokenResource::class,
             ])
             ->pages([
                 Dashboard::class,

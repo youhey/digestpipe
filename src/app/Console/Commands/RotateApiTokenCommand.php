@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\ApiTokens\ApiTokenService;
 use App\Models\User;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -24,7 +24,7 @@ class RotateApiTokenCommand extends Command
      *
      * @return int success=0 or failure=1 or invalid=2
      */
-    public function handle(): int
+    public function handle(ApiTokenService $tokens): int
     {
         try {
             $email = $this->emailArgument();
@@ -44,13 +44,9 @@ class RotateApiTokenCommand extends Command
             return self::FAILURE;
         }
 
-        DB::table('personal_access_tokens')
-            ->where('tokenable_type', User::class)
-            ->where('tokenable_id', $user->id)
-            ->where('name', $tokenName)
-            ->delete();
+        $tokens->revokeTokensByName($user, $tokenName);
 
-        $token = $user->createToken($tokenName, $abilities)->plainTextToken;
+        $token = $tokens->createToken($user, $tokenName, $abilities)->plainTextToken;
 
         $this->line('API token rotated. Store it now; it will not be shown again. Token: ' . $token);
 

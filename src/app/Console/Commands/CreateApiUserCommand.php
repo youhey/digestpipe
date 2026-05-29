@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\ApiTokens\ApiTokenService;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
@@ -26,7 +27,7 @@ class CreateApiUserCommand extends Command
      *
      * @return int success=0 or invalid=2
      */
-    public function handle(): int
+    public function handle(ApiTokenService $tokens): int
     {
         try {
             $email = $this->emailArgument();
@@ -47,7 +48,7 @@ class CreateApiUserCommand extends Command
             ],
         );
 
-        $token = $user->createToken($tokenName, $abilities)->plainTextToken;
+        $token = $tokens->createToken($user, $tokenName, $abilities)->plainTextToken;
 
         $this->line('API token created. Store it now; it will not be shown again. Token: ' . $token);
 

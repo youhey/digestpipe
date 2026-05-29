@@ -15,7 +15,18 @@ curl -H "Authorization: Bearer ${DIGESTPIPE_API_TOKEN}" \
   "http://localhost:8080/api/articles"
 ```
 
-API users と tokens は Artisan command で管理します。
+API users と tokens は Filament admin UI または Artisan command で管理します。
+
+Filament admin UI:
+
+- `/admin/api-tokens`
+- `Create API Token` action で token を作成
+- `Revoke Token` / `Revoke All API Tokens` action で token を失効
+- UI で作成する token の既定 ability は `digests:read`
+
+Plain text token は作成直後に一度だけ表示されます。Token 一覧では plain text token や token hash は表示しません。
+
+Artisan commands:
 
 Create an API user and token:
 

@@ -79,7 +79,7 @@ DIGESTPIPE_ADMIN_DEV_LOGIN_EMAIL=admin@example.test
 
 ## 現在の範囲
 
-この foundation では dashboard、Analysis Insights page、Source Insights page、Feed Sources resource、Feed Source detail page、Digest Item review resource、Positive Keywords resource、Negative Keywords resource を実装しています。
+この foundation では dashboard、Analysis Insights page、Source Insights page、Feed Sources resource、Feed Source detail page、Digest Item review resource、Positive Keywords resource、Negative Keywords resource、API Tokens resource を実装しています。
 
 ## Dashboard
 
@@ -239,6 +239,43 @@ Manual rating は `digest_items.manual_rating` に保存されます。
 Good と Bad は 1 つの `manual_rating` value で表現するため相互排他的です。View page の上部と末尾に star rating UI を表示します。星を選ぶと `1..5`、Bad icon を選ぶと `-1` を保存します。同じ rating をもう一度選ぶと `manual_rating` と `manual_rated_at` を `null` に戻します。
 
 Manual rating は将来 Source Insights の source-level quality metrics に使う予定です。この段階では `manual_good_rate`、multi-user review、public review UI、AI evaluation は実装していません。
+
+## API Tokens
+
+API Tokens resource は `/admin/api-tokens` にあります。Operations group から開けます。
+
+この resource は Laravel Sanctum personal access token を User 単位で管理するための private admin UI です。API endpoint や Sanctum middleware の挙動は変更しません。
+
+一覧では次の metadata だけを表示します。
+
+- User name
+- User email
+- Token name
+- Abilities
+- Last used at
+- Created at
+- Expires at
+
+Plain text token と token hash は一覧に表示しません。
+
+Header の `Create API Token` action から User を選び、token name と ability を指定して新しい token を作成できます。UI で選択できる ability は現在 `digests:read` です。作成後、plain text token は同じ画面に一度だけ表示されます。画面を更新した後に再表示することはできません。
+
+Token の失効は次の action で行えます。
+
+- `Revoke Token`: 選択した token だけを失効
+- `Revoke All For User`: その token owner の全 token を失効
+- `Revoke All API Tokens`: Header action から User を選択して全 token を失効
+
+いずれも既存 API access を即時に無効化します。実行前に対象 User と token を確認してください。
+
+既存の Artisan command も引き続き利用できます。
+
+```bash
+php artisan digestpipe:users:create-api-user user@example.test --name="DigestPipe User"
+php artisan digestpipe:users:rotate-api-token user@example.test
+```
+
+Plain text token は保存・ログ出力・再表示しません。Repository に token を commit しないでください。
 
 ## Selection Keywords
 
