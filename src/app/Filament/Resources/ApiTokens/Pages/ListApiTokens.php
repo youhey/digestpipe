@@ -44,7 +44,7 @@ class ListApiTokens extends ListRecords
         return $schema
             ->components([
                 View::make('filament.resources.api-tokens.created-token')
-                    ->viewData([
+                    ->viewData(fn (): array => [
                         'plainTextToken' => $this->newPlainTextToken,
                         'tokenName' => $this->newTokenName,
                         'userEmail' => $this->newTokenUserEmail,

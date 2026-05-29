@@ -73,6 +73,9 @@ class ApiTokenAdminResourceTest extends TestCase
         self::assertNotSame($plainTextToken, $accessToken->token);
         self::assertSame('digestpipe-api', $component->get('newTokenName'));
         self::assertSame('api@example.test', $component->get('newTokenUserEmail'));
+        $component->assertSee('Plain text token');
+        $component->assertSee('Copy token');
+        $component->assertSeeHtml('role="dialog"');
         Notification::assertNotified('API token を作成しました。');
     }
 
