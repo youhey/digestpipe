@@ -20,6 +20,7 @@ class ApiTokenService
     {
         return [
             'digests:read' => 'digests:read',
+            'digests:rate' => 'digests:rate',
         ];
     }
 

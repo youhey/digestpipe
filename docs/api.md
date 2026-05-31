@@ -1,8 +1,8 @@
 # API
 
-digestpipe の HTTP API は private / read-only です。
+digestpipe の HTTP API は private API です。
 
-現在の API は、完了済みの記事分析結果を downstream application へ渡すための Article JSON API だけを提供します。write API、public API、OAuth、login API、registration API、password reset flow は実装していません。
+現在の API は、完了済みの記事分析結果を downstream application へ渡すための Article JSON API と、downstream から Article rating を返す Rating API だけを提供します。public API、OAuth、login API、registration API、password reset flow は実装していません。
 
 ## Authentication
 
@@ -23,6 +23,7 @@ Filament admin UI:
 - `Create API Token` action で token を作成
 - `Revoke Token` / `Revoke All API Tokens` action で token を失効
 - UI で作成する token の既定 ability は `digests:read`
+- UI で選択できる ability は `digests:read` と `digests:rate`
 
 Plain text token は作成直後に一度だけ表示されます。Token 一覧では plain text token や token hash は表示しません。
 
@@ -45,7 +46,8 @@ Token behavior:
 - Tokens are shown only once when created or rotated.
 - Store tokens securely outside the repository.
 - Rotating a token invalidates the previous `digestpipe-api` token.
-- Tokens should have the `digests:read` ability.
+- Read tokens should have the `digests:read` ability.
+- Rating tokens should have the `digests:rate` ability.
 - Raw tokens are not stored on the `users` table.
 
 ## Endpoints
@@ -57,13 +59,22 @@ sync when the Article JSON API response shape changes.
 ```txt
 GET /api/articles
 GET /api/articles/{id}
+PUT /api/articles/{id}/rating
+DELETE /api/articles/{id}/rating
 ```
 
-Both endpoints require:
+Read endpoints require:
 
 ```txt
 auth:sanctum
 abilities:digests:read
+```
+
+Rating endpoints require:
+
+```txt
+auth:sanctum
+abilities:digests:rate
 ```
 
 ## GET /api/articles
@@ -468,6 +479,67 @@ Response example:
 }
 ```
 
+## PUT /api/articles/{id}/rating
+
+Sets or overwrites the downstream rating for one API-visible Article.
+
+Rules:
+
+- Requires `digests:rate`.
+- Only records visible through `GET /api/articles/{id}` can be rated.
+- Returns `404` when the item does not exist, analysis is incomplete, or `analysis_json` is missing.
+- Request field is `rating`.
+- Response wrapper is `article_rating`.
+- Response uses `rating` and `rated_at`.
+- Internal DB field names `manual_rating` and `manual_rated_at` are not exposed.
+- `rating = -1` means Bad.
+- `rating = 1..5` means Good star rating.
+- `rating = 0`, `null`, missing values, and values outside `-1 | 1..5` are rejected.
+
+Request example:
+
+```json
+{
+  "rating": 5
+}
+```
+
+Response example:
+
+```json
+{
+  "article_rating": {
+    "article_id": 123,
+    "rating": 5,
+    "rated_at": "2026-05-31T10:15:00.000000Z"
+  }
+}
+```
+
+## DELETE /api/articles/{id}/rating
+
+Clears the downstream rating for one API-visible Article.
+
+Rules:
+
+- Requires `digests:rate`.
+- Only records visible through `GET /api/articles/{id}` can have rating cleared.
+- Returns `404` when the item does not exist, analysis is incomplete, or `analysis_json` is missing.
+- Returns the updated rating state with `200 OK`; it does not return `204 No Content`.
+- Internal DB field names `manual_rating` and `manual_rated_at` are not exposed.
+
+Response example:
+
+```json
+{
+  "article_rating": {
+    "article_id": 123,
+    "rating": null,
+    "rated_at": null
+  }
+}
+```
+
 ## Error Responses
 
 `401 Unauthorized`
@@ -476,7 +548,10 @@ Returned when the request does not include a valid Bearer token.
 
 `403 Forbidden`
 
-Returned when the token is valid but does not have the required `digests:read` ability.
+Returned when the token is valid but does not have the required ability.
+
+- Article read endpoints require `digests:read`.
+- Article rating endpoints require `digests:rate`.
 
 `404 Not Found`
 
@@ -494,7 +569,7 @@ Returned when query parameters are invalid. Examples:
 ## Current Limitations
 
 - No public API.
-- No write API.
+- No write API other than Article rating.
 - No OAuth.
 - No login API.
 - No registration API.

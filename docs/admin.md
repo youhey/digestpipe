@@ -258,7 +258,7 @@ API Tokens resource は `/admin/api-tokens` にあります。Settings group か
 
 Plain text token と token hash は一覧に表示しません。
 
-Header の `Create API Token` action から User を選び、token name と ability を指定して新しい token を作成できます。UI で選択できる ability は現在 `digests:read` です。作成後、plain text token は同じ画面に一度だけ表示されます。画面を更新した後に再表示することはできません。
+Header の `Create API Token` action から User を選び、token name と ability を指定して新しい token を作成できます。UI で選択できる ability は現在 `digests:read` と `digests:rate` です。既定では `digests:read` を選択します。Article rating API に downstream から書き込む token には `digests:rate` を付与してください。作成後、plain text token は同じ画面に一度だけ表示されます。画面を更新した後に再表示することはできません。
 
 Token の失効は次の action で行えます。
 

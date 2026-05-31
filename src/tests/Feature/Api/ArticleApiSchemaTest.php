@@ -58,6 +58,32 @@ class ArticleApiSchemaTest extends TestCase
         $this->assertInternalFieldsAreNotExposed($response->json());
     }
 
+    public function testRatingResponsesMatchOpenApiSchema(): void
+    {
+        $this->authenticateWithAbilities(['digests:rate']);
+        $item = $this->createDigestItem();
+
+        $putResponse = $this->putJson("/api/articles/{$item->id}/rating", [
+            'rating' => 5,
+        ])->assertOk();
+
+        $this->openApi->validateComponent('ArticleRatingResponse', $putResponse->json());
+        $this->assertInternalFieldsAreNotExposed($putResponse->json());
+
+        $deleteResponse = $this->deleteJson("/api/articles/{$item->id}/rating")
+            ->assertOk();
+
+        $this->openApi->validateComponent('ArticleRatingResponse', $deleteResponse->json());
+        $this->assertInternalFieldsAreNotExposed($deleteResponse->json());
+    }
+
+    public function testRatingRequestMatchesOpenApiSchema(): void
+    {
+        $this->openApi->validateComponent('ArticleRatingRequest', [
+            'rating' => 5,
+        ]);
+    }
+
     public function testOpenApiDocumentDefinesOnlyImplementedArticleApiParameters(): void
     {
         $document = $this->openApi->document();
@@ -66,6 +92,7 @@ class ArticleApiSchemaTest extends TestCase
         self::assertIsArray($paths);
         self::assertArrayHasKey('/api/articles', $paths);
         self::assertArrayHasKey('/api/articles/{id}', $paths);
+        self::assertArrayHasKey('/api/articles/{id}/rating', $paths);
         self::assertSame('3.1.0', $document['openapi']);
 
         $articlesPath = $paths['/api/articles'];
@@ -127,7 +154,15 @@ class ArticleApiSchemaTest extends TestCase
 
     private function authenticate(): void
     {
-        Sanctum::actingAs(User::factory()->create(), ['digests:read']);
+        $this->authenticateWithAbilities(['digests:read']);
+    }
+
+    /**
+     * @param list<string> $abilities
+     */
+    private function authenticateWithAbilities(array $abilities): void
+    {
+        Sanctum::actingAs(User::factory()->create(), $abilities);
     }
 
     private function createDigestItem(): DigestItem

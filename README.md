@@ -110,7 +110,7 @@ The primary output of digestpipe is structured digest JSON. Each exported digest
 
 Downstream applications can translate, rewrite, narrate, personalize, rank, group, or combine these digest records. Raw extracted article content is not exported by default.
 
-digestpipe exposes this output through an Artisan command and a private read-only Article JSON API.
+digestpipe exposes this output through an Artisan command and a private Article JSON API.
 
 ```bash
 docker compose exec -T php-cli php artisan digestpipe:digests:export --limit=20
@@ -123,7 +123,7 @@ Supported filters are `--source`, `--topic`, `--content-type`, `--from`, `--to`,
 
 ## API
 
-The private read-only Article JSON API is documented in [docs/api.md](docs/api.md).
+The private Article JSON API is documented in [docs/api.md](docs/api.md).
 The explicit OpenAPI contract is available at [docs/openapi.yaml](docs/openapi.yaml).
 
 Optional PhpStorm HTTP Client smoke tests are documented in [docs/http-client-tests.md](docs/http-client-tests.md).

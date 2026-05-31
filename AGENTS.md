@@ -404,7 +404,7 @@ php artisan digestpipe:users:create-api-user user@example.test --name="DigestPip
 php artisan digestpipe:users:rotate-api-token user@example.test
 ```
 
-Tokens should use the `digests:read` ability for read-only digest access. Future digest API routes should be protected with `auth:sanctum` and the `digests:read` ability, for example `['auth:sanctum', 'abilities:digests:read']`.
+Tokens should use the `digests:read` ability for read-only digest access and `digests:rate` for downstream Article rating writes. Read digest API routes should be protected with `auth:sanctum` and `abilities:digests:read`; rating write routes should be protected with `auth:sanctum` and `abilities:digests:rate`.
 
 Never log raw personal access tokens. Print newly created or rotated tokens only once in the command output, and do not commit generated tokens.
 
@@ -466,22 +466,24 @@ Domain admin resources such as thresholds, Digest Item views, and analysis repor
 
 ## Article JSON API
 
-The private Article JSON API exposes completed article analysis records through read-only routes:
+The private Article JSON API exposes completed article analysis records through read routes:
 
 ```txt
 GET /api/articles
 GET /api/articles/{id}
 ```
 
-These routes must stay protected by `auth:sanctum` and `abilities:digests:read`. Do not add public unauthenticated access or write APIs unless explicitly requested.
+These routes must stay protected by `auth:sanctum` and `abilities:digests:read`. Article rating write routes are limited to `PUT /api/articles/{id}/rating` and `DELETE /api/articles/{id}/rating`, and must stay protected by `auth:sanctum` and `abilities:digests:rate`. Do not add public unauthenticated access or other write APIs unless explicitly requested.
 
 The API response shape should stay aligned with `DigestExportItemBuilder` and `digestpipe:digests:export`. Do not expose raw `article_content_text`, prompts, provider raw responses, API keys, or secrets.
+
+Article rating API responses must expose external field names `rating` and `rated_at` under the `article_rating` wrapper. Do not expose internal `manual_rating` or `manual_rated_at` field names through API responses.
 
 The Article JSON API response contract is defined in `docs/openapi.yaml`. Do not change Article API response schema definitions unless explicitly requested. When Article API behavior or response shape is intentionally changed, update `docs/openapi.yaml`, `docs/api.md` if applicable, and schema validation tests in the same task. Downstream clients such as radiopipe and Rust applications may rely on this OpenAPI schema.
 
 `GET /api/articles` supports `from`, `to`, `source`, and `limit`. The default window is the last 24 hours, using `published_at` with `fetched_at` fallback. The default limit is `100`, and the maximum limit is `500`.
 
-`fields` filtering, pagination, topic filtering, source-specific metadata fetching, write APIs, daily digest generation, and Hacker News discussion/comment analysis are intentionally deferred.
+`fields` filtering, pagination, topic filtering, source-specific metadata fetching, write APIs beyond Article rating, daily digest generation, and Hacker News discussion/comment analysis are intentionally deferred.
 
 ## API Documentation
 

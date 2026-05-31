@@ -574,20 +574,23 @@ Validation:
 
 ### Article JSON API
 
-分析済みの Digest Item を返す private read-only API です。
+分析済みの Digest Item を返し、downstream から Article rating を受け付ける private API です。
 
 Endpoint:
 
 ```txt
 GET /api/articles
 GET /api/articles/{id}
+PUT /api/articles/{id}/rating
+DELETE /api/articles/{id}/rating
 ```
 
 認証:
 
 ```txt
 auth:sanctum
-abilities:digests:read
+GET routes: abilities:digests:read
+rating routes: abilities:digests:rate
 ```
 
 ### Digest Export Item / Digest Record

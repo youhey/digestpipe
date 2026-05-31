@@ -48,6 +48,15 @@ class ApiTokenAdminResourceTest extends TestCase
         self::assertSame('Settings', ApiTokenResource::getNavigationGroup());
     }
 
+    public function testApiTokenServiceAllowsReadAndRateAbilities(): void
+    {
+        self::assertSame([
+            'digests:read' => 'digests:read',
+            'digests:rate' => 'digests:rate',
+        ], app(ApiTokenService::class)->allowedAbilities());
+        self::assertSame(['digests:read'], app(ApiTokenService::class)->defaultAbilities());
+    }
+
     public function testCreateApiTokenActionCreatesTokenAndShowsPlainTextOnce(): void
     {
         $this->actingAsAdmin();

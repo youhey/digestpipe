@@ -131,6 +131,107 @@
           }
         }
       }
+    },
+    "/api/articles/{id}/rating": {
+      "put": {
+        "summary": "Set article rating",
+        "description": "Sets or overwrites the downstream rating for an API-visible Digest Item. Requires a Sanctum bearer token with the digests:rate ability. The public API uses rating and rated_at; internal manual_rating and manual_rated_at names are not exposed.",
+        "operationId": "setArticleRating",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Digest Item id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleRatingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated article rating state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleRatingResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Clear article rating",
+        "description": "Clears the downstream rating for an API-visible Digest Item. Requires a Sanctum bearer token with the digests:rate ability. Returns the updated rating state instead of 204 No Content.",
+        "operationId": "clearArticleRating",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Digest Item id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cleared article rating state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleRatingResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -505,6 +606,75 @@
             ]
           },
           "analyzed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ArticleRatingRequest": {
+        "type": "object",
+        "required": [
+          "rating"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "enum": [
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          }
+        }
+      },
+      "ArticleRatingResponse": {
+        "type": "object",
+        "required": [
+          "article_rating"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "article_rating": {
+            "$ref": "#/components/schemas/ArticleRating"
+          }
+        }
+      },
+      "ArticleRating": {
+        "type": "object",
+        "required": [
+          "article_id",
+          "rating",
+          "rated_at"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "article_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "rating": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "enum": [
+              -1,
+              1,
+              2,
+              3,
+              4,
+              5,
+              null
+            ]
+          },
+          "rated_at": {
             "type": [
               "string",
               "null"
