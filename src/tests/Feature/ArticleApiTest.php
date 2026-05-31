@@ -69,11 +69,11 @@ class ArticleApiTest extends TestCase
 
         $this->getJson('/api/articles')
             ->assertOk()
-            ->assertJsonPath('data.0.id', $item->id)
-            ->assertJsonPath('data.0.selection.status', 'selected')
-            ->assertJsonPath('data.0.selection.score', 12)
-            ->assertJsonMissingPath('data.0.selection.matched_good_keywords')
-            ->assertJsonMissingPath('data.0.selection.matched_bad_keywords')
+            ->assertJsonPath('articles.0.id', $item->id)
+            ->assertJsonPath('articles.0.selection.status', 'selected')
+            ->assertJsonPath('articles.0.selection.score', 12)
+            ->assertJsonMissingPath('articles.0.selection.matched_good_keywords')
+            ->assertJsonMissingPath('articles.0.selection.matched_bad_keywords')
             ->assertJsonPath('meta.limit', 100);
     }
 
@@ -84,7 +84,7 @@ class ArticleApiTest extends TestCase
 
         $this->getJson('/api/articles/' . $item->id)
             ->assertOk()
-            ->assertJsonPath('data.id', $item->id);
+            ->assertJsonPath('article.id', $item->id);
     }
 
     public function testIndexReturnsOnlyCompletedAnalysisItems(): void
@@ -106,8 +106,8 @@ class ArticleApiTest extends TestCase
 
         $this->getJson('/api/articles')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $readyItem->id);
+            ->assertJsonCount(1, 'articles')
+            ->assertJsonPath('articles.0.id', $readyItem->id);
     }
 
     public function testDefaultWindowReturnsRecentItemsAndExcludesOldItems(): void
@@ -122,8 +122,8 @@ class ArticleApiTest extends TestCase
 
         $response = $this->getJson('/api/articles')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $recentItem->id);
+            ->assertJsonCount(1, 'articles')
+            ->assertJsonPath('articles.0.id', $recentItem->id);
 
         $response->assertJsonPath('meta.from', '2026-05-23T12:00:00.000000Z');
         $response->assertJsonPath('meta.to', '2026-05-24T12:00:00.000000Z');
@@ -155,8 +155,8 @@ class ArticleApiTest extends TestCase
 
         $this->getJson('/api/articles?source=hacker_news&from=2026-05-24T08:00:00Z&to=2026-05-24T10:30:00Z&limit=1')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $matchingItem->id)
+            ->assertJsonCount(1, 'articles')
+            ->assertJsonPath('articles.0.id', $matchingItem->id)
             ->assertJsonPath('meta.count', 1)
             ->assertJsonPath('meta.limit', 1);
     }
@@ -171,8 +171,8 @@ class ArticleApiTest extends TestCase
 
         $this->getJson('/api/articles?from=2026-05-24T09:00:00Z&to=2026-05-24T11:00:00Z')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $item->id);
+            ->assertJsonCount(1, 'articles')
+            ->assertJsonPath('articles.0.id', $item->id);
     }
 
     public function testLimitRejectsValuesOverMaximum(): void
@@ -217,9 +217,9 @@ class ArticleApiTest extends TestCase
 
         $response = $this->getJson('/api/articles')
             ->assertOk()
-            ->assertJsonPath('data.0.id', $item->id);
+            ->assertJsonPath('articles.0.id', $item->id);
 
-        self::assertEquals($expected, $response->json('data.0'));
+        self::assertEquals($expected, $response->json('articles.0'));
         self::assertStringNotContainsString('Raw article content must not be exposed.', $this->jsonResponseBody($response->json()));
     }
 
@@ -232,11 +232,11 @@ class ArticleApiTest extends TestCase
 
         $response = $this->getJson('/api/articles/' . $item->id)
             ->assertOk()
-            ->assertJsonPath('data.id', $item->id);
+            ->assertJsonPath('article.id', $item->id);
 
         self::assertEquals(
             $this->app->make(DigestExportItemBuilder::class)->build($item),
-            $response->json('data'),
+            $response->json('article'),
         );
     }
 

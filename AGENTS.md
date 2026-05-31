@@ -475,7 +475,7 @@ GET /api/articles/{id}
 
 These routes must stay protected by `auth:sanctum` and `abilities:digests:read`. Article rating write routes are limited to `PUT /api/articles/{id}/rating` and `DELETE /api/articles/{id}/rating`, and must stay protected by `auth:sanctum` and `abilities:digests:rate`. Do not add public unauthenticated access or other write APIs unless explicitly requested.
 
-The API response shape should stay aligned with `DigestExportItemBuilder` and `digestpipe:digests:export`. Do not expose raw `article_content_text`, prompts, provider raw responses, API keys, or secrets.
+The API response item shape should stay aligned with `DigestExportItemBuilder` and `digestpipe:digests:export`. `GET /api/articles` wraps records under `articles`; `GET /api/articles/{id}` wraps the record under `article`. Do not expose raw `article_content_text`, prompts, provider raw responses, API keys, or secrets.
 
 Article rating API responses must expose external field names `rating` and `rated_at` under the `article_rating` wrapper. Do not expose internal `manual_rating` or `manual_rated_at` field names through API responses.
 

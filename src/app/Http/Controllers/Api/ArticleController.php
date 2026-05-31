@@ -56,7 +56,7 @@ class ArticleController extends Controller
         );
 
         return response()->json([
-            'data' => $records,
+            'articles' => $records,
             'meta' => [
                 'count' => count($records),
                 'limit' => $limit,
@@ -84,7 +84,7 @@ class ArticleController extends Controller
         }
 
         return response()->json([
-            'data' => $this->builder->build($item),
+            'article' => $this->builder->build($item),
         ]);
     }
 

@@ -287,12 +287,12 @@
       "ArticleIndexResponse": {
         "type": "object",
         "required": [
-          "data",
+          "articles",
           "meta"
         ],
         "additionalProperties": false,
         "properties": {
-          "data": {
+          "articles": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DigestRecord"
@@ -306,11 +306,11 @@
       "ArticleDetailResponse": {
         "type": "object",
         "required": [
-          "data"
+          "article"
         ],
         "additionalProperties": false,
         "properties": {
-          "data": {
+          "article": {
             "$ref": "#/components/schemas/DigestRecord"
           }
         }

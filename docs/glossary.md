@@ -593,6 +593,13 @@ GET routes: abilities:digests:read
 rating routes: abilities:digests:rate
 ```
 
+Read response wrapper:
+
+```txt
+GET /api/articles      -> articles
+GET /api/articles/{id} -> article
+```
+
 ### Digest Export Item / Digest Record
 
 `DigestExportItemBuilder` が生成する、CLI export と API で共通利用する Item Shape です。

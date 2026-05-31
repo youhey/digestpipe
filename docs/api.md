@@ -89,6 +89,7 @@ Rules:
 - Default limit is `100`.
 - Maximum limit is `500`.
 - Newest records are returned first.
+- Response wrapper is `articles`.
 - Raw `article_content_text` is not returned.
 - Selection details are limited to `selection.status` and `selection.score`.
 
@@ -122,7 +123,7 @@ Response example:
 
 ```json
 {
-  "data": [
+  "articles": [
     {
       "id": 123,
       "source": {
@@ -408,6 +409,7 @@ Rules:
 
 - Requires authentication.
 - Uses the same item shape as `GET /api/articles`.
+- Response wrapper is `article`.
 - Returns `404` when the item does not exist.
 - Returns `404` when the item exists but is not API-visible because analysis is incomplete or missing.
 - Raw `article_content_text` is not returned.
@@ -424,7 +426,7 @@ Response example:
 
 ```json
 {
-  "data": {
+  "article": {
     "id": 123,
     "source": {
       "key": "hacker_news",
