@@ -260,8 +260,11 @@ Plain text token と token hash は一覧に表示しません。
 
 Header の `Create API Token` action から User を選び、token name と ability を指定して新しい token を作成できます。UI で選択できる ability は現在 `digests:read` と `digests:rate` です。既定では `digests:read` を選択します。Article rating API に downstream から書き込む token には `digests:rate` を付与してください。作成後、plain text token は同じ画面に一度だけ表示されます。画面を更新した後に再表示することはできません。
 
+既存 token は row action の `Edit Token` から metadata だけを編集できます。編集できる項目は token name と abilities だけです。編集しても token 文字列は再発行されず、plain text token や token hash は表示・更新されません。Abilities は一覧で個別の badge として表示されます。
+
 Token の失効は次の action で行えます。
 
+- `Edit Token`: token name と abilities だけを編集
 - `Revoke Token`: 選択した token だけを失効
 - `Revoke All For User`: その token owner の全 token を失効
 - `Revoke All API Tokens`: Header action から User を選択して全 token を失効

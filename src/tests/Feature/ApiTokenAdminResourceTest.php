@@ -8,6 +8,7 @@ use App\Filament\Resources\ApiTokens\Pages\ListApiTokens;
 use App\Models\User;
 use Filament\Notifications\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use InvalidArgumentException;
 use Laravel\Sanctum\PersonalAccessToken;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -98,14 +99,66 @@ class ApiTokenAdminResourceTest extends TestCase
     {
         $this->actingAsAdmin();
         $apiUser = User::factory()->create(['email' => 'api@example.test']);
-        $createdToken = app(ApiTokenService::class)->createToken($apiUser, 'digestpipe-api', ['digests:read']);
+        $createdToken = app(ApiTokenService::class)->createToken($apiUser, 'digestpipe-api', ['digests:read', 'digests:rate']);
 
         $this->get('/admin/api-tokens')
             ->assertOk()
             ->assertSee('digestpipe-api')
             ->assertSee('api@example.test')
+            ->assertSee('digests:read')
+            ->assertSee('digests:rate')
+            ->assertSee('api-token-ability-badge')
             ->assertDontSee($createdToken->plainTextToken)
             ->assertDontSee($createdToken->accessToken->token);
+    }
+
+    public function testEditTokenActionUpdatesTokenMetadataOnly(): void
+    {
+        $this->actingAsAdmin();
+        $apiUser = User::factory()->create(['email' => 'api@example.test']);
+        $createdToken = app(ApiTokenService::class)->createToken($apiUser, 'digestpipe-api', ['digests:read']);
+        $tokenHash = $createdToken->accessToken->token;
+
+        /** @var Testable<ListApiTokens> $component */
+        $component = Livewire::test(ListApiTokens::class);
+
+        /** @phpstan-ignore-next-line Livewire の table action test helper は runtime に追加されます。 */
+        $component
+            ->callTableAction('editToken', $createdToken->accessToken, [
+                'token_name' => 'digestpipe-rating-api',
+                'abilities' => ['digests:read', 'digests:rate'],
+            ])
+            ->assertHasNoErrors();
+
+        $updatedToken = PersonalAccessToken::query()->findOrFail($createdToken->accessToken->id);
+        self::assertSame('digestpipe-rating-api', $updatedToken->name);
+        self::assertSame(['digests:read', 'digests:rate'], $updatedToken->abilities);
+        self::assertSame($tokenHash, $updatedToken->token);
+        self::assertNotSame($createdToken->plainTextToken, $updatedToken->token);
+        self::assertNull($component->get('newPlainTextToken'));
+        Notification::assertNotified('API token updated.');
+    }
+
+    public function testApiTokenServiceRejectsEmptyMetadataAbilities(): void
+    {
+        $apiUser = User::factory()->create(['email' => 'api@example.test']);
+        $createdToken = app(ApiTokenService::class)->createToken($apiUser, 'digestpipe-api', ['digests:read']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('API token abilities must not be empty.');
+
+        app(ApiTokenService::class)->updateTokenMetadata($createdToken->accessToken, 'digestpipe-api', []);
+    }
+
+    public function testApiTokenServiceRejectsUnsupportedMetadataAbilities(): void
+    {
+        $apiUser = User::factory()->create(['email' => 'api@example.test']);
+        $createdToken = app(ApiTokenService::class)->createToken($apiUser, 'digestpipe-api', ['digests:read']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unsupported API token ability: digests:admin');
+
+        app(ApiTokenService::class)->updateTokenMetadata($createdToken->accessToken, 'digestpipe-api', ['digests:admin']);
     }
 
     public function testRevokeTokenActionDeletesSelectedToken(): void

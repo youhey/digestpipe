@@ -21,11 +21,12 @@ Filament admin UI:
 
 - `/admin/api-tokens`
 - `Create API Token` action で token を作成
+- `Edit Token` action で既存 token の token name と abilities を編集
 - `Revoke Token` / `Revoke All API Tokens` action で token を失効
 - UI で作成する token の既定 ability は `digests:read`
 - UI で選択できる ability は `digests:read` と `digests:rate`
 
-Plain text token は作成直後に一度だけ表示されます。Token 一覧では plain text token や token hash は表示しません。
+Plain text token は作成直後に一度だけ表示されます。Token 一覧や edit modal では plain text token や token hash は表示しません。既存 token の metadata 編集では token 文字列を再発行しません。
 
 Artisan commands:
 

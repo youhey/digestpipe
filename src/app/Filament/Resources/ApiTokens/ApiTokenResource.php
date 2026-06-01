@@ -7,6 +7,8 @@ use App\Filament\Resources\ApiTokens\Pages\ListApiTokens;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
@@ -15,6 +17,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
+use InvalidArgumentException;
 use Laravel\Sanctum\PersonalAccessToken;
 use UnitEnum;
 
@@ -78,8 +82,8 @@ class ApiTokenResource extends Resource
                     ->sortable(),
                 TextColumn::make('abilities')
                     ->label('Abilities')
-                    ->state(static fn (PersonalAccessToken $record): string => self::abilityList($record))
-                    ->badge(),
+                    ->state(static fn (PersonalAccessToken $record): HtmlString => self::abilityBadges($record))
+                    ->html(),
                 TextColumn::make('last_used_at')
                     ->label('Last used at')
                     ->dateTime('Y-m-d H:i:s T')
@@ -96,6 +100,47 @@ class ApiTokenResource extends Resource
                     ->sortable(),
             ])
             ->recordActions([
+                Action::make('editToken')
+                    ->label('Edit Token')
+                    ->icon(Heroicon::PencilSquare)
+                    ->modalSubmitActionLabel('Save')
+                    ->fillForm(static fn (PersonalAccessToken $record): array => [
+                        'token_name' => $record->name,
+                        'abilities' => self::abilityValues($record),
+                    ])
+                    ->form([
+                        TextInput::make('token_name')
+                            ->label('Token name')
+                            ->required()
+                            ->maxLength(255),
+                        CheckboxList::make('abilities')
+                            ->label('Abilities')
+                            ->options(static fn (ApiTokenService $tokens): array => $tokens->allowedAbilities())
+                            ->required()
+                            ->columns(1),
+                    ])
+                    ->action(static function (PersonalAccessToken $record, array $data, ApiTokenService $tokens): void {
+                        try {
+                            $tokens->updateTokenMetadata(
+                                $record,
+                                self::tokenNameFromData($data),
+                                self::abilitiesFromData($data),
+                            );
+                        } catch (InvalidArgumentException $exception) {
+                            Notification::make()
+                                ->danger()
+                                ->title('API token を更新できませんでした。')
+                                ->body($exception->getMessage())
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('API token updated.')
+                            ->send();
+                    }),
                 Action::make('revokeToken')
                     ->label('Revoke Token')
                     ->icon(Heroicon::Trash)
@@ -161,27 +206,85 @@ class ApiTokenResource extends Resource
         return 'N/A';
     }
 
-    private static function abilityList(PersonalAccessToken $record): string
+    private static function abilityBadges(PersonalAccessToken $record): HtmlString
+    {
+        $abilities = self::abilityValues($record);
+
+        if ($abilities === []) {
+            return new HtmlString('<span style="color: rgb(107 114 128);">N/A</span>');
+        }
+
+        $html = '<div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">';
+
+        foreach ($abilities as $ability) {
+            $html .= '<span class="api-token-ability-badge" style="display: inline-flex; align-items: center; border-radius: 9999px; background: rgb(243 244 246); padding: 0.125rem 0.5rem; font-size: 0.75rem; font-weight: 500; line-height: 1.25rem; color: rgb(55 65 81);">'
+                . e($ability)
+                . '</span>';
+        }
+
+        $html .= '</div>';
+
+        return new HtmlString($html);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function abilityValues(PersonalAccessToken $record): array
     {
         $abilities = $record->abilities;
 
-        if (! is_array($abilities) || $abilities === []) {
-            return 'N/A';
+        if (! is_array($abilities)) {
+            return [];
         }
 
-        $labels = [];
+        $values = [];
 
         foreach ($abilities as $ability) {
-            if (is_scalar($ability)) {
-                $labels[] = (string) $ability;
+            if (is_scalar($ability) && trim((string) $ability) !== '') {
+                $values[] = trim((string) $ability);
             }
         }
 
-        if ($labels === []) {
-            return 'N/A';
+        return array_values(array_unique($values));
+    }
+
+    /**
+     * @param array<mixed> $data
+     */
+    private static function tokenNameFromData(array $data): string
+    {
+        $value = $data['token_name'] ?? null;
+
+        if (! is_string($value)) {
+            return '';
         }
 
-        return implode(', ', $labels);
+        return trim($value);
+    }
+
+    /**
+     * @param array<mixed> $data
+     *
+     * @return list<string>
+     */
+    private static function abilitiesFromData(array $data): array
+    {
+        $abilities = $data['abilities'] ?? [];
+
+        if (! is_array($abilities)) {
+            return [];
+        }
+
+        $values = [];
+
+        foreach ($abilities as $ability) {
+            if (is_string($ability)) {
+                $values[] = $ability;
+            }
+        }
+
+        return $values;
     }
 
     /**

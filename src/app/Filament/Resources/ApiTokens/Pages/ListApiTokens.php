@@ -18,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * API token 一覧と発行操作を提供する画面
@@ -84,9 +85,19 @@ class ListApiTokens extends ListRecords
                         ->columns(1),
                 ])
                 ->action(function (array $data, ApiTokenService $tokens): void {
-                    $user = User::query()->findOrFail($this->userIdFromData($data));
-                    $abilities = $this->validatedAbilities($data['abilities'] ?? [], $tokens);
-                    $createdToken = $tokens->createToken($user, $this->tokenNameFromData($data), $abilities);
+                    try {
+                        $user = User::query()->findOrFail($this->userIdFromData($data));
+                        $abilities = $this->validatedAbilities($data['abilities'] ?? [], $tokens);
+                        $createdToken = $tokens->createToken($user, $this->tokenNameFromData($data), $abilities);
+                    } catch (InvalidArgumentException $exception) {
+                        Notification::make()
+                            ->danger()
+                            ->title('API token を作成できませんでした。')
+                            ->body($exception->getMessage())
+                            ->send();
+
+                        return;
+                    }
 
                     $this->newPlainTextToken = $createdToken->plainTextToken;
                     $this->newTokenName = $createdToken->accessToken->name;
@@ -180,20 +191,14 @@ class ListApiTokens extends ListRecords
      */
     private function validatedAbilities(mixed $value, ApiTokenService $tokens): array
     {
-        $abilities = is_array($value) ? array_values($value) : [];
-        $allowed = array_keys($tokens->allowedAbilities());
-        $validated = [];
+        $abilities = [];
 
-        foreach ($abilities as $ability) {
-            if (is_string($ability) && in_array($ability, $allowed, true)) {
-                $validated[] = $ability;
+        foreach (is_array($value) ? array_values($value) : [] as $ability) {
+            if (is_string($ability)) {
+                $abilities[] = $ability;
             }
         }
 
-        if ($validated === []) {
-            return $tokens->defaultAbilities();
-        }
-
-        return array_values(array_unique($validated));
+        return $tokens->normalizeAllowedAbilities($abilities);
     }
 }
