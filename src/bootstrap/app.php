@@ -7,6 +7,7 @@ use App\Console\Commands\ExportDigestsCommand;
 use App\Console\Commands\FetchFeedsCommand;
 use App\Console\Commands\InsightsExportCommand;
 use App\Console\Commands\RotateApiTokenCommand;
+use App\Console\Commands\RunCycleCommand;
 use App\Console\Commands\SelectionReportCommand;
 use App\Console\Commands\SelectionRollbackCommand;
 use App\Console\Commands\SourceInsightsCommand;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         FetchFeedsCommand::class,
         InsightsExportCommand::class,
         RotateApiTokenCommand::class,
+        RunCycleCommand::class,
         SelectionReportCommand::class,
         SelectionRollbackCommand::class,
         SourceInsightsCommand::class,

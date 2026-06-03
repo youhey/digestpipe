@@ -45,6 +45,8 @@ class ArticleAnalysisPipelineTest extends TestCase
         self::assertSame('en', $analysisJson['source_language'] ?? null);
         self::assertSame('news_article', $classification['content_type'] ?? null);
         self::assertNotNull($item->analyzed_at);
+        self::assertNotNull($item->analysis_started_at);
+        self::assertNotNull($item->analysis_completed_at);
         self::assertNull($item->analysis_error);
     }
 
@@ -63,6 +65,8 @@ class ArticleAnalysisPipelineTest extends TestCase
             'analysis_status' => 'failed',
             'analysis_error' => 'Stub analysis failure.',
         ]);
+        $item->refresh();
+        self::assertNotNull($item->analysis_failed_at);
     }
 
     public function testAnalysisJobSkipsUnusableInput(): void
@@ -82,6 +86,25 @@ class ArticleAnalysisPipelineTest extends TestCase
             'analysis_status' => 'skipped',
             'analysis_error' => 'Article analysis input was not usable.',
         ]);
+        $item->refresh();
+        self::assertNotNull($item->analysis_skipped_at);
+    }
+
+    public function testAnalysisJobSkipsNonQueuedItem(): void
+    {
+        $item = $this->createDigestItem([
+            'article_content_status' => 'completed',
+            'article_content_text' => 'Usable article content.',
+            'analysis_status' => 'pending',
+        ]);
+
+        (new AnalyzeDigestItemJob($item->id))->handle(new FakeArticleAnalyzer());
+
+        $item->refresh();
+
+        self::assertSame('pending', $item->analysis_status);
+        self::assertNull($item->analysis_started_at);
+        self::assertNull($item->analysis_json);
     }
 
     public function testOpenAiAnalyzerCanBeResolvedFromConfig(): void

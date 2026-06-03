@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
 use App\Models\DigestpipeCommandRun;
 use App\Models\FeedSource;
@@ -10,6 +11,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\PendingCommand;
 use RuntimeException;
 use Tests\TestCase;
@@ -20,6 +22,13 @@ use Tests\TestCase;
 class FetchFeedsCommandTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Queue::fake();
+    }
 
     public function testCommandCanRun(): void
     {
@@ -33,11 +42,13 @@ class FetchFeedsCommandTest extends TestCase
             ->assertSuccessful();
 
         $this->assertDatabaseCount('digest_items', 2);
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 2);
         $run = DigestpipeCommandRun::query()->firstOrFail();
 
         self::assertSame('digestpipe:feeds:fetch', $run->command_name);
         self::assertSame('completed', $run->status);
         self::assertSame(2, $run->result_summary['created'] ?? null);
+        self::assertSame(2, $run->result_summary['article_fetch_dispatched'] ?? null);
         self::assertSame(0, $run->result_summary['duplicates'] ?? null);
         self::assertSame(0, $run->result_summary['failed_items'] ?? null);
         self::assertSame(0, $run->result_summary['failed_feeds'] ?? null);
@@ -95,6 +106,7 @@ class FetchFeedsCommandTest extends TestCase
             ->assertSuccessful();
 
         $this->assertDatabaseCount('digest_items', 0);
+        Queue::assertNothingPushed();
     }
 
     public function testDuplicateItemsAreSkipped(): void
@@ -111,6 +123,7 @@ class FetchFeedsCommandTest extends TestCase
             ->assertSuccessful();
 
         $this->assertDatabaseCount('digest_items', 2);
+        Queue::assertPushed(FetchDigestItemArticleContentJob::class, 2);
     }
 
     public function testValidFeedItemsAreStoredWithProcessingDefaults(): void
@@ -132,7 +145,7 @@ class FetchFeedsCommandTest extends TestCase
             'source_url' => 'https://news.example.test/one',
             'discussion_url' => null,
             'title' => 'First item',
-            'article_content_status' => 'pending',
+            'article_content_status' => 'queued',
             'analysis_status' => 'pending',
         ]);
 
@@ -140,6 +153,7 @@ class FetchFeedsCommandTest extends TestCase
 
         self::assertNotSame('', $item->identity_hash);
         self::assertNotSame('', $item->content_hash);
+        self::assertNotNull($item->article_content_queued_at);
     }
 
     public function testFailedFeedResponseIsLoggedAndDoesNotCrashTheCommand(): void

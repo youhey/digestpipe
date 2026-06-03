@@ -27,14 +27,23 @@ use InvalidArgumentException;
  * @property array<string, mixed>|null $selection_result
  * @property CarbonImmutable|null $selection_evaluated_at
  * @property string $article_content_status
+ * @property CarbonImmutable|null $article_content_queued_at
+ * @property CarbonImmutable|null $article_content_started_at
  * @property string|null $article_content_text
  * @property CarbonImmutable|null $article_content_fetched_at
+ * @property CarbonImmutable|null $article_content_skipped_at
+ * @property CarbonImmutable|null $article_content_failed_at
  * @property string|null $article_content_error
  * @property string $analysis_status
+ * @property CarbonImmutable|null $analysis_queued_at
+ * @property CarbonImmutable|null $analysis_started_at
  * @property array<string, mixed>|null $analysis_json
  * @property string|null $analysis_model
  * @property string|null $analysis_error
  * @property CarbonImmutable|null $analyzed_at
+ * @property CarbonImmutable|null $analysis_completed_at
+ * @property CarbonImmutable|null $analysis_skipped_at
+ * @property CarbonImmutable|null $analysis_failed_at
  * @property int|null $manual_rating
  * @property CarbonImmutable|null $manual_rated_at
  * @property CarbonImmutable|null $created_at
@@ -61,14 +70,23 @@ class DigestItem extends Model
         'selection_result',
         'selection_evaluated_at',
         'article_content_status',
+        'article_content_queued_at',
+        'article_content_started_at',
         'article_content_text',
         'article_content_fetched_at',
+        'article_content_skipped_at',
+        'article_content_failed_at',
         'article_content_error',
         'analysis_status',
+        'analysis_queued_at',
+        'analysis_started_at',
         'analysis_json',
         'analysis_model',
         'analysis_error',
         'analyzed_at',
+        'analysis_completed_at',
+        'analysis_skipped_at',
+        'analysis_failed_at',
         'manual_rating',
         'manual_rated_at',
     ];
@@ -182,8 +200,17 @@ class DigestItem extends Model
             'selection_result' => 'array',
             'selection_evaluated_at' => 'immutable_datetime',
             'analysis_json' => 'array',
+            'analysis_queued_at' => 'immutable_datetime',
+            'analysis_started_at' => 'immutable_datetime',
             'analyzed_at' => 'immutable_datetime',
+            'analysis_completed_at' => 'immutable_datetime',
+            'analysis_skipped_at' => 'immutable_datetime',
+            'analysis_failed_at' => 'immutable_datetime',
+            'article_content_queued_at' => 'immutable_datetime',
+            'article_content_started_at' => 'immutable_datetime',
             'article_content_fetched_at' => 'immutable_datetime',
+            'article_content_skipped_at' => 'immutable_datetime',
+            'article_content_failed_at' => 'immutable_datetime',
             'manual_rating' => 'integer',
             'manual_rated_at' => 'immutable_datetime',
         ];

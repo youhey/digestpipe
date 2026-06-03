@@ -387,7 +387,9 @@ Article content extraction must be deterministic and non-AI. Prefer modest DOM-b
 
 Analysis input should prefer extracted `article_content_text`, then meaningful `excerpt`, then title-only fallback. Do not send raw HTML or large article bodies to AI services.
 
-Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. It is state-aware and dispatches only one next valid job per item in this order: article content fetch, article analysis.
+Use `digestpipe:run-cycle` as the normal processing entrypoint. It fetches RSS items, dispatches article content jobs for newly created Digest Items, then runs a temporary `queue:work database --stop-when-empty --max-time=...` worker. Do not reintroduce a permanently running queue worker or frequent all-day scheduler loop unless explicitly requested.
+
+`digestpipe:items:enqueue-processing` remains available as a maintenance-oriented state-aware dispatcher. It should not be part of the normal schedule unless explicitly requested.
 
 Treat an item as ready for downstream digest use only when `analysis_status=completed` and `analysis_json` is present.
 
@@ -456,7 +458,7 @@ Selection Keywords are DB-backed master data managed through the Filament admin 
 
 Selection evaluation history is stored in the `selection_evaluations` table. Keep it append-only. Digest Item latest selection fields remain the runtime state, while `selection_evaluations` records historical pre-content and post-content decisions. Do not store raw article content in this history table.
 
-Key digestpipe Artisan command runs are stored in the `digestpipe_command_runs` table. `digestpipe:feeds:fetch` and `digestpipe:items:enqueue-processing` should record start, completion or failure, duration, arguments, and a compact JSON result summary. Keep this separate from selection evaluation history and do not store secrets or stack traces.
+Key digestpipe Artisan command runs are stored in the `digestpipe_command_runs` table. `digestpipe:feeds:fetch`, `digestpipe:items:enqueue-processing`, and `digestpipe:run-cycle` should record start, completion or failure, duration, arguments, and a compact JSON result summary. Keep this separate from selection evaluation history and do not store secrets or stack traces.
 
 The Filament dashboard currently provides Phase 1 selection visibility, Phase 2 pipeline health visibility, and a Cloud Status widget for Laravel Cloud deployment status. It covers selection status, source breakdowns, keyword matches, recent selected/skipped Digest Items, article content status, analysis status, latest pipeline activity, recent failed processing items, and the latest Laravel Cloud deployment. The Cloud Status widget uses `LARAVEL_CLOUD_API_TOKEN` and `LARAVEL_CLOUD_ENVIRONMENT_ID`; handle missing configuration and API failures safely, and never expose the token. Keep scheduler run history, analysis insights, and source detail pages out of the dashboard unless explicitly requested.
 

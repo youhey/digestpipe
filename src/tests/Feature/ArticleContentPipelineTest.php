@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Articles\ArticleTextExtractor;
 use App\Items\DigestItemTextSelector;
+use App\Jobs\AnalyzeDigestItemJob;
 use App\Jobs\FetchDigestItemArticleContentJob;
 use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -22,6 +24,8 @@ class ArticleContentPipelineTest extends TestCase
 
     public function testFetchJobStoresExtractedArticleTextFromHtml(): void
     {
+        config(['digestpipe.selection.enabled' => false]);
+        Queue::fake();
         config([
             'digestpipe.content.min_chars' => 80,
         ]);
@@ -48,10 +52,14 @@ class ArticleContentPipelineTest extends TestCase
         self::assertStringContainsString('This is the first paragraph with useful article content', $item->article_content_text);
         self::assertStringNotContainsString('Navigation should be removed', $item->article_content_text);
         self::assertNotNull($item->article_content_fetched_at);
+        self::assertNotNull($item->article_content_started_at);
+        Queue::assertPushed(AnalyzeDigestItemJob::class, static fn (AnalyzeDigestItemJob $job): bool => $job->digestItemId === $item->id);
     }
 
     public function testFetchJobSkipsNonHtmlResponses(): void
     {
+        config(['digestpipe.selection.enabled' => false]);
+        Queue::fake();
         $item = $this->createDigestItem([
             'article_content_status' => 'queued',
         ]);
@@ -70,10 +78,12 @@ class ArticleContentPipelineTest extends TestCase
             'article_content_status' => 'skipped',
             'article_content_error' => 'Article response was not HTML.',
         ]);
+        Queue::assertPushed(AnalyzeDigestItemJob::class, static fn (AnalyzeDigestItemJob $job): bool => $job->digestItemId === $item->id);
     }
 
     public function testFetchJobHandlesHttpFailuresSafely(): void
     {
+        Queue::fake();
         $item = $this->createDigestItem([
             'article_content_status' => 'queued',
         ]);
@@ -92,6 +102,31 @@ class ArticleContentPipelineTest extends TestCase
             'article_content_status' => 'failed',
             'article_content_error' => 'Article fetch failed with HTTP status 500.',
         ]);
+        Queue::assertNothingPushed();
+    }
+
+    public function testFetchJobDoesNotDispatchAnalysisWhenAnalysisIsNotPending(): void
+    {
+        config([
+            'digestpipe.content.min_chars' => 80,
+            'digestpipe.selection.enabled' => false,
+        ]);
+        Queue::fake();
+        $item = $this->createDigestItem([
+            'article_content_status' => 'queued',
+            'analysis_status' => 'completed',
+            'source_url' => 'https://article.example.test/story',
+        ]);
+
+        Http::fake([
+            'https://article.example.test/story' => Http::response($this->articleHtml(), 200, [
+                'Content-Type' => 'text/html; charset=utf-8',
+            ]),
+        ]);
+
+        (new FetchDigestItemArticleContentJob($item->id))->handle($this->articleTextExtractor());
+
+        Queue::assertNothingPushed();
     }
 
     public function testFetchJobIsIdempotentWhenContentIsAlreadyCompleted(): void

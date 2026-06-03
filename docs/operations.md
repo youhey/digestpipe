@@ -49,16 +49,18 @@ scheduled executions.
 Current scheduled commands:
 
 ```txt
-digestpipe:feeds:fetch
-digestpipe:items:enqueue-processing --limit=100 --per-source-limit=10
+digestpipe:run-cycle --feed-limit=20 --item-limit=50 --max-seconds=600
 ```
 
 Current scheduler mutex expiration values:
 
 ```txt
-digestpipe:feeds:fetch: 15 minutes
-digestpipe:items:enqueue-processing: 10 minutes
+digestpipe:run-cycle: 30 minutes
 ```
+
+The production schedule runs every 30 minutes during JST daytime only
+(`08:00` through `17:59`, `Asia/Tokyo`). The normal workflow no longer depends
+on a permanently running queue worker.
 
 If scheduled tasks appear to stop running, a stale scheduler mutex may be one
 possible cause. For recovery or debugging, clear Laravel's scheduler mutex cache:
@@ -316,6 +318,7 @@ Currently instrumented commands:
 
 - `digestpipe:feeds:fetch`
 - `digestpipe:items:enqueue-processing`
+- `digestpipe:run-cycle`
 
 Each command run records start, completion or failure, duration, command
 arguments, a JSON result summary, and a safe error message when an uncaught
@@ -327,6 +330,10 @@ handles remain part of a completed command run and are reflected in the summary.
 
 `digestpipe:items:enqueue-processing` stores candidate counts, queued/planned
 job counts, skipped counts, selection counts, and source summary data.
+
+`digestpipe:run-cycle` stores cycle options, duration, feed fetch exit code,
+temporary queue worker exit code, queue worker max time, and whether the cycle
+reached its configured max time.
 
 This helps diagnose scheduler gaps, Laravel Cloud hibernation, stale scheduler
 mutex issues, and failed batch execution. If scheduled tasks stop running due to

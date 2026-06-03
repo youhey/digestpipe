@@ -6,6 +6,8 @@ use App\Feeds\DigestItemIngestor;
 use App\Feeds\FeedFetcher;
 use App\Feeds\FeedSourceRepository;
 use App\Feeds\RssFeedParser;
+use App\Items\DigestItemWorkflow;
+use App\Models\DigestItem;
 use App\Models\DigestpipeCommandRun;
 use App\Support\DigestpipeCommandRunRecorder;
 use Illuminate\Console\Command;
@@ -21,7 +23,8 @@ class FetchFeedsCommand extends Command
     protected $signature = 'digestpipe:feeds:fetch
         {--source= : Fetch only one configured source key}
         {--dry-run : Fetch and parse feeds without writing records}
-        {--limit= : Maximum feed items to process per source}';
+        {--limit= : Maximum feed items to process per source}
+        {--item-dispatch-limit= : Maximum newly created digest items to dispatch for article content fetching}';
 
     protected $description = 'Fetch configured RSS feeds and store new digest items.';
 
@@ -35,6 +38,8 @@ class FetchFeedsCommand extends Command
 
     private readonly DigestpipeCommandRunRecorder $commandRuns;
 
+    private readonly DigestItemWorkflow $workflow;
+
     /**
      * Constructor
      */
@@ -43,13 +48,15 @@ class FetchFeedsCommand extends Command
         FeedFetcher $fetcher,
         RssFeedParser $parser,
         DigestItemIngestor $ingestor,
-        DigestpipeCommandRunRecorder $commandRuns
+        DigestpipeCommandRunRecorder $commandRuns,
+        DigestItemWorkflow $workflow
     ) {
         $this->sources = $sources;
         $this->fetcher = $fetcher;
         $this->parser = $parser;
         $this->ingestor = $ingestor;
         $this->commandRuns = $commandRuns;
+        $this->workflow = $workflow;
 
         parent::__construct();
     }
@@ -77,11 +84,13 @@ class FetchFeedsCommand extends Command
         $sourceKey = $this->stringOption('source');
         $dryRun = $this->option('dry-run');
         $limit = $this->limitOption();
+        $itemDispatchLimit = $this->itemDispatchLimitOption();
 
         Log::info('RSS feed fetch command started.', [
             'source_filter' => $sourceKey,
             'dry_run' => $dryRun,
             'limit' => $limit,
+            'item_dispatch_limit' => $itemDispatchLimit,
         ]);
 
         try {
@@ -98,6 +107,7 @@ class FetchFeedsCommand extends Command
                 'source' => $sourceKey,
                 'dry_run' => $dryRun,
                 'limit' => $limit,
+                'item_dispatch_limit' => $itemDispatchLimit,
                 'error' => $exception->getMessage(),
             ]);
 
@@ -112,6 +122,7 @@ class FetchFeedsCommand extends Command
         $skippedDuplicateCount = 0;
         $failedItemCount = 0;
         $failedFeedCount = 0;
+        $articleFetchDispatchedCount = 0;
 
         foreach ($sources as $source) {
             Log::info('RSS feed fetch started.', [
@@ -143,6 +154,10 @@ class FetchFeedsCommand extends Command
 
                 $parsedFeed = $this->parser->parse($fetchedFeed->body, $limit);
                 $result = $this->ingestor->ingest($source, $parsedFeed->items, $dryRun);
+                $articleFetchDispatchedCount += $this->dispatchArticleFetchJobs(
+                    $result->createdDigestItemIds,
+                    $itemDispatchLimit === null ? null : max(0, $itemDispatchLimit - $articleFetchDispatchedCount)
+                );
 
                 $createdCount += $result->createdCount;
                 $skippedDuplicateCount += $result->skippedDuplicateCount;
@@ -153,6 +168,7 @@ class FetchFeedsCommand extends Command
                     'feed_url' => $source->url,
                     'parsed_item_count' => count($parsedFeed->items),
                     'created_item_count' => $result->createdCount,
+                    'article_fetch_dispatched_count' => $articleFetchDispatchedCount,
                     'skipped_duplicate_count' => $result->skippedDuplicateCount,
                     'failed_item_count' => $parsedFeed->failedItemCount,
                     'dry_run' => $dryRun,
@@ -174,12 +190,14 @@ class FetchFeedsCommand extends Command
             'skipped_duplicate_count' => $skippedDuplicateCount,
             'failed_item_count' => $failedItemCount,
             'failed_feed_count' => $failedFeedCount,
+            'article_fetch_dispatched_count' => $articleFetchDispatchedCount,
             'dry_run' => $dryRun,
         ]);
 
         $this->info(sprintf(
-            'RSS feed fetch finished. Created: %d, duplicates: %d, failed items: %d, failed feeds: %d.',
+            'RSS feed fetch finished. Created: %d, article fetch queued: %d, duplicates: %d, failed items: %d, failed feeds: %d.',
             $createdCount,
+            $articleFetchDispatchedCount,
             $skippedDuplicateCount,
             $failedItemCount,
             $failedFeedCount,
@@ -189,8 +207,10 @@ class FetchFeedsCommand extends Command
             'source' => $sourceKey,
             'dry_run' => $dryRun,
             'limit' => $limit,
+            'item_dispatch_limit' => $itemDispatchLimit,
             'configured_feeds' => count($sources),
             'created' => $createdCount,
+            'article_fetch_dispatched' => $articleFetchDispatchedCount,
             'duplicates' => $skippedDuplicateCount,
             'failed_items' => $failedItemCount,
             'failed_feeds' => $failedFeedCount,
@@ -208,7 +228,38 @@ class FetchFeedsCommand extends Command
             'source' => $this->option('source'),
             'dry_run' => $this->option('dry-run'),
             'limit' => $this->option('limit'),
+            'item_dispatch_limit' => $this->option('item-dispatch-limit'),
         ];
+    }
+
+    /**
+     * @param list<int> $createdDigestItemIds
+     */
+    private function dispatchArticleFetchJobs(array $createdDigestItemIds, ?int $limit): int
+    {
+        if ($limit === 0 || $createdDigestItemIds === []) {
+            return 0;
+        }
+
+        $dispatchedCount = 0;
+
+        foreach ($createdDigestItemIds as $id) {
+            if ($limit !== null && $dispatchedCount >= $limit) {
+                break;
+            }
+
+            $item = DigestItem::query()->find($id);
+
+            if (! $item instanceof DigestItem) {
+                continue;
+            }
+
+            if ($this->workflow->dispatchArticleFetchIfReady($item)) {
+                ++$dispatchedCount;
+            }
+        }
+
+        return $dispatchedCount;
     }
 
     private function stringOption(string $name): ?string
@@ -234,6 +285,23 @@ class FetchFeedsCommand extends Command
 
         if (! is_int($limit)) {
             throw new InvalidArgumentException('The --limit option must be a positive integer.');
+        }
+
+        return $limit;
+    }
+
+    private function itemDispatchLimitOption(): ?int
+    {
+        $value = $this->option('item-dispatch-limit');
+
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $limit = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+
+        if (! is_int($limit)) {
+            throw new InvalidArgumentException('The --item-dispatch-limit option must be a positive integer.');
         }
 
         return $limit;

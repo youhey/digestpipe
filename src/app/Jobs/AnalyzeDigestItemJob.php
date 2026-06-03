@@ -61,9 +61,25 @@ class AnalyzeDigestItemJob implements ShouldQueue
             return;
         }
 
+        if ($item->analysis_status !== 'queued') {
+            Log::info('Digest item analysis job skipped non-queued item.', [
+                'digest_item_id' => $item->id,
+                'analysis_status' => $item->analysis_status,
+            ]);
+
+            return;
+        }
+
+        $item->forceFill([
+            'analysis_status' => 'processing',
+            'analysis_started_at' => CarbonImmutable::now(),
+            'analysis_error' => null,
+        ])->save();
+
         if ($this->hasUsableInput($item) === false) {
             $item->forceFill([
                 'analysis_status' => 'skipped',
+                'analysis_skipped_at' => CarbonImmutable::now(),
                 'analysis_error' => 'Article analysis input was not usable.',
             ])->save();
 
@@ -76,19 +92,16 @@ class AnalyzeDigestItemJob implements ShouldQueue
         }
 
         try {
-            $item->forceFill([
-                'analysis_status' => 'processing',
-                'analysis_error' => null,
-            ])->save();
-
             $result = $analyzer->analyze($item);
+            $completedAt = CarbonImmutable::now();
 
             $item->forceFill([
                 'analysis_status' => 'completed',
                 'analysis_json' => $result->json,
                 'analysis_model' => $result->model,
                 'analysis_error' => null,
-                'analyzed_at' => CarbonImmutable::now(),
+                'analyzed_at' => $completedAt,
+                'analysis_completed_at' => $completedAt,
             ])->save();
 
             Log::info('Digest item analysis job finished.', [
@@ -99,6 +112,7 @@ class AnalyzeDigestItemJob implements ShouldQueue
         } catch (Throwable $exception) {
             $item->forceFill([
                 'analysis_status' => 'failed',
+                'analysis_failed_at' => CarbonImmutable::now(),
                 'analysis_error' => self::shortErrorMessage($exception),
             ])->save();
 

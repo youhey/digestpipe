@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Articles\ArticleContentExtractionException;
 use App\Articles\ArticleTextExtractor;
+use App\Items\DigestItemWorkflow;
 use App\Models\DigestItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -38,11 +39,14 @@ class FetchDigestItemArticleContentJob implements ShouldQueue
      * Digest Itemの本文を取得して保存
      *
      * @param ArticleTextExtractor $extractor
+     * @param DigestItemWorkflow|null $workflow
      *
      * @return void
      */
-    public function handle(ArticleTextExtractor $extractor): void
+    public function handle(ArticleTextExtractor $extractor, ?DigestItemWorkflow $workflow = null): void
     {
+        $workflow ??= app(DigestItemWorkflow::class);
+
         Log::info('Article content fetch job started.', [
             'digest_item_id' => $this->digestItemId,
         ]);
@@ -75,6 +79,7 @@ class FetchDigestItemArticleContentJob implements ShouldQueue
 
         $item->forceFill([
             'article_content_status' => 'processing',
+            'article_content_started_at' => CarbonImmutable::now(),
             'article_content_error' => null,
         ])->save();
 
@@ -171,6 +176,8 @@ class FetchDigestItemArticleContentJob implements ShouldQueue
             'extracted_character_count' => $content->characterCount,
             'article_content_status' => 'completed',
         ]);
+
+        $workflow->dispatchAnalysisIfReady($item);
     }
 
     private function fetch(string $url): Response
@@ -189,6 +196,7 @@ class FetchDigestItemArticleContentJob implements ShouldQueue
     {
         $item->forceFill([
             'article_content_status' => 'skipped',
+            'article_content_skipped_at' => CarbonImmutable::now(),
             'article_content_error' => self::shortMessage($message),
         ])->save();
 
@@ -197,12 +205,15 @@ class FetchDigestItemArticleContentJob implements ShouldQueue
             'article_url' => $item->source_url,
             'reason' => self::shortMessage($message),
         ]);
+
+        app(DigestItemWorkflow::class)->dispatchAnalysisIfReady($item);
     }
 
     private function markFailed(DigestItem $item, string $message): void
     {
         $item->forceFill([
             'article_content_status' => 'failed',
+            'article_content_failed_at' => CarbonImmutable::now(),
             'article_content_error' => self::shortMessage($message),
         ])->save();
 

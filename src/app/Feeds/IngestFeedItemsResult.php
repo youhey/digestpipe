@@ -13,15 +13,20 @@ class IngestFeedItemsResult
     /** @var int スキップした既存アイテムの件数 */
     public readonly int $skippedDuplicateCount;
 
+    /** @var list<int> 新規作成した Digest Item ID */
+    public readonly array $createdDigestItemIds;
+
     /**
      * Constructor
      *
      * @param int $createdCount
      * @param int $skippedDuplicateCount
+     * @param list<int> $createdDigestItemIds
      */
-    public function __construct(int $createdCount, int $skippedDuplicateCount)
+    public function __construct(int $createdCount, int $skippedDuplicateCount, array $createdDigestItemIds = [])
     {
         $this->createdCount = $createdCount;
         $this->skippedDuplicateCount = $skippedDuplicateCount;
+        $this->createdDigestItemIds = $createdDigestItemIds;
     }
 }

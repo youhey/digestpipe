@@ -90,15 +90,15 @@ Enable GitHub Dependabot alerts and Dependabot security updates in the repositor
 Run application batch commands through the `php-cli` service.
 
 ```bash
+docker compose exec -T php-cli php artisan digestpipe:run-cycle
 docker compose exec -T php-cli php artisan digestpipe:feeds:fetch
-docker compose exec -T php-cli php artisan digestpipe:items:enqueue-processing
 docker compose exec -T php-cli php artisan queue:work --stop-when-empty
 docker compose exec -T php-cli php artisan digestpipe:digests:export --limit=20
 ```
 
-Use `digestpipe:items:enqueue-processing` as the primary item processing orchestrator. The command is state-aware and dispatches only the next valid job for each item: article content fetch, then article analysis. The analysis output is structured digest JSON for downstream applications.
+Use `digestpipe:run-cycle` as the normal processing entrypoint. One cycle fetches RSS items, dispatches article content jobs for newly created Digest Items, then runs `queue:work database --stop-when-empty --max-time=...` so the worker exits when the queue is drained or the cycle time limit is reached.
 
-`digestpipe:items:enqueue-processing` supports `--limit`, `--per-source-limit`, `--dry-run`, `--source`, and `--stage=content|analysis`. `--limit` limits the total number of candidates in one command run. When `--source` is not specified, `--per-source-limit` limits candidates gathered from each enabled analysis source.
+`digestpipe:run-cycle` supports `--feed-limit`, `--item-limit`, and `--max-seconds`. `digestpipe:items:enqueue-processing` remains available as a maintenance-oriented state-aware dispatcher, but it is no longer part of the normal schedule.
 
 A digest item is ready for downstream digest use when `analysis_status=completed` and `analysis_json` is present.
 

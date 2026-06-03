@@ -24,6 +24,7 @@ class DigestItemIngestor
     {
         $createdCount = 0;
         $skippedDuplicateCount = 0;
+        $createdDigestItemIds = [];
         $fetchedAt = CarbonImmutable::now();
 
         foreach ($items as $item) {
@@ -45,7 +46,7 @@ class DigestItemIngestor
                 continue;
             }
 
-            DigestItem::query()->create([
+            $digestItem = DigestItem::query()->create([
                 'source_key' => $source->key,
                 'source_name' => $source->name,
                 'external_id' => $item->externalId,
@@ -63,8 +64,9 @@ class DigestItemIngestor
             ]);
 
             ++$createdCount;
+            $createdDigestItemIds[] = $digestItem->id;
         }
 
-        return new IngestFeedItemsResult($createdCount, $skippedDuplicateCount);
+        return new IngestFeedItemsResult($createdCount, $skippedDuplicateCount, $createdDigestItemIds);
     }
 }

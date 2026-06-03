@@ -668,10 +668,25 @@ field:
 ### `digestpipe:feeds:fetch`
 
 Enabled な情報源から RSS / Atom feed を取得し、新しい Digest Item を保存します。
+通常運用では、新規作成した Digest Item の本文取得 Job もこの command から dispatch します。
+
+### `digestpipe:run-cycle`
+
+JST 日中の通常処理 cycle です。
+
+1 cycle で RSS / Atom feed を取得し、新規 Digest Item の本文取得 Job を dispatch したあと、
+`queue:work database --stop-when-empty --max-time=...` を実行します。
+Queue が空になるか最大実行時間に到達すると終了します。
+
+Option:
+
+- `--feed-limit`
+- `--item-limit`
+- `--max-seconds`
 
 ### `digestpipe:items:enqueue-processing`
 
-State-Aware Orchestrator コマンドです。
+State-Aware Orchestrator コマンドです。通常 schedule からは外れており、主に保守・復旧用途で使います。
 
 Option:
 
@@ -744,18 +759,17 @@ Authoritative Composer Project は `src/composer.json` および `src/composer.l
 現在の schedule:
 
 ```txt
-digestpipe:feeds:fetch: every 10 minutes, withoutOverlapping(15)
-digestpipe:items:enqueue-processing --limit=100 --per-source-limit=10: every 5 minutes, withoutOverlapping(10)
+digestpipe:run-cycle --feed-limit=20 --item-limit=50 --max-seconds=600: every 30 minutes, Asia/Tokyo 08:00-17:59, withoutOverlapping(30)
 ```
 
 ### Queue Worker
 
 Laravel Queue Job を処理する Worker です。
 
-Laravel Cloud では App Cluster Background Process として次のようなコマンドを使う想定です。
+通常運用では常駐 Queue Worker を使わず、`digestpipe:run-cycle` の中で一時 worker を実行します。
 
 ```bash
-php artisan queue:work database --sleep=3 --tries=3 --timeout=120 --backoff=30
+php artisan queue:work database --stop-when-empty --max-time=600 --sleep=1 --tries=3 --timeout=120 --backoff=30
 ```
 
 ### `GET /`

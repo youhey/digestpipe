@@ -432,8 +432,21 @@ class EnqueueProcessingCommand extends Command
             return;
         }
 
-        $item->forceFill([
+        $queuedAtField = match ($plan->statusField) {
+            'article_content_status' => 'article_content_queued_at',
+            'analysis_status' => 'analysis_queued_at',
+            default => null,
+        };
+        $attributes = [
             $plan->statusField => 'queued',
+        ];
+
+        if ($queuedAtField !== null) {
+            $attributes[$queuedAtField] = CarbonImmutable::now();
+        }
+
+        $item->forceFill([
+            ...$attributes,
         ])->save();
 
         match ($plan->jobClass) {
